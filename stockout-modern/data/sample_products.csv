@@ -1,0 +1,4 @@
+id,name,sku,lead_time_days,safety_stock
+1,Produit A,SKU-A,7,10
+2,Produit B,SKU-B,14,5
+3,Produit C,SKU-C,10,8

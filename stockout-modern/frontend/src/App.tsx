@@ -1,0 +1,58 @@
+import React from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import AppLayout from './components/AppLayout'
+import Landing from './pages/Landing'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import CreateProduct from './pages/CreateProduct'
+import AddSale from './pages/AddSale'
+import Predict from './pages/Predict'
+import Analytics from './pages/Analytics'
+import Compare from './pages/Compare'
+import ImportCSV from './pages/ImportCSV'
+import Profile from './pages/Profile'
+import Chatbot from './pages/Chatbot'
+import InventoryHealth from './pages/InventoryHealth'
+import Pricing from './pages/Pricing'
+import PaymentResult from './pages/PaymentResult'
+import NotFound from './pages/NotFound'
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/create-product" element={<CreateProduct />} />
+            <Route path="/add-sale" element={<AddSale />} />
+            <Route path="/predict" element={<Predict />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/import" element={<ImportCSV />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/chat" element={<Chatbot />} />
+            <Route path="/inventory-health" element={<InventoryHealth />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/payment/success" element={<PaymentResult type="success" />} />
+            <Route path="/payment/cancel" element={<PaymentResult type="cancel" />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthProvider>
+    </ThemeProvider>
+  )
+}
