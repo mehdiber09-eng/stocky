@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 import secrets as _secrets
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -11,6 +11,7 @@ from app.models import models
 from app.api.deps import get_db, get_current_user
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.config import settings
+from app.core.rate_limit import check_rate_limit
 
 router = APIRouter()
 
@@ -25,10 +26,12 @@ class PreferencesPayload(BaseModel):
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(request: Request, payload: UserCreate, db: AsyncSession = Depends(get_db)):
+    await check_rate_limit(request, max_calls=5, window_seconds=300)
+
     q = await db.execute(select(models.User).filter(models.User.email == payload.email))
     if q.scalars().first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
     user = models.User(
         email=payload.email,
         password_hash=hash_password(payload.password),
@@ -40,13 +43,15 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/token", response_model=Token)
-async def login(payload: UserCreate, db: AsyncSession = Depends(get_db)):
+async def login(request: Request, payload: UserCreate, db: AsyncSession = Depends(get_db)):
+    await check_rate_limit(request, max_calls=10, window_seconds=60)
+
     q = await db.execute(select(models.User).filter(models.User.email == payload.email))
     user = q.scalars().first()
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Email ou mot de passe incorrect.",
         )
     return {"access_token": create_access_token(str(user.id))}
 
@@ -63,11 +68,11 @@ async def change_password(
     user=Depends(get_current_user),
 ):
     if not verify_password(payload.current_password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
+        raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect.")
     user.password_hash = hash_password(payload.new_password)
     db.add(user)
     await db.commit()
-    return {"message": "Mot de passe modifié avec succès"}
+    return {"message": "Mot de passe modifié avec succès."}
 
 
 @router.post("/preferences", status_code=200)
@@ -92,7 +97,13 @@ class ResetPasswordPayload(BaseModel):
 
 
 @router.post("/forgot-password", status_code=200)
-async def forgot_password(payload: ForgotPasswordPayload, db: AsyncSession = Depends(get_db)):
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordPayload,
+    db: AsyncSession = Depends(get_db),
+):
+    await check_rate_limit(request, max_calls=3, window_seconds=300)
+
     # Chercher l'utilisateur (ne pas révéler s'il existe ou non)
     q = await db.execute(select(models.User).where(models.User.email == payload.email))
     user = q.scalars().first()
@@ -123,8 +134,16 @@ async def reset_password(payload: ResetPasswordPayload, db: AsyncSession = Depen
         models.PasswordResetToken.used == False,
     ))
     reset_token = q.scalars().first()
-    if not reset_token or reset_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+    if not reset_token:
         raise HTTPException(status_code=400, detail="Token invalide ou expiré.")
+
+    # Comparaison timezone-safe : gérer les deux cas (tz-aware et tz-naive)
+    expires = reset_token.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré.")
+
     user = await db.get(models.User, reset_token.user_id)
     user.password_hash = hash_password(payload.new_password)
     reset_token.used = True

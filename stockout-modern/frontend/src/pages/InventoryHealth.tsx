@@ -10,6 +10,7 @@ import Toast from '../components/Toast'
 import EditProductModal from '../components/EditProductModal'
 import { SkeletonTable } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
+import Tooltip from '../components/Tooltip'
 
 const ABC_CONFIG = {
   A: { label: 'A', bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30', title: 'Top 70% revenus' },
@@ -222,7 +223,7 @@ export default function InventoryHealth() {
             <h1 className="text-2xl font-semibold text-gradient">Inventaire & Santé Stock</h1>
             <p className="text-sm text-zinc-400 mt-1">ABC · Points de réappro · Couverture · Vélocité</p>
           </div>
-          <button onClick={load} className="btn-glass flex items-center gap-2 text-sm" disabled={loading}>
+          <button onClick={load} className="btn-glass flex items-center gap-2 text-sm transition-all duration-150" disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Actualiser
           </button>
@@ -251,7 +252,9 @@ export default function InventoryHealth() {
 
       {/* ABC legend */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs text-zinc-600 font-medium uppercase tracking-wider">Classification ABC :</span>
+        <Tooltip text="Classification ABC : A = produits les plus vendus (70% du CA), B = moyens (20%), C = faibles (10%)" position="right">
+          <span className="text-xs text-zinc-600 font-medium uppercase tracking-wider cursor-help">Classification ABC :</span>
+        </Tooltip>
         {Object.entries(ABC_CONFIG).map(([cls, cfg]) => (
           <span key={cls} className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${cfg.bg}`}>
             <span className="font-bold">{cfg.label}</span>
@@ -266,7 +269,7 @@ export default function InventoryHealth() {
           <button
             key={t.key}
             onClick={() => setFilter(t.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
               filter === t.key
                 ? 'bg-white/10 text-white'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
@@ -295,12 +298,24 @@ export default function InventoryHealth() {
               <thead>
                 <tr className="border-b border-white/8">
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Produit</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">ABC</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+                    <Tooltip text="Classification ABC : A = produits les plus vendus (70% du CA), B = moyens (20%), C = faibles (10%)">
+                      <span className="cursor-help border-b border-dashed border-zinc-600">ABC</span>
+                    </Tooltip>
+                  </th>
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Stock</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Pt. Réappro</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Couverture</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Vélocité 30j</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Tendance</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden sm:table-cell">
+                    <Tooltip text="Quantité minimale avant de recommander une nouvelle commande">
+                      <span className="cursor-help border-b border-dashed border-zinc-600">Pt. Réappro</span>
+                    </Tooltip>
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden sm:table-cell">
+                    <Tooltip text="Nombre de jours avant rupture de stock au rythme de vente actuel">
+                      <span className="cursor-help border-b border-dashed border-zinc-600">Couverture</span>
+                    </Tooltip>
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Vélocité 30j</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Tendance</th>
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Statut</th>
                   <th className="text-right px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -329,25 +344,25 @@ export default function InventoryHealth() {
                           {item.current_stock}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-zinc-400 tabular-nums">
+                      <td className="px-5 py-3.5 text-zinc-400 tabular-nums hidden sm:table-cell">
                         {item.reorder_point}
                         <span className="text-zinc-600 text-xs ml-1">unités</span>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 hidden sm:table-cell">
                         <CoverageMeter
                           days={item.days_of_coverage}
                           reorderPoint={item.reorder_point}
                           stock={item.current_stock}
                         />
                       </td>
-                      <td className="px-5 py-3.5 text-zinc-300 tabular-nums">
+                      <td className="px-5 py-3.5 text-zinc-300 tabular-nums hidden md:table-cell">
                         {item.avg_daily_sales_30d > 0 ? (
                           <span>{item.avg_daily_sales_30d}<span className="text-zinc-600 text-xs">/j</span></span>
                         ) : (
                           <span className="text-zinc-600">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 hidden md:table-cell">
                         {vel ? (
                           <TrendBadge trend={vel.trend} pct={Math.abs(vel.trend_pct)} />
                         ) : (
@@ -362,37 +377,40 @@ export default function InventoryHealth() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => setHistoryTarget({ id: item.product_id, name: item.product_name })}
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-brand-300 hover:bg-brand-500/10 transition-all"
-                            title="Voir l'historique du stock"
-                          >
-                            <History size={12} />
-                            Historique
-                          </button>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const res = await ProductsAPI.get(item.product_id)
-                                setEditTarget(res.data)
-                              } catch {
-                                setToast({ msg: 'Impossible de charger le produit', type: 'error' })
-                              }
-                            }}
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-zinc-200 hover:bg-white/8 transition-all"
-                            title="Modifier le produit"
-                          >
-                            <Edit2 size={12} />
-                            Éditer
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget({ id: item.product_id, name: item.product_name })}
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                            title="Supprimer le produit"
-                          >
-                            <Trash2 size={12} />
-                            Supprimer
-                          </button>
+                          <Tooltip text="Voir l'évolution du stock dans le temps">
+                            <button
+                              onClick={() => setHistoryTarget({ id: item.product_id, name: item.product_name })}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-brand-300 hover:bg-brand-500/10 transition-all duration-150"
+                            >
+                              <History size={12} />
+                              <span className="hidden sm:inline">Historique</span>
+                            </button>
+                          </Tooltip>
+                          <Tooltip text="Modifier les paramètres de ce produit">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await ProductsAPI.get(item.product_id)
+                                  setEditTarget(res.data)
+                                } catch {
+                                  setToast({ msg: 'Impossible de charger le produit', type: 'error' })
+                                }
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-zinc-200 hover:bg-white/8 transition-all duration-150"
+                            >
+                              <Edit2 size={12} />
+                              <span className="hidden sm:inline">Éditer</span>
+                            </button>
+                          </Tooltip>
+                          <Tooltip text="Supprimer ce produit définitivement">
+                            <button
+                              onClick={() => setDeleteTarget({ id: item.product_id, name: item.product_name })}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                            >
+                              <Trash2 size={12} />
+                              <span className="hidden sm:inline">Supprimer</span>
+                            </button>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>

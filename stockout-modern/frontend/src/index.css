@@ -210,6 +210,12 @@
     border: 1px solid rgba(99,102,241,0.25);
   }
 
+  /* STATUS BADGES — meilleur contraste */
+  .badge-critical { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-300 border border-red-500/25; }
+  .badge-warning  { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25; }
+  .badge-ok       { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25; }
+  .badge-neutral  { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-brand-500/15 text-brand-300 border border-brand-500/25; }
+
   /* GRADIENT TEXT */
   .text-gradient {
     background: linear-gradient(135deg, #a5b4fc 0%, #e879f9 50%, #22d3ee 100%);
@@ -296,6 +302,18 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===========================================================
+   Smartphone landscape orientation
+   =========================================================== */
+@media (max-width: 768px) and (orientation: landscape) {
+  .sidebar-mobile {
+    width: 240px !important;
+  }
+  .main-content {
+    padding-top: 0.5rem !important;
   }
 }
 

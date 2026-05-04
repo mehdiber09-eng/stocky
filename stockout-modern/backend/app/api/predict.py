@@ -30,6 +30,8 @@ async def predict(
     if is_superuser and not user.is_subscribed:
         user.is_subscribed = True
         db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
     if not user.is_subscribed and not is_superuser:
         used = await get_free_trials(user.id)
@@ -105,6 +107,8 @@ async def predict_batch(
     if is_superuser and not user.is_subscribed:
         user.is_subscribed = True
         db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
     if not user.is_subscribed and not is_superuser:
         used = await get_free_trials(user.id)

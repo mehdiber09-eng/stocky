@@ -75,6 +75,7 @@ export default function AddSale() {
                   <option key={p.id} value={p.id}>{p.name} — {p.sku}</option>
                 ))}
               </select>
+              <p className="text-xs text-zinc-600 mt-1.5">Sélectionnez le produit pour lequel vous enregistrez une vente</p>
             </div>
 
             {selectedProduct && (
@@ -93,6 +94,7 @@ export default function AddSale() {
                 value={quantity}
                 onChange={e => setQuantity(Math.max(1, Number(e.target.value)))}
               />
+              <p className="text-xs text-zinc-600 mt-1.5">Nombre d'unités vendues — le stock sera automatiquement mis à jour</p>
             </div>
 
             <div className="flex items-center gap-3 pt-2">

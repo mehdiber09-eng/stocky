@@ -83,6 +83,7 @@ export default function CreateProduct() {
                 onChange={e => setSku(e.target.value.toUpperCase())}
                 required
               />
+              <p className="text-xs text-zinc-600 mt-1.5">Code unique du produit (ex : PROD-001). Ne peut pas être modifié après création.</p>
             </div>
             <div>
               <label className="label">Délai de livraison <span className="text-zinc-600">(jours)</span></label>
@@ -93,6 +94,7 @@ export default function CreateProduct() {
                 value={leadTime}
                 onChange={e => setLeadTime(Number(e.target.value))}
               />
+              <p className="text-xs text-zinc-600 mt-1.5">Délai moyen en jours entre la commande fournisseur et la réception en stock</p>
             </div>
             <div>
               <label className="label">Stock de sécurité <span className="text-zinc-600">(unités)</span></label>
@@ -103,6 +105,7 @@ export default function CreateProduct() {
                 value={safetyStock}
                 onChange={e => setSafetyStock(Number(e.target.value))}
               />
+              <p className="text-xs text-zinc-600 mt-1.5">Quantité minimale à toujours garder en stock pour les imprévus</p>
             </div>
             <div className="col-span-2">
               <label className="label">Stock initial <span className="text-zinc-600">(quantité actuellement disponible)</span></label>

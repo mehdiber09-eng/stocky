@@ -12,6 +12,7 @@ import {
 import { AnalyticsAPI, ExportAPI, downloadBlob } from '../api/api'
 import Toast from '../components/Toast'
 import Pagination from '../components/Pagination'
+import HintTooltip from '../components/Tooltip'
 
 const RISK_COLORS = { low: '#10b981', medium: '#f59e0b', high: '#ef4444' }
 
@@ -117,29 +118,35 @@ export default function Analytics() {
           <button onClick={load} className="btn-ghost flex items-center gap-2 text-sm" disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button
-            onClick={() => window.print()}
-            className="btn-glass flex items-center gap-2 text-sm print:hidden"
-          >
-            <Printer size={14} />
-            Exporter PDF
-          </button>
-          <button
-            onClick={() => handleExport('predictions')}
-            disabled={!!exporting}
-            className="btn-ghost flex items-center gap-2 text-sm print:hidden"
-          >
-            {exporting === 'predictions' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            Prédictions CSV
-          </button>
-          <button
-            onClick={() => handleExport('sales')}
-            disabled={!!exporting}
-            className="btn-primary flex items-center gap-2 text-sm print:hidden"
-          >
-            {exporting === 'sales' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            Ventes CSV
-          </button>
+          <HintTooltip text="Imprimer ou sauvegarder vos analytics en PDF">
+            <button
+              onClick={() => window.print()}
+              className="btn-glass flex items-center gap-2 text-sm print:hidden transition-all duration-150"
+            >
+              <Printer size={14} />
+              Exporter PDF
+            </button>
+          </HintTooltip>
+          <HintTooltip text="Télécharger vos données dans Excel ou Google Sheets">
+            <button
+              onClick={() => handleExport('predictions')}
+              disabled={!!exporting}
+              className="btn-ghost flex items-center gap-2 text-sm print:hidden transition-all duration-150"
+            >
+              {exporting === 'predictions' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              Prédictions CSV
+            </button>
+          </HintTooltip>
+          <HintTooltip text="Télécharger vos données dans Excel ou Google Sheets">
+            <button
+              onClick={() => handleExport('sales')}
+              disabled={!!exporting}
+              className="btn-primary flex items-center gap-2 text-sm print:hidden transition-all duration-150"
+            >
+              {exporting === 'sales' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              Ventes CSV
+            </button>
+          </HintTooltip>
         </div>
       </div>
 
@@ -223,12 +230,13 @@ export default function Analytics() {
               <div className="text-center py-12 text-zinc-600 text-sm">Aucune prédiction effectuée</div>
             ) : (
               <>
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-surface-border">
                       <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Date</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Produit</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Horizon</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide hidden sm:table-cell">Horizon</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Probabilité</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Risque</th>
                     </tr>
@@ -240,7 +248,7 @@ export default function Analytics() {
                         <tr key={row.id} className="border-b border-surface-border last:border-0 hover:bg-surface-tertiary/50 transition-colors">
                           <td className="px-6 py-3 text-zinc-500 text-xs">{new Date(row.predicted_at).toLocaleString('fr-FR')}</td>
                           <td className="px-6 py-3 font-medium text-zinc-200">{row.product_name}</td>
-                          <td className="px-6 py-3 text-zinc-400">{row.horizon}j</td>
+                          <td className="px-6 py-3 text-zinc-400 hidden sm:table-cell">{row.horizon}j</td>
                           <td className="px-6 py-3 font-semibold" style={{ color: row.probability >= 0.7 ? '#ef4444' : row.probability >= 0.4 ? '#f59e0b' : '#10b981' }}>
                             {(row.probability * 100).toFixed(1)}%
                           </td>
@@ -258,6 +266,7 @@ export default function Analytics() {
                       ))}
                   </tbody>
                 </table>
+                </div>
                 <div className="px-6 pb-4">
                   <Pagination
                     page={historyPage}

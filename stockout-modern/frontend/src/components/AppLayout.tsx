@@ -1,9 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 
 export default function AppLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   return (
     <div className="relative min-h-screen flex overflow-hidden">
       {/* Animated background orbs (behind everything) */}
@@ -13,11 +15,20 @@ export default function AppLayout() {
         <div className="orb orb-cyan w-[480px] h-[480px] -bottom-40 left-1/3 animate-float" style={{ animationDelay: '-6s' }} />
       </div>
 
-      <Sidebar />
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden
+        />
+      )}
 
-      <main className="relative z-10 flex-1 overflow-y-auto h-screen">
-        <Topbar />
-        <div className="max-w-6xl mx-auto px-8 py-8">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <main className="relative z-10 flex-1 overflow-y-auto h-screen main-content">
+        <Topbar onMenuOpen={() => setSidebarOpen(true)} />
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
           <Outlet />
         </div>
       </main>

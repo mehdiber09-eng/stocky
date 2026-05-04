@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { ProductsAPI, PredictAPI, Product, PredictionResult } from '../api/api'
 import Toast from '../components/Toast'
+import HintTooltip from '../components/Tooltip'
 
 function getRiskLevel(prob: number) {
   if (prob >= 0.7) return { label: 'Risque élevé', color: 'text-red-400', badge: 'badge-risk-high', icon: <AlertTriangle size={16} /> }
@@ -170,15 +171,18 @@ export default function Predict() {
                 <div className="flex justify-between text-xs text-zinc-600 mt-1">
                   <span>7j</span><span>90j</span>
                 </div>
+                <p className="text-xs text-zinc-600 mt-2">Nombre de jours à analyser (ex : 30 jours = prédiction sur le prochain mois)</p>
               </div>
-              <button
-                type="submit"
-                className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
-                disabled={loading || !productId}
-              >
-                {loading ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />}
-                {loading ? 'Analyse...' : 'Lancer la prédiction'}
-              </button>
+              <HintTooltip text="Calculer la probabilité de rupture de stock sur la période choisie grâce à l'IA">
+                <button
+                  type="submit"
+                  className="btn-primary w-full flex items-center justify-center gap-2 mt-2 transition-all duration-150"
+                  disabled={loading || !productId}
+                >
+                  {loading ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />}
+                  {loading ? 'Analyse...' : 'Lancer la prédiction'}
+                </button>
+              </HintTooltip>
             </form>
           )}
           {result && (

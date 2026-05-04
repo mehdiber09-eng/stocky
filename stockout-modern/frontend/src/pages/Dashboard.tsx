@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 import {
   Package, TrendingUp, ShoppingCart, Trash2, Plus, RefreshCw, Loader2,
   Sparkles, ArrowUpRight, BarChart2, Bell, Zap, AlertTriangle, Layers,
-  CheckCircle, Clock, Search,
+  CheckCircle, Clock, Search, Info, Rocket, PackageCheck, Brain,
 } from 'lucide-react'
 import { ProductsAPI, Product, AnalyticsAPI, PredictAPI, BatchPredictionResult, InventoryHealthItem } from '../api/api'
 import Toast from '../components/Toast'
 import { SkeletonCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
+import Tooltip from '../components/Tooltip'
 
 interface Summary {
   total_products: number
@@ -17,6 +18,13 @@ interface Summary {
   avg_probability: number
   total_sales_qty: number
   recent_sales_qty: number
+}
+
+const STAT_TOOLTIPS: Record<string, string> = {
+  'Produits': 'Nombre total de produits suivis dans votre catalogue',
+  'Prédictions': 'Nombre total de prédictions de rupture effectuées',
+  'Risque élevé': 'Produits avec une probabilité de rupture supérieure à 70%',
+  'Ventes 30j': 'Quantité totale vendue au cours des 30 derniers jours',
 }
 
 export default function Dashboard() {
@@ -127,7 +135,7 @@ export default function Dashboard() {
       <div className="card-glow shimmer relative overflow-hidden">
         <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-brand-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-magenta-500/20 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center justify-between gap-6">
+        <div className="relative flex items-center justify-between gap-6 flex-wrap">
           <div>
             <div className="inline-flex items-center gap-2 badge-info mb-3">
               <Sparkles size={11} /> StockSense v3
@@ -135,20 +143,95 @@ export default function Dashboard() {
             <h1 className="text-3xl font-semibold text-gradient leading-tight">Dashboard</h1>
             <p className="text-sm text-zinc-400 mt-2">Vue d'ensemble en temps réel · {products.length} produit{products.length !== 1 ? 's' : ''} suivi{products.length !== 1 ? 's' : ''}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={fetchAll} className="btn-glass flex items-center gap-2 text-sm" disabled={loading}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={fetchAll} className="btn-glass flex items-center gap-2 text-sm transition-all duration-150" disabled={loading}>
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Actualiser
             </button>
-            <Link to="/create-product">
-              <button className="btn-primary flex items-center gap-2 text-sm">
-                <Plus size={14} />
-                Nouveau produit
-              </button>
-            </Link>
+            <Tooltip text="Ajouter un nouveau produit à votre inventaire">
+              <Link to="/create-product">
+                <button className="btn-primary flex items-center gap-2 text-sm transition-all duration-150">
+                  <Plus size={14} />
+                  Nouveau produit
+                </button>
+              </Link>
+            </Tooltip>
           </div>
         </div>
       </div>
+
+      {/* Onboarding banner — shown only when no products yet */}
+      {!loading && products.length === 0 && (
+        <div className="card border border-brand-500/30 bg-gradient-to-br from-brand-500/10 to-purple-500/5 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-brand-500/10 blur-2xl pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center">
+                <Rocket size={16} className="text-brand-300" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-100">Bienvenue sur StockSense !</h2>
+                <p className="text-xs text-zinc-500">Suivez ces 3 étapes pour commencer</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                {
+                  icon: Package,
+                  step: '1',
+                  title: 'Créer votre premier produit',
+                  desc: 'Ajoutez un produit à votre catalogue avec son SKU et délai fournisseur.',
+                  href: '/create-product',
+                  cta: 'Créer un produit',
+                  color: 'text-brand-300',
+                  bg: 'bg-brand-500/10',
+                  btnClass: 'btn-primary',
+                },
+                {
+                  icon: PackageCheck,
+                  step: '2',
+                  title: 'Saisir votre stock initial',
+                  desc: 'Enregistrez vos premières ventes ou importez votre historique CSV.',
+                  href: '/add-sale',
+                  cta: 'Saisir une vente',
+                  color: 'text-emerald-300',
+                  bg: 'bg-emerald-500/10',
+                  btnClass: 'btn-glass border border-emerald-500/30 hover:border-emerald-500/50',
+                },
+                {
+                  icon: Brain,
+                  step: '3',
+                  title: 'Lancer votre première prédiction IA',
+                  desc: 'Obtenez la probabilité de rupture et la date estimée pour chaque produit.',
+                  href: '/predict',
+                  cta: 'Prédire maintenant',
+                  color: 'text-purple-300',
+                  bg: 'bg-purple-500/10',
+                  btnClass: 'btn-glass border border-purple-500/30 hover:border-purple-500/50',
+                },
+              ].map(({ icon: Icon, step, title, desc, href, cta, color, bg, btnClass }) => (
+                <div key={step} className="flex flex-col gap-3 p-4 rounded-xl bg-white/3 border border-white/8">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}>
+                      <Icon size={16} className={color} />
+                    </div>
+                    <span className="text-xs font-bold text-zinc-600">Étape {step}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-zinc-200 mb-1">{title}</p>
+                    <p className="text-xs text-zinc-500 leading-relaxed">{desc}</p>
+                  </div>
+                  <Link to={href}>
+                    <button className={`w-full py-2 rounded-lg text-xs font-medium transition-all ${btnClass}`}>
+                      {cta}
+                    </button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -160,7 +243,14 @@ export default function Dashboard() {
                 <div className={`w-10 h-10 rounded-xl glass-subtle flex items-center justify-center ${iconColor} group-hover:scale-110 transition-transform`}>
                   <Icon size={18} />
                 </div>
-                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{label}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{label}</span>
+                  <Tooltip text={STAT_TOOLTIPS[label] ?? label} position="left">
+                    <span className="text-zinc-600 hover:text-zinc-400 cursor-help transition-colors">
+                      <Info size={11} />
+                    </span>
+                  </Tooltip>
+                </div>
               </div>
               <p className="text-3xl font-semibold text-white mt-1">{value}</p>
             </div>
@@ -170,7 +260,7 @@ export default function Dashboard() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Link to="/predict" className="card group flex items-center justify-between">
+        <Link to="/predict" className="card group flex items-center justify-between hover:border-zinc-600 transition-all duration-150">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-300 group-hover:shadow-glow transition-all">
               <TrendingUp size={18} />
@@ -182,7 +272,7 @@ export default function Dashboard() {
           </div>
           <ArrowUpRight size={16} className="text-zinc-600 group-hover:text-brand-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
         </Link>
-        <Link to="/add-sale" className="card group flex items-center justify-between">
+        <Link to="/add-sale" className="card group flex items-center justify-between hover:border-zinc-600 transition-all duration-150">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-300 group-hover:shadow-glow-emerald transition-all">
               <ShoppingCart size={18} />
@@ -194,7 +284,7 @@ export default function Dashboard() {
           </div>
           <ArrowUpRight size={16} className="text-zinc-600 group-hover:text-emerald-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
         </Link>
-        <Link to="/analytics" className="card group flex items-center justify-between">
+        <Link to="/analytics" className="card group flex items-center justify-between hover:border-zinc-600 transition-all duration-150">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-magenta-500/10 flex items-center justify-center text-magenta-400 group-hover:shadow-glow-magenta transition-all">
               <BarChart2 size={18} />
@@ -256,14 +346,16 @@ export default function Dashboard() {
               <p className="text-xs text-zinc-600">Prédictions de rupture sur 30 jours</p>
             </div>
           </div>
-          <button
-            onClick={runBatchPredictions}
-            disabled={batchLoading || products.length === 0}
-            className="btn-primary flex items-center gap-2 text-sm"
-          >
-            {batchLoading ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-            {batchLoading ? 'Analyse...' : 'Prédire tout'}
-          </button>
+          <Tooltip text="Analyser tous vos produits en une seule fois pour détecter les risques de rupture">
+            <button
+              onClick={runBatchPredictions}
+              disabled={batchLoading || products.length === 0}
+              className="btn-primary flex items-center gap-2 text-sm transition-all duration-150"
+            >
+              {batchLoading ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+              {batchLoading ? 'Analyse...' : 'Prédire tout'}
+            </button>
+          </Tooltip>
         </div>
 
         {batchResult ? (
@@ -332,7 +424,7 @@ export default function Dashboard() {
               <input
                 type="text"
                 className="input pl-8 py-1.5 text-sm w-52"
-                placeholder="Rechercher par nom / SKU…"
+                placeholder="Rechercher par nom ou référence (SKU)..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -362,38 +454,42 @@ export default function Dashboard() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto"><table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/8">
-                <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Produit</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">SKU</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Délai</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Stock min.</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map((p) => (
-                <tr key={p.id} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
-                  <td className="px-6 py-4 font-medium text-zinc-100">{p.name}</td>
-                  <td className="px-6 py-4">
-                    <code className="text-xs bg-white/5 border border-white/8 px-2 py-0.5 rounded font-mono text-zinc-400">{p.sku}</code>
-                  </td>
-                  <td className="px-6 py-4 text-zinc-400">{p.lead_time_days}j</td>
-                  <td className="px-6 py-4 text-zinc-400">{p.safety_stock}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => setDeleteTarget(p.id)}
-                      disabled={deleting === p.id}
-                      className="p-2 rounded-lg text-zinc-500 hover:text-red-300 hover:bg-red-500/10 transition-all"
-                    >
-                      {deleting === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/8">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Produit</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden sm:table-cell">SKU</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Délai</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Stock min.</th>
+                  <th className="px-6 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table></div>
+              </thead>
+              <tbody>
+                {filteredProducts.map((p) => (
+                  <tr key={p.id} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
+                    <td className="px-6 py-4 font-medium text-zinc-100">{p.name}</td>
+                    <td className="px-6 py-4 hidden sm:table-cell">
+                      <code className="text-xs bg-white/5 border border-white/8 px-2 py-0.5 rounded font-mono text-zinc-400">{p.sku}</code>
+                    </td>
+                    <td className="px-6 py-4 text-zinc-400 hidden md:table-cell">{p.lead_time_days}j</td>
+                    <td className="px-6 py-4 text-zinc-400 hidden md:table-cell">{p.safety_stock}</td>
+                    <td className="px-6 py-4 text-right">
+                      <Tooltip text="Supprimer définitivement ce produit et tout son historique" position="left">
+                        <button
+                          onClick={() => setDeleteTarget(p.id)}
+                          disabled={deleting === p.id}
+                          className="p-2 rounded-lg text-zinc-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-150"
+                        >
+                          {deleting === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        </button>
+                      </Tooltip>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

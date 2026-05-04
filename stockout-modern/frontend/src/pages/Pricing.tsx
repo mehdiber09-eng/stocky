@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { PaymentAPI } from '../api/api'
 import Toast from '../components/Toast'
+import Tooltip from '../components/Tooltip'
 
 const FREE_FEATURES = [
   '5 prédictions ML gratuites',
@@ -180,24 +181,28 @@ export default function Pricing() {
                 <p className="text-xs text-zinc-500 flex items-center gap-1.5">
                   <span className="text-base">🇩🇿</span> Paiement algérien — Chargily Pay
                 </p>
-                <button
-                  onClick={() => payChargily('edahabia')}
-                  disabled={loading !== null || !chargilyEnabled}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: 'linear-gradient(135deg,#00a651,#007a3d)', color: '#fff', boxShadow: '0 4px 16px rgba(0,166,81,0.3)' }}
-                >
-                  {loading === 'edahabia' ? <Loader2 size={14} className="animate-spin" /> : '💳'}
-                  Dahabia (Poste Algérie)
-                </button>
-                <button
-                  onClick={() => payChargily('cib')}
-                  disabled={loading !== null || !chargilyEnabled}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: 'linear-gradient(135deg,#1d4ed8,#1e40af)', color: '#fff', boxShadow: '0 4px 16px rgba(29,78,216,0.3)' }}
-                >
-                  {loading === 'cib' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                  CIB / Visa / Mastercard
-                </button>
+                <Tooltip text="Paiement via votre carte postale algérienne (CCP)" position="left">
+                  <button
+                    onClick={() => payChargily('edahabia')}
+                    disabled={loading !== null || !chargilyEnabled}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ background: 'linear-gradient(135deg,#00a651,#007a3d)', color: '#fff', boxShadow: '0 4px 16px rgba(0,166,81,0.3)' }}
+                  >
+                    {loading === 'edahabia' ? <Loader2 size={14} className="animate-spin" /> : '💳'}
+                    Dahabia (Poste Algérie)
+                  </button>
+                </Tooltip>
+                <Tooltip text="Paiement via votre carte bancaire algérienne CIB, Visa ou Mastercard" position="left">
+                  <button
+                    onClick={() => payChargily('cib')}
+                    disabled={loading !== null || !chargilyEnabled}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ background: 'linear-gradient(135deg,#1d4ed8,#1e40af)', color: '#fff', boxShadow: '0 4px 16px rgba(29,78,216,0.3)' }}
+                  >
+                    {loading === 'cib' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+                    CIB / Visa / Mastercard
+                  </button>
+                </Tooltip>
                 {!chargilyEnabled && (
                   <p className="text-xs text-amber-500/80 flex items-center gap-1">
                     <AlertCircle size={11} /> Chargily non configuré (admin requis)
@@ -213,15 +218,17 @@ export default function Pricing() {
               </div>
 
               {/* PayPal */}
-              <button
-                onClick={payPaypal}
-                disabled={loading !== null || !paypalEnabled}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: 'linear-gradient(135deg,#0070ba,#003087)', color: '#fff', boxShadow: '0 4px 16px rgba(0,112,186,0.3)' }}
-              >
-                {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
-                PayPal — {priceUsd}€
-              </button>
+              <Tooltip text="Paiement international par carte ou compte PayPal" position="left">
+                <button
+                  onClick={payPaypal}
+                  disabled={loading !== null || !paypalEnabled}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg,#0070ba,#003087)', color: '#fff', boxShadow: '0 4px 16px rgba(0,112,186,0.3)' }}
+                >
+                  {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
+                  PayPal — {priceUsd}€
+                </button>
+              </Tooltip>
               {!paypalEnabled && (
                 <p className="text-xs text-amber-500/80 flex items-center gap-1">
                   <AlertCircle size={11} /> PayPal non configuré (admin requis)
