@@ -1,360 +1,480 @@
-import React, { useEffect, useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import React, { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Activity, TrendingUp, Bell, Shield, Zap, ArrowRight,
-  CheckCircle, Upload, Brain, BarChart3, AlertTriangle,
-  Clock, MapPin, HeadphonesIcon,
+  CheckCircle, Brain, BarChart3, AlertTriangle, QrCode,
+  FlaskConical, Sparkles, Package, Clock, ChevronRight,
+  Star, Globe, Lock,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-/* ─────────────────────────────────────────────
-   DATA
-───────────────────────────────────────────── */
+/* ── animated counter ── */
+function Counter({ to, suffix = '' }: { to: number; suffix?: string }) {
+  const [val, setVal] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return
+      obs.disconnect()
+      let start = 0
+      const step = Math.ceil(to / 60)
+      const id = setInterval(() => {
+        start = Math.min(start + step, to)
+        setVal(start)
+        if (start >= to) clearInterval(id)
+      }, 16)
+    }, { threshold: 0.3 })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [to])
+  return <span ref={ref}>{val.toLocaleString()}{suffix}</span>
+}
 
-const problems = [
-  {
-    emoji: '😰',
-    title: 'Stock épuisé = client perdu',
-    desc: 'Chaque rupture coûte des ventes et abîme votre réputation. Le client qui ne trouve pas son produit va chez le concurrent.',
-  },
-  {
-    emoji: '📉',
-    title: 'Trop de stock = argent immobilisé',
-    desc: 'Sur-stocker paralyse votre trésorerie. Des centaines de milliers de dinars bloqués dans des produits qui ne bougent pas.',
-  },
-  {
-    emoji: '⏰',
-    title: 'Décisions tardives = pertes',
-    desc: 'Commander après la rupture, c\'est déjà trop tard. Les délais fournisseurs font le reste.',
-  },
-]
+/* ── floating alert card ── */
+function LiveAlert({ delay }: { delay: string }) {
+  return (
+    <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/25 rounded-xl px-3 py-2.5 shadow-lg"
+         style={{ animation: `fadeSlideUp 0.6s ease ${delay} both` }}>
+      <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse shrink-0" />
+      <span className="text-xs text-red-300 font-medium">Rupture prévue dans <strong>4 jours</strong> · Huile d'olive</span>
+      <span className="ml-auto text-[10px] text-red-400/60">87%</span>
+    </div>
+  )
+}
 
-const steps = [
-  {
-    emoji: '📊',
-    number: '01',
-    title: 'Importez vos ventes',
-    desc: 'Glissez-déposez un CSV ou saisissez vos ventes manuellement. StockSense apprend de votre historique en quelques secondes.',
-    color: 'text-brand-400',
-    bg: 'bg-brand-500/10',
-    border: 'border-brand-500/20',
-  },
-  {
-    emoji: '🤖',
-    number: '02',
-    title: "L'IA analyse et prédit",
-    desc: 'Notre moteur XGBoost + LSTM calcule la probabilité de rupture avec un intervalle de confiance à 95% sur l\'horizon de votre choix.',
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/20',
-  },
-  {
-    emoji: '📬',
-    number: '03',
-    title: 'Recevez des alertes',
-    desc: 'Notification email automatique dès que le risque dépasse votre seuil. Commandez au bon moment, jamais trop tôt ni trop tard.',
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/20',
-  },
-]
-
-const stats = [
-  { icon: TrendingUp, value: '95%', label: 'Précision ML', color: 'text-brand-400' },
-  { icon: Zap, value: '< 2s', label: 'Par prédiction', color: 'text-amber-400' },
-  { icon: MapPin, value: 'DZ & FR', label: 'Algérie & France', color: 'text-emerald-400' },
-  { icon: HeadphonesIcon, value: '7j/7', label: 'Support inclus', color: 'text-purple-400' },
-]
-
-const testimonials = [
-  {
-    name: 'Karim B.',
-    role: 'Gérant · épicerie fine, Alger',
-    flag: '🇩🇿',
-    text: 'StockSense m\'a alerté 12 jours avant la rupture de mon huile d\'olive premium. Je commande maintenant au bon moment, sans jamais sur-stocker. Les ventes ont augmenté de 18%.',
-    rating: 5,
-  },
-  {
-    name: 'Sophie M.',
-    role: 'Responsable stock · pharmacie, Lyon',
-    flag: '🇫🇷',
-    text: 'Outil incroyablement précis. L\'import CSV nous a économisé des heures de saisie chaque semaine. Le conseiller IA répond comme un expert en supply chain. Je recommande sans hésiter.',
-    rating: 5,
-  },
-  {
-    name: 'Youcef A.',
-    role: 'Propriétaire · électroménager, Oran',
-    flag: '🇩🇿',
-    text: 'Le seul outil vraiment adapté à la réalité algérienne : paiement CIB/Edahabia, interface en français, support réactif. Et les prédictions sont bluffantes de précision.',
-    rating: 5,
-  },
-]
-
-const freePlanFeatures = [
-  '5 prédictions IA par mois',
-  'Tous vos produits',
-  'Export CSV',
-  'Conseiller IA',
-  'Support email',
-]
-
-const proPlanFeatures = [
-  'Prédictions illimitées',
-  'Alertes email automatiques',
-  'Analytics & graphiques avancés',
-  'Import CSV en masse',
-  'Comparaison multi-produits',
-  'Support prioritaire 7j/7',
-]
-
-/* ─────────────────────────────────────────────
-   SUB-COMPONENTS
-───────────────────────────────────────────── */
-
-function StarRating({ count }: { count: number }) {
+/* ── star rating ── */
+function Stars({ n = 5 }: { n?: number }) {
   return (
     <div className="flex gap-0.5">
-      {Array.from({ length: count }).map((_, i) => (
-        <span key={i} className="text-amber-400 text-sm">★</span>
+      {Array.from({ length: n }).map((_, i) => (
+        <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
       ))}
     </div>
   )
 }
 
-/* ─────────────────────────────────────────────
-   MAIN PAGE
-───────────────────────────────────────────── */
+const FEATURES = [
+  {
+    icon: Brain,
+    title: 'IA XGBoost + LSTM',
+    desc: 'Double modèle entraîné sur vos données. Intervalle de confiance 95%.',
+    gradient: 'from-indigo-500 to-purple-600',
+  },
+  {
+    icon: QrCode,
+    title: 'Scan QR instantané',
+    desc: 'Scannez un produit, obtenez son score de risque IA en moins de 2 secondes.',
+    gradient: 'from-cyan-500 to-blue-600',
+  },
+  {
+    icon: FlaskConical,
+    title: 'Simulation Ramadan',
+    desc: 'Anticipez la hausse de demande, les retards fournisseurs, les événements business.',
+    gradient: 'from-amber-500 to-orange-600',
+  },
+  {
+    icon: Bell,
+    title: 'Alertes email auto',
+    desc: 'Notification dès que le risque dépasse votre seuil. Zéro surveillance manuelle.',
+    gradient: 'from-emerald-500 to-teal-600',
+  },
+  {
+    icon: BarChart3,
+    title: 'Analytics avancés',
+    desc: 'Segmentation ABC, vélocité des ventes, santé du stock en temps réel.',
+    gradient: 'from-pink-500 to-rose-600',
+  },
+  {
+    icon: Shield,
+    title: 'Sécurité enterprise',
+    desc: 'JWT, rate limiting, CORS strict, chiffrement bcrypt. Vos données sont protégées.',
+    gradient: 'from-violet-500 to-purple-600',
+  },
+]
+
+const STEPS = [
+  {
+    n: '01',
+    title: 'Importez vos ventes',
+    desc: "CSV glisser-déposer ou saisie manuelle. L'IA apprend votre historique en secondes.",
+    icon: '📊',
+  },
+  {
+    n: '02',
+    title: "L'IA prédit les ruptures",
+    desc: "XGBoost + LSTM calcule la probabilité sur l'horizon choisi (7 → 90 jours).",
+    icon: '🤖',
+  },
+  {
+    n: '03',
+    title: 'Commandez au bon moment',
+    desc: 'Alertes email automatiques. Plus jamais trop tôt ni trop tard.',
+    icon: '📬',
+  },
+]
+
+const TESTIMONIALS = [
+  {
+    name: 'Karim B.',
+    role: 'Épicerie fine · Alger',
+    flag: '🇩🇿',
+    text: "StockSense m'a alerté 12 jours avant la rupture de mon huile d'olive. +18% de ventes dès le premier mois.",
+  },
+  {
+    name: 'Sophie M.',
+    role: 'Pharmacie · Lyon',
+    flag: '🇫🇷',
+    text: "Outil incroyablement précis. L'import CSV nous a économisé 4h/semaine. Le conseiller IA répond comme un expert supply chain.",
+  },
+  {
+    name: 'Youcef A.',
+    role: 'Électroménager · Oran',
+    flag: '🇩🇿',
+    text: 'Le seul outil adapté à la réalité algérienne : paiement CIB/Edahabia, mode Ramadan, prédictions bluffantes.',
+  },
+]
 
 export default function Landing() {
   const { isAuthenticated } = useAuth()
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', fn)
+    const fn = () => setScrolled(window.scrollY > 24)
+    window.addEventListener('scroll', fn, { passive: true })
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  if (isAuthenticated || !!localStorage.getItem('token')) {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  const scrollToDemo = () => {
-    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const scrollTo = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
   return (
-    <div className="min-h-screen bg-surface text-zinc-100 overflow-x-hidden">
+    <div className="min-h-screen text-zinc-100 overflow-x-hidden" style={{ background: '#06060c' }}>
 
       {/* ── NAV ── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-zinc-950/90 backdrop-blur border-b border-zinc-800' : ''}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between">
+      <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/6' : ''}`}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-              <Activity size={16} className="text-white" />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                 style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}>
+              <Activity size={15} className="text-white" />
             </div>
-            <span className="font-semibold text-zinc-100 tracking-tight">StockSense</span>
+            <span className="font-bold text-white tracking-tight">Stocky</span>
+            {isAuthenticated && (
+              <span className="ml-1 text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full">connecté</span>
+            )}
           </div>
-          <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
-            <button onClick={scrollToDemo} className="hover:text-zinc-100 transition-colors">Comment ça marche</button>
-            <Link to="/pricing" className="hover:text-zinc-100 transition-colors">Tarifs</Link>
+
+          <div className="hidden sm:flex items-center gap-7 text-sm text-zinc-400">
+            <button onClick={() => scrollTo('features')} className="hover:text-white transition-colors">Fonctionnalités</button>
+            <button onClick={() => scrollTo('how-it-works')} className="hover:text-white transition-colors">Comment ça marche</button>
+            <Link to="/pricing" className="hover:text-white transition-colors">Tarifs</Link>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/login" className="btn-ghost text-sm">Connexion</Link>
-            <Link to="/register">
-              <button className="btn-primary text-sm px-4 py-2">Commencer gratuitement</button>
-            </Link>
+
+          <div className="flex items-center gap-2">
+            {isAuthenticated ? (
+              <Link to="/dashboard">
+                <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
+                        style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}>
+                  Dashboard <ChevronRight size={14} />
+                </button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">Connexion</Link>
+                <Link to="/register">
+                  <button className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
+                          style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}>
+                    Commencer gratuitement
+                  </button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative max-w-6xl mx-auto px-4 sm:px-8 pt-36 sm:pt-44 pb-24 sm:pb-32 text-center">
-        {/* Ambient glow */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-        >
-          <div className="absolute left-1/2 top-0 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-brand-600/10 blur-[120px] animate-pulse" />
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-5 sm:px-8 text-center pt-24 pb-20">
+        {/* Background orbs */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-[-10%] left-[10%] w-[700px] h-[700px] rounded-full"
+               style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)' }} />
+          <div className="absolute top-[20%] right-[-5%] w-[500px] h-[500px] rounded-full"
+               style={{ background: 'radial-gradient(circle, rgba(217,70,239,0.1) 0%, transparent 70%)' }} />
+          <div className="absolute bottom-[10%] left-[30%] w-[400px] h-[400px] rounded-full"
+               style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%)' }} />
+          {/* Grid pattern */}
+          <div className="absolute inset-0 opacity-[0.04]"
+               style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
         </div>
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/25 rounded-full px-4 py-1.5 text-xs text-brand-400 mb-8 font-medium">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500" />
-          </span>
-          Prédiction de ruptures par IA · DZ &amp; FR
+        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs text-zinc-400 mb-8 font-medium"
+             style={{ animation: 'fadeSlideUp 0.5s ease 0.1s both' }}>
+          <Sparkles size={11} className="text-brand-400" />
+          Intelligence artificielle · Prédiction de ruptures · DZ &amp; FR
         </div>
 
-        {/* Title */}
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.08]">
-          <span className="text-zinc-100">Ne jamais manquer</span>
+        {/* Headline */}
+        <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight mb-6 leading-[1.0]"
+            style={{ animation: 'fadeSlideUp 0.6s ease 0.2s both' }}>
+          <span className="text-white">Anticipez</span>
           <br />
-          <span
-            className="bg-gradient-to-r from-brand-400 via-purple-400 to-brand-500 bg-clip-text text-transparent"
-            style={{ backgroundSize: '200% auto', animation: 'gradientShift 4s ease infinite' }}
-          >
-            une vente.
+          <span style={{
+            background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 40%, #38bdf8 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>
+            les ruptures.
           </span>
         </h1>
 
-        {/* Subtitle */}
-        <p className="text-zinc-400 text-base sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-          StockSense analyse vos ventes et prédit les ruptures avant qu'elles arrivent.
-          Pour les commerçants <strong className="text-zinc-300">algériens</strong> et <strong className="text-zinc-300">français</strong>.
+        <p className="text-zinc-400 text-lg sm:text-xl max-w-xl mx-auto mb-10 leading-relaxed"
+           style={{ animation: 'fadeSlideUp 0.6s ease 0.3s both' }}>
+          Stocky prédit quand votre stock va tomber à zéro —{' '}
+          <strong className="text-zinc-200">avant que ça arrive.</strong>
+          <br className="hidden sm:block" /> Pour les commerçants algériens et français.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-3 mb-5"
+             style={{ animation: 'fadeSlideUp 0.6s ease 0.4s both' }}>
           <Link to="/register" className="w-full sm:w-auto">
-            <button className="btn-primary flex items-center justify-center gap-2 px-8 py-4 text-base w-full sm:w-auto shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:scale-[1.03] transition-all duration-200">
-              Commencer gratuitement <ArrowRight size={16} />
+            <button className="w-full flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-bold text-white shadow-2xl transition-all hover:scale-[1.03] hover:brightness-110 active:scale-[0.99]"
+                    style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)', boxShadow: '0 0 40px rgba(99,102,241,0.4)' }}>
+              Commencer gratuitement <ArrowRight size={18} />
             </button>
           </Link>
           <button
-            onClick={scrollToDemo}
-            className="flex items-center justify-center gap-2 px-8 py-4 text-base w-full sm:w-auto rounded-lg border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 hover:bg-white/5 transition-all duration-200"
+            onClick={() => scrollTo('how-it-works')}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-zinc-300 border border-white/10 hover:border-white/25 hover:text-white hover:bg-white/5 transition-all"
           >
             Voir une démo
           </button>
         </div>
 
-        <p className="text-xs text-zinc-600 mt-5">
+        <p className="text-xs text-zinc-600" style={{ animation: 'fadeSlideUp 0.5s ease 0.5s both' }}>
           5 prédictions gratuites · Aucune carte bancaire · CIB &amp; Edahabia acceptés
         </p>
 
-        {/* Mini dashboard illustration */}
-        <div className="mt-16 max-w-3xl mx-auto rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur p-5 sm:p-6 text-left shadow-2xl shadow-black/40">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
-            <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
-            <span className="ml-2 text-xs text-zinc-600">StockSense — Tableau de bord</span>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            {[
-              { label: 'Risque rupture', value: '87%', color: 'text-red-400', bar: 'bg-red-500', w: 'w-[87%]' },
-              { label: 'Niveau de stock', value: '13 unités', color: 'text-amber-400', bar: 'bg-amber-500', w: 'w-[26%]' },
-              { label: 'Prédiction J+7', value: '2 unités', color: 'text-brand-400', bar: 'bg-brand-500', w: 'w-[10%]' },
-            ].map(({ label, value, color, bar, w }) => (
-              <div key={label} className="bg-zinc-800/60 rounded-lg p-3">
-                <p className="text-zinc-500 text-xs mb-1">{label}</p>
-                <p className={`font-semibold text-sm ${color}`}>{value}</p>
-                <div className="mt-2 h-1 bg-zinc-700 rounded-full overflow-hidden">
-                  <div className={`h-full ${bar} ${w} rounded-full`} />
-                </div>
+        {/* Hero dashboard mockup */}
+        <div className="mt-16 w-full max-w-2xl mx-auto"
+             style={{ animation: 'fadeSlideUp 0.8s ease 0.5s both' }}>
+          <div className="rounded-3xl border border-white/8 p-1"
+               style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', boxShadow: '0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)' }}>
+            {/* Title bar */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/6">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/70" />
+                <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
               </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-            <Bell size={12} className="text-red-400 shrink-0" />
-            <span className="text-xs text-red-300">Alerte · Huile d'olive premium · Rupture estimée dans <strong>4 jours</strong> · Commander maintenant</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── LE PROBLÈME ── */}
-      <section className="border-t border-zinc-800 py-20 sm:py-24 bg-zinc-900/50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8">
-          <div className="text-center mb-12">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest font-medium mb-3">Le problème</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">
-              Chaque commerçant connaît cette douleur
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {problems.map(({ emoji, title, desc }) => (
-              <div
-                key={title}
-                className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 hover:border-zinc-700 transition-colors"
-              >
-                <div className="text-4xl mb-4">{emoji}</div>
-                <h3 className="font-semibold text-zinc-100 mb-2 text-base">{title}</h3>
-                <p className="text-zinc-500 text-sm leading-relaxed">{desc}</p>
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-xs text-zinc-600 bg-white/5 px-4 py-1 rounded-lg">stocky.app — Dashboard IA</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── LA SOLUTION / HOW IT WORKS ── */}
-      <section id="how-it-works" className="border-t border-zinc-800 py-20 sm:py-24">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8">
-          <div className="text-center mb-14">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest font-medium mb-3">La solution</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">
-              Opérationnel en moins de 5 minutes
-            </h2>
-            <p className="text-zinc-500 mt-3 max-w-xl mx-auto text-sm sm:text-base">
-              Trois étapes simples. Zéro formation requise.
-            </p>
-          </div>
-
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Connector lines (desktop) */}
-            <div className="hidden md:flex absolute top-12 left-[calc(33.33%+1.5rem)] right-[calc(33.33%+1.5rem)] items-center justify-between pointer-events-none" aria-hidden>
-              <ArrowRight size={18} className="text-zinc-700 -ml-2" />
-              <ArrowRight size={18} className="text-zinc-700 -mr-2" />
             </div>
-
-            {steps.map(({ emoji, number, title, desc, color, bg, border }) => (
-              <div
-                key={number}
-                className={`rounded-2xl border ${border} ${bg} p-6 flex flex-col items-center text-center relative`}
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-zinc-900 border ${border} flex items-center justify-center text-2xl mb-4 shadow-lg`}>
-                  {emoji}
-                </div>
-                <span className={`text-xs font-bold ${color} mb-2 tracking-widest`}>ÉTAPE {number}</span>
-                <h3 className="font-semibold text-zinc-100 mb-2 text-base">{title}</h3>
-                <p className="text-zinc-500 text-sm leading-relaxed">{desc}</p>
+            {/* Content */}
+            <div className="p-5 space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Risque rupture', val: '87%', color: '#f87171', glow: 'rgba(248,113,113,0.3)', w: 87 },
+                  { label: 'Stock restant', val: '13 unités', color: '#fbbf24', glow: 'rgba(251,191,36,0.2)', w: 26 },
+                  { label: 'Prédiction J+30', val: '2 unités', color: '#818cf8', glow: 'rgba(129,140,248,0.2)', w: 10 },
+                ].map(({ label, val, color, glow, w }) => (
+                  <div key={label} className="rounded-xl p-3 border border-white/6" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <p className="text-[10px] text-zinc-500 mb-1.5">{label}</p>
+                    <p className="text-sm font-bold" style={{ color }}>{val}</p>
+                    <div className="mt-2 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${w}%`, background: color, boxShadow: `0 0 8px ${glow}` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+              <LiveAlert delay="0.9s" />
+              <div className="flex items-center gap-2 bg-emerald-500/8 border border-emerald-500/20 rounded-xl px-3 py-2.5"
+                   style={{ animation: 'fadeSlideUp 0.5s ease 1.1s both' }}>
+                <Package size={12} className="text-emerald-400" />
+                <span className="text-xs text-emerald-300">
+                  Café arabica · Stock sain · <strong>42 unités</strong> · Risque faible 12%
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── STATS / SOCIAL PROOF ── */}
-      <section className="border-t border-zinc-800 py-20 sm:py-24 bg-zinc-900/50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100 mb-3">
-              Rejoignez les commerçants qui ne tombent plus en rupture
-            </h2>
-            <p className="text-zinc-500 text-sm sm:text-base">
-              Des résultats concrets, mesurables, dès la première semaine.
-            </p>
-          </div>
-
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
-            {stats.map(({ icon: Icon, value, label, color }) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 text-center hover:border-zinc-700 transition-colors"
-              >
-                <Icon size={20} className={`${color} mx-auto mb-2`} />
-                <p className={`text-2xl sm:text-3xl font-bold ${color} mb-1`}>{value}</p>
+      {/* ── STATS BAR ── */}
+      <section className="border-y border-white/6 py-10" style={{ background: 'rgba(255,255,255,0.015)' }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+            {[
+              { val: 95, suffix: '%', label: 'Précision IA', color: '#818cf8' },
+              { val: 2, suffix: 's', label: 'Par prédiction', color: '#fbbf24' },
+              { val: 18, suffix: '%', label: 'Ventes en +', color: '#34d399' },
+              { val: 500, suffix: '+', label: 'Commerçants', color: '#c084fc' },
+            ].map(({ val, suffix, label, color }) => (
+              <div key={label}>
+                <p className="text-3xl sm:text-4xl font-black mb-1" style={{ color }}>
+                  <Counter to={val} suffix={suffix} />
+                </p>
                 <p className="text-xs text-zinc-500">{label}</p>
               </div>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Testimonials */}
+      {/* ── PAIN POINTS ── */}
+      <section className="py-24 sm:py-32 px-5 sm:px-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">Le problème</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+              Chaque commerçant connaît<br className="hidden sm:block" /> cette douleur
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { emoji: '😰', title: 'Stock épuisé = client perdu', color: '#f87171', desc: 'Chaque rupture coûte des ventes et votre réputation. Le client qui ne trouve pas va chez le concurrent.', loss: '−30% de fidélité' },
+              { emoji: '📉', title: 'Trop de stock = trésorerie bloquée', color: '#fbbf24', desc: 'Surstockage paralyse votre cash. Des centaines de milliers de dinars immobilisés dans des produits qui ne bougent pas.', loss: '−40% cash flow' },
+              { emoji: '⏰', title: 'Décision tardive = perte sèche', color: '#f97316', desc: "Commander après la rupture, c'est déjà trop tard. Les délais fournisseurs font le reste des dégâts.", loss: '−15% CA mensuel' },
+            ].map(({ emoji, title, color, desc, loss }) => (
+              <div key={title} className="group rounded-2xl border border-white/8 p-6 hover:border-white/15 transition-all hover:-translate-y-1"
+                   style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <div className="text-4xl mb-4">{emoji}</div>
+                <h3 className="font-bold text-white mb-2 text-base">{title}</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed mb-4">{desc}</p>
+                <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                     style={{ color, background: `${color}18`, border: `1px solid ${color}30` }}>
+                  <AlertTriangle size={10} /> {loss}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section id="how-it-works" className="py-24 sm:py-32 px-5 sm:px-8 border-t border-white/6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">La solution</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+              Opérationnel en<br className="hidden sm:block" /> <span style={{ color: '#818cf8' }}>5 minutes</span>
+            </h2>
+            <p className="text-zinc-500 mt-4 text-base max-w-lg mx-auto">Trois étapes. Zéro formation. Résultats immédiats.</p>
+          </div>
+
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
+            {STEPS.map(({ n, title, desc, icon }, i) => (
+              <div key={n} className="relative">
+                <div className="rounded-2xl border border-white/8 p-7 h-full hover:border-white/16 transition-all"
+                     style={{ background: 'rgba(255,255,255,0.025)' }}>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5 border border-white/8"
+                       style={{ background: 'rgba(99,102,241,0.1)' }}>
+                    {icon}
+                  </div>
+                  <div className="text-xs font-bold text-zinc-600 tracking-widest mb-2">ÉTAPE {n}</div>
+                  <h3 className="font-bold text-white text-lg mb-2">{title}</h3>
+                  <p className="text-zinc-500 text-sm leading-relaxed">{desc}</p>
+                </div>
+                {i < 2 && (
+                  <div className="hidden md:flex absolute top-12 -right-3 z-10 items-center justify-center w-6 h-6 rounded-full bg-zinc-900 border border-white/10">
+                    <ArrowRight size={12} className="text-zinc-600" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES GRID ── */}
+      <section id="features" className="py-24 sm:py-32 px-5 sm:px-8 border-t border-white/6"
+               style={{ background: 'rgba(255,255,255,0.01)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">Fonctionnalités</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+              Tout ce dont vous avez besoin.<br className="hidden sm:block" />{' '}
+              <span style={{ color: '#c084fc' }}>Rien de superflu.</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FEATURES.map(({ icon: Icon, title, desc, gradient }) => (
+              <div key={title} className="group rounded-2xl border border-white/8 p-6 hover:border-white/15 transition-all hover:-translate-y-0.5 cursor-default"
+                   style={{ background: 'rgba(255,255,255,0.025)' }}>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-lg`}>
+                  <Icon size={18} className="text-white" />
+                </div>
+                <h3 className="font-bold text-white mb-1.5 text-sm">{title}</h3>
+                <p className="text-zinc-500 text-xs leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ALGÉRIE vs FRANCE ── */}
+      <section className="py-24 sm:py-32 px-5 sm:px-8 border-t border-white/6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">Mode pays</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+              Conçu pour votre marché
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="rounded-2xl border border-emerald-500/20 p-7"
+                 style={{ background: 'rgba(16,185,129,0.04)' }}>
+              <div className="text-3xl mb-4">🇩🇿</div>
+              <h3 className="font-bold text-white text-lg mb-4">Algérie</h3>
+              <ul className="space-y-3">
+                {['Paiement CIB & Edahabia', 'Mode Ramadan (demande x1.8)', 'Volatilité saisonnière intégrée', 'Anti-rupture prioritaire', 'Interface 100% français'].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                    <CheckCircle size={14} className="text-emerald-400 shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-blue-500/20 p-7"
+                 style={{ background: 'rgba(59,130,246,0.04)' }}>
+              <div className="text-3xl mb-4">🇫🇷</div>
+              <h3 className="font-bold text-white text-lg mb-4">France</h3>
+              <ul className="space-y-3">
+                {['Paiement CB / PayPal', 'Optimisation coût & surstock', 'Conformité RGPD', 'Simulation soldes & fêtes', 'Export PDF & CSV'].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                    <CheckCircle size={14} className="text-blue-400 shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section className="py-24 sm:py-32 px-5 sm:px-8 border-t border-white/6"
+               style={{ background: 'rgba(255,255,255,0.01)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">Ils nous font confiance</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white">
+              Des résultats réels
+            </h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {testimonials.map(({ name, role, flag, text, rating }) => (
-              <div
-                key={name}
-                className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 flex flex-col gap-4 hover:border-zinc-700 transition-colors"
-              >
-                <StarRating count={rating} />
+            {TESTIMONIALS.map(({ name, role, flag, text }) => (
+              <div key={name} className="rounded-2xl border border-white/8 p-6 flex flex-col gap-4 hover:border-white/15 transition-all"
+                   style={{ background: 'rgba(255,255,255,0.025)' }}>
+                <Stars />
                 <p className="text-zinc-400 text-sm leading-relaxed flex-1">"{text}"</p>
-                <div className="pt-3 border-t border-zinc-800 flex items-center gap-2">
-                  <span className="text-xl">{flag}</span>
+                <div className="pt-4 border-t border-white/6 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/8 text-base shrink-0">{flag}</div>
                   <div>
-                    <p className="text-zinc-200 font-medium text-sm">{name}</p>
-                    <p className="text-zinc-600 text-xs mt-0.5">{role}</p>
+                    <p className="text-white font-semibold text-sm">{name}</p>
+                    <p className="text-zinc-600 text-xs">{role}</p>
                   </div>
                 </div>
               </div>
@@ -363,114 +483,105 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── TARIFS COURT ── */}
-      <section className="border-t border-zinc-800 py-20 sm:py-24">
-        <div className="max-w-3xl mx-auto px-4 sm:px-8">
-          <div className="text-center mb-12">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest font-medium mb-3">Tarifs</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">Simple et transparent</h2>
-            <p className="text-zinc-500 mt-3 text-sm">
-              Paiement 100% algérien (CIB / Edahabia) · ou carte bancaire française
-            </p>
+      {/* ── PRICING PREVIEW ── */}
+      <section className="py-24 sm:py-32 px-5 sm:px-8 border-t border-white/6">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">Tarifs</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white">Simple et transparent</h2>
+            <p className="text-zinc-500 mt-3 text-sm">100% algérien (CIB / Edahabia) · ou carte bancaire française</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-            {/* Gratuit */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-              <h3 className="font-bold text-zinc-100 mb-1 text-lg">Gratuit</h3>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-bold text-zinc-100">0</span>
-                <span className="text-zinc-500 text-sm">DA / mois</span>
-              </div>
-              <p className="text-zinc-600 text-xs mb-6">Pour commencer sans risque</p>
-              <ul className="space-y-2.5 mb-6">
-                {freePlanFeatures.map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
-                    <CheckCircle size={13} className="text-zinc-600 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+            <div className="rounded-2xl border border-white/8 p-7" style={{ background: 'rgba(255,255,255,0.02)' }}>
+              <p className="font-bold text-white text-lg mb-1">Gratuit</p>
+              <p className="text-4xl font-black text-white mb-1">0 <span className="text-lg text-zinc-500 font-normal">DA</span></p>
+              <p className="text-zinc-600 text-xs mb-6">Pour découvrir sans risque</p>
+              {['5 prédictions IA', 'Tous vos produits', 'Export CSV', 'Conseiller IA'].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm text-zinc-400 mb-2.5">
+                  <CheckCircle size={13} className="text-zinc-600 shrink-0" /> {f}
+                </div>
+              ))}
               <Link to="/register">
-                <button className="w-full py-2.5 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-300 hover:border-zinc-500 hover:bg-white/5 transition-all">
+                <button className="w-full mt-5 py-3 rounded-xl border border-white/10 text-sm font-medium text-zinc-300 hover:border-white/25 hover:bg-white/5 transition-all">
                   Commencer gratuitement
                 </button>
               </Link>
             </div>
-
-            {/* Pro */}
-            <div className="relative rounded-2xl border border-brand-600/50 bg-brand-500/5 p-6 shadow-lg shadow-brand-500/10">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
+            <div className="relative rounded-2xl p-7" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(217,70,239,0.08))', border: '1px solid rgba(99,102,241,0.4)' }}>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold text-white px-3 py-1 rounded-full"
+                   style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}>
                 Recommandé
               </div>
-              <h3 className="font-bold text-zinc-100 mb-1 text-lg">Pro</h3>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-bold text-zinc-100">900</span>
-                <span className="text-zinc-500 text-sm">DA / mois</span>
-              </div>
+              <p className="font-bold text-white text-lg mb-1">Pro</p>
+              <p className="text-4xl font-black text-white mb-1">900 <span className="text-lg text-zinc-400 font-normal">DA</span></p>
               <p className="text-zinc-500 text-xs mb-6">ou 9 € / mois · Annulation libre</p>
-              <ul className="space-y-2.5 mb-6">
-                {proPlanFeatures.map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-zinc-300">
-                    <CheckCircle size={13} className="text-brand-400 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+              {['Prédictions illimitées', 'Alertes email auto', 'Analytics avancés', 'Support prioritaire 7j/7'].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm text-zinc-200 mb-2.5">
+                  <CheckCircle size={13} className="text-brand-400 shrink-0" /> {f}
+                </div>
+              ))}
               <Link to="/register">
-                <button className="btn-primary w-full py-2.5 rounded-xl text-sm font-medium shadow-md shadow-brand-500/20 hover:scale-[1.02] transition-transform">
+                <button className="w-full mt-5 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}>
                   Essayer 14 jours gratuits
                 </button>
               </Link>
             </div>
           </div>
-
           <div className="text-center">
-            <Link
-              to="/pricing"
-              className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-4"
-            >
+            <Link to="/pricing" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-4">
               Voir les tarifs complets <ArrowRight size={13} />
             </Link>
           </div>
-
-          <p className="text-center text-xs text-zinc-600 mt-4 flex items-center justify-center gap-1.5">
-            <Shield size={11} /> Paiement sécurisé · Aucun engagement · Annulation à tout moment
-          </p>
+          <div className="flex items-center justify-center gap-4 mt-6 text-xs text-zinc-600">
+            <span className="flex items-center gap-1"><Lock size={10} /> Paiement sécurisé</span>
+            <span className="flex items-center gap-1"><Globe size={10} /> DZ &amp; FR</span>
+            <span className="flex items-center gap-1"><Zap size={10} /> Annulation libre</span>
+          </div>
         </div>
       </section>
 
       {/* ── CTA FINAL ── */}
-      <section className="border-t border-zinc-800 py-20 sm:py-24 text-center bg-zinc-900/50">
-        <div className="max-w-xl mx-auto px-4 sm:px-8">
-          <div className="text-5xl mb-6">🚀</div>
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-            Prêt à anticiper vos ruptures ?
+      <section className="py-32 px-5 sm:px-8 border-t border-white/6 text-center relative overflow-hidden">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full blur-[100px]"
+               style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)' }} />
+        </div>
+        <div className="relative max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs text-zinc-400 mb-8">
+            <Sparkles size={11} className="text-brand-400" />
+            Rejoignez 500+ commerçants
+          </div>
+          <h2 className="text-4xl sm:text-6xl font-black text-white mb-6 leading-tight">
+            Prêt à ne plus jamais<br />
+            <span style={{ color: '#818cf8' }}>tomber en rupture ?</span>
           </h2>
-          <p className="text-zinc-500 mb-10 text-sm sm:text-base">
-            Rejoignez les commerçants algériens et français qui pilotent leur stock avec intelligence.
+          <p className="text-zinc-400 text-lg mb-10">
+            Commencez gratuitement. Résultats visibles dès la première semaine.
           </p>
           <Link to="/register">
-            <button className="btn-primary px-10 py-4 text-base flex items-center gap-2 mx-auto shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:scale-[1.03] transition-all duration-200">
-              Commencer gratuitement <ArrowRight size={16} />
+            <button className="inline-flex items-center gap-2 px-10 py-5 rounded-2xl text-lg font-bold text-white transition-all hover:scale-[1.04] hover:brightness-110"
+                    style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)', boxShadow: '0 0 60px rgba(99,102,241,0.5)' }}>
+              Commencer gratuitement <ArrowRight size={20} />
             </button>
           </Link>
-          <p className="text-xs text-zinc-600 mt-4">Sans carte bancaire · 5 prédictions offertes · Annulation libre</p>
+          <p className="text-xs text-zinc-600 mt-5">Sans carte bancaire · 5 prédictions offertes · Annulation à tout moment</p>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-zinc-800 px-4 sm:px-8 py-8">
+      <footer className="border-t border-white/6 px-5 sm:px-8 py-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-600">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-brand-600 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                 style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}>
               <Activity size={12} className="text-white" />
             </div>
-            <span className="font-semibold text-zinc-500">StockSense</span>
-            <span className="text-zinc-700">·</span>
+            <span className="font-bold text-zinc-500">Stocky</span>
+            <span className="text-zinc-800">·</span>
             <span>© 2026</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-6">
             <Link to="/pricing" className="hover:text-zinc-300 transition-colors">Tarifs</Link>
             <Link to="/login" className="hover:text-zinc-300 transition-colors">Connexion</Link>
             <a href="mailto:support@stocksense.app" className="hover:text-zinc-300 transition-colors">Contact</a>
@@ -478,12 +589,10 @@ export default function Landing() {
         </div>
       </footer>
 
-      {/* Gradient animation keyframes */}
       <style>{`
-        @keyframes gradientShift {
-          0%   { background-position: 0% center; }
-          50%  { background-position: 100% center; }
-          100% { background-position: 0% center; }
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
