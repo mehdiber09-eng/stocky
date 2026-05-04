@@ -10,6 +10,10 @@
     color-scheme: dark;
   }
 
+  html.lang-ar, html.lang-ar body, html.lang-ar input, html.lang-ar button, html.lang-ar select {
+    font-family: 'Cairo', 'DM Sans', sans-serif;
+  }
+
   html, body, #root { height: 100%; }
 
   body {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 
 type Lang = 'fr' | 'ar'
 
@@ -17,6 +17,8 @@ const translations = {
     nav_profile: 'Profil',
     nav_products: 'Produits',
     nav_sales: 'Ventes',
+    nav_scan_qr: 'Scan QR',
+    nav_simulate: 'Simulation',
 
     // Actions communes
     btn_save: 'Sauvegarder',
@@ -137,6 +139,8 @@ const translations = {
     nav_profile: 'الملف الشخصي',
     nav_products: 'المنتجات',
     nav_sales: 'المبيعات',
+    nav_scan_qr: 'مسح QR',
+    nav_simulate: 'محاكاة السيناريوهات',
 
     // Actions communes
     btn_save: 'حفظ',
@@ -261,17 +265,31 @@ const LanguageContext = createContext<LanguageContextType>({
   isRTL: false,
 })
 
+function applyLangToDOM(l: Lang) {
+  const isAr = l === 'ar'
+  document.documentElement.dir = isAr ? 'rtl' : 'ltr'
+  document.documentElement.lang = l
+  if (isAr) {
+    document.documentElement.classList.add('lang-ar')
+  } else {
+    document.documentElement.classList.remove('lang-ar')
+  }
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('lang') as Lang) || 'fr')
+
+  // Apply on mount
+  useEffect(() => { applyLangToDOM(lang) }, [])
 
   function setLang(l: Lang) {
     setLangState(l)
     localStorage.setItem('lang', l)
-    document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr'
-    document.documentElement.lang = l
+    applyLangToDOM(l)
   }
 
-  const t = (key: TranslationKey): string => translations[lang][key] || translations.fr[key]
+  const t = (key: TranslationKey): string =>
+    (translations[lang] as Record<string, string>)[key] || (translations.fr as Record<string, string>)[key] || key
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t, isRTL: lang === 'ar' }}>
