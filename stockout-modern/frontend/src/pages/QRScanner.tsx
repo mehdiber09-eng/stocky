@@ -1,9 +1,61 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import jsQR from 'jsqr'
-import { QrCode, Camera, CameraOff, Search, AlertTriangle, CheckCircle, Loader2, Package, Clock, Shield, RotateCcw, Zap } from 'lucide-react'
+import {
+  MultiFormatReader,
+  BarcodeFormat,
+  DecodeHintType,
+  RGBLuminanceSource,
+  BinaryBitmap,
+  HybridBinarizer,
+  NotFoundException,
+} from '@zxing/library'
+import {
+  QrCode, Camera, CameraOff, Search, AlertTriangle, CheckCircle,
+  Loader2, Package, Clock, Shield, RotateCcw, Zap, Barcode,
+} from 'lucide-react'
 import API from '../api/api'
 import Toast from '../components/Toast'
 
+// ── Barcode formats supported ────────────────────────────────────────────────
+const FORMATS = [
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
+  BarcodeFormat.CODE_128,
+  BarcodeFormat.CODE_39,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+  BarcodeFormat.ITF,
+  BarcodeFormat.DATA_MATRIX,
+  BarcodeFormat.PDF_417,
+]
+
+const FORMAT_LABEL: Record<string, string> = {
+  QR_CODE: 'QR Code',
+  EAN_13: 'EAN-13',
+  EAN_8: 'EAN-8',
+  CODE_128: 'Code 128',
+  CODE_39: 'Code 39',
+  UPC_A: 'UPC-A',
+  UPC_E: 'UPC-E',
+  ITF: 'ITF',
+  DATA_MATRIX: 'Data Matrix',
+  PDF_417: 'PDF 417',
+}
+
+// ── Module-level ZXing reader (initialised once) ─────────────────────────────
+let _zxingReader: MultiFormatReader | null = null
+function getReader(): MultiFormatReader {
+  if (!_zxingReader) {
+    const hints = new Map()
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, FORMATS)
+    hints.set(DecodeHintType.TRY_HARDER, false)
+    _zxingReader = new MultiFormatReader()
+    _zxingReader.setHints(hints)
+  }
+  return _zxingReader
+}
+
+// ── Risk config ───────────────────────────────────────────────────────────────
 interface ScanResult {
   product_id: number
   product_name: string
@@ -24,6 +76,7 @@ const RISK_CONFIG = {
   CRITICAL: { color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/30',     bar: 'bg-red-400',      icon: AlertTriangle,  label: 'Critique' },
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function QRScanner() {
   const [mode, setMode] = useState<'camera' | 'text'>('camera')
   const [cameraActive, setCameraActive] = useState(false)
@@ -34,13 +87,15 @@ export default function QRScanner() {
   const [result, setResult] = useState<ScanResult | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [lastScanned, setLastScanned] = useState<string | null>(null)
+  const [detectedFormat, setDetectedFormat] = useState<string | null>(null)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const rafRef = useRef<number>(0)
+  const frameRef = useRef(0)
 
-  // Start camera
+  // ── Camera start/stop ────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
     setCameraError(null)
     try {
@@ -53,6 +108,7 @@ export default function QRScanner() {
         await videoRef.current.play()
         setCameraActive(true)
         setScanning(true)
+        frameRef.current = 0
       }
     } catch (err: any) {
       if (err.name === 'NotAllowedError') {
@@ -66,7 +122,6 @@ export default function QRScanner() {
     }
   }, [])
 
-  // Stop camera
   const stopCamera = useCallback(() => {
     setScanning(false)
     setCameraActive(false)
@@ -75,9 +130,11 @@ export default function QRScanner() {
     streamRef.current = null
   }, [])
 
-  // QR decode loop
+  // ── ZXing decode loop ────────────────────────────────────────────────────
   useEffect(() => {
     if (!scanning || !cameraActive) return
+
+    const reader = getReader()
 
     function tick() {
       const video = videoRef.current
@@ -86,41 +143,60 @@ export default function QRScanner() {
         rafRef.current = requestAnimationFrame(tick)
         return
       }
+
+      // Throttle: decode every 4th frame to save CPU
+      frameRef.current++
+      if (frameRef.current % 4 !== 0) {
+        rafRef.current = requestAnimationFrame(tick)
+        return
+      }
+
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
       const ctx = canvas.getContext('2d', { willReadFrequently: true })
-      if (!ctx) return
+      if (!ctx) { rafRef.current = requestAnimationFrame(tick); return }
       ctx.drawImage(video, 0, 0)
+
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' })
-      if (code && code.data && code.data !== lastScanned) {
-        setLastScanned(code.data)
-        handleAnalyze(code.data)
-        return // stop scanning after a hit
+      try {
+        const luminance = new RGBLuminanceSource(imageData.data, canvas.width, canvas.height)
+        const bitmap = new BinaryBitmap(new HybridBinarizer(luminance))
+        const decoded = reader.decode(bitmap)
+        const text = decoded.getText()
+        if (text && text !== lastScanned) {
+          const fmt = BarcodeFormat[decoded.getBarcodeFormat()] ?? 'UNKNOWN'
+          setDetectedFormat(FORMAT_LABEL[fmt] ?? fmt)
+          setLastScanned(text)
+          handleAnalyze(text)
+          return
+        }
+      } catch (e) {
+        // NotFoundException / ChecksumException — no code in frame, continue
       }
       rafRef.current = requestAnimationFrame(tick)
     }
+
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
   }, [scanning, cameraActive, lastScanned])
 
-  // Start camera on mount if mode is camera
+  // Start camera on mount when mode=camera
   useEffect(() => {
     if (mode === 'camera') startCamera()
     return () => stopCamera()
   }, [mode])
 
-  async function handleAnalyze(qrData: string) {
+  // ── API call ─────────────────────────────────────────────────────────────
+  async function handleAnalyze(data: string) {
     setScanning(false)
     setLoading(true)
     setResult(null)
     try {
-      const res = await API.post<ScanResult>('/scan_qr/', { qr_data: qrData.trim() })
+      const res = await API.post<ScanResult>('/scan_qr/', { qr_data: data.trim() })
       setResult(res.data)
       stopCamera()
     } catch (err: any) {
-      setToast({ msg: err.response?.data?.detail || 'Produit introuvable pour ce QR code', type: 'error' })
-      // Resume scanning after error
+      setToast({ msg: err.response?.data?.detail || 'Produit introuvable pour ce code', type: 'error' })
       setTimeout(() => {
         setLastScanned(null)
         setScanning(true)
@@ -139,10 +215,9 @@ export default function QRScanner() {
   function reset() {
     setResult(null)
     setLastScanned(null)
+    setDetectedFormat(null)
     setManualInput('')
-    if (mode === 'camera') {
-      setScanning(true)
-    }
+    if (mode === 'camera') setScanning(true)
   }
 
   const cfg = result ? RISK_CONFIG[result.risk_level] : null
@@ -155,12 +230,21 @@ export default function QRScanner() {
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
              style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}>
-          <QrCode size={22} className="text-white" />
+          <Barcode size={22} className="text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Scan QR Code</h1>
-          <p className="text-sm text-zinc-400">Analyse IA instantanée de votre produit</p>
+          <h1 className="text-2xl font-bold text-white">Scanner produit</h1>
+          <p className="text-sm text-zinc-400">QR Code · EAN-13 · Code 128 · UPC · et plus</p>
         </div>
+      </div>
+
+      {/* Supported formats badge strip */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {['QR Code', 'EAN-13', 'EAN-8', 'Code 128', 'Code 39', 'UPC', 'ITF'].map(f => (
+          <span key={f} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">
+            {f}
+          </span>
+        ))}
       </div>
 
       {/* Mode switcher */}
@@ -186,43 +270,45 @@ export default function QRScanner() {
       {/* Camera view */}
       {mode === 'camera' && (
         <div className="rounded-2xl overflow-hidden border border-white/10 relative bg-black aspect-video">
-          <video
-            ref={videoRef}
-            className="w-full h-full object-cover"
-            playsInline
-            muted
-          />
-          {/* Hidden canvas for jsQR */}
+          <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
           <canvas ref={canvasRef} className="hidden" />
 
-          {/* Overlay when scanning */}
+          {/* Scan overlay */}
           {cameraActive && scanning && !loading && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="relative w-48 h-48">
+              {/* Outer dim */}
+              <div className="absolute inset-0 bg-black/30" />
+              {/* Scan window */}
+              <div className="relative z-10 w-64 h-40">
                 {/* Corner brackets */}
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-brand-400 rounded-tl-lg" />
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-brand-400 rounded-tr-lg" />
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-brand-400 rounded-bl-lg" />
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-brand-400 rounded-br-lg" />
                 {/* Scan line */}
-                <div className="absolute inset-x-2 h-0.5 bg-brand-400/70 rounded-full"
+                <div className="absolute inset-x-2 h-0.5 bg-brand-400/80 rounded-full"
                      style={{ animation: 'scanLine 2s ease-in-out infinite', top: '50%' }} />
               </div>
               <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                <span className="bg-black/60 backdrop-blur text-xs text-zinc-300 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                <span className="bg-black/70 backdrop-blur text-xs text-zinc-300 px-3 py-1.5 rounded-full flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
-                  Pointez la caméra vers un QR code
+                  Pointez vers un QR code ou code-barres
                 </span>
               </div>
             </div>
           )}
 
-          {/* Loading state */}
+          {/* Loading */}
           {loading && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
               <div className="text-center space-y-2">
                 <Loader2 size={32} className="text-brand-400 animate-spin mx-auto" />
                 <p className="text-sm text-zinc-300">Analyse IA en cours...</p>
+                {detectedFormat && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-brand-300 bg-brand-500/20 px-3 py-1 rounded-full">
+                    <Barcode size={11} /> {detectedFormat} détecté
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -267,7 +353,9 @@ export default function QRScanner() {
       {mode === 'text' && (
         <div className="glass-subtle rounded-2xl p-6 border border-white/8">
           <form onSubmit={handleManualSubmit} className="space-y-4">
-            <label className="block text-sm font-medium text-zinc-300">SKU ou ID produit</label>
+            <label className="block text-sm font-medium text-zinc-300">
+              SKU, ID produit ou numéro de code-barres
+            </label>
             <div className="flex gap-3">
               <div className="relative flex-1">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -275,7 +363,7 @@ export default function QRScanner() {
                   type="text"
                   value={manualInput}
                   onChange={e => setManualInput(e.target.value)}
-                  placeholder="Ex: SKU-001 ou 42"
+                  placeholder="Ex: SKU-001, 3760168930191, 42"
                   autoFocus
                   className="w-full pl-9 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white
                              placeholder-zinc-500 focus:outline-none focus:border-brand-500/60 transition-all text-sm"
@@ -295,7 +383,7 @@ export default function QRScanner() {
         </div>
       )}
 
-      {/* Result card */}
+      {/* Result */}
       {result && cfg && (
         <div className={`rounded-2xl p-6 border ${cfg.border} ${cfg.bg} space-y-5`}>
           {/* Product header */}
@@ -306,7 +394,14 @@ export default function QRScanner() {
               </div>
               <div>
                 <p className="font-bold text-white text-lg leading-tight">{result.product_name}</p>
-                <p className="text-xs text-zinc-500 font-mono mt-0.5">SKU: {result.sku}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-zinc-500 font-mono">SKU: {result.sku}</p>
+                  {detectedFormat && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-zinc-400 font-medium">
+                      {detectedFormat}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${cfg.border} ${cfg.color}`}>
@@ -364,17 +459,17 @@ export default function QRScanner() {
       {/* Empty state */}
       {!result && !loading && mode === 'text' && (
         <div className="text-center py-8 text-zinc-600 text-sm">
-          <QrCode size={36} className="mx-auto opacity-20 mb-3" />
-          <p>Entrez un SKU ou un ID pour obtenir une analyse IA instantanée</p>
+          <Barcode size={36} className="mx-auto opacity-20 mb-3" />
+          <p>Entrez un SKU, un ID ou un numéro de code-barres</p>
         </div>
       )}
 
       <style>{`
         @keyframes scanLine {
-          0%   { transform: translateY(-60px); opacity: 0; }
+          0%   { transform: translateY(-40px); opacity: 0; }
           10%  { opacity: 1; }
           90%  { opacity: 1; }
-          100% { transform: translateY(60px); opacity: 0; }
+          100% { transform: translateY(40px); opacity: 0; }
         }
       `}</style>
     </div>
