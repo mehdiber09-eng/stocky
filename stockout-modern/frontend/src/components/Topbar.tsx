@@ -1,6 +1,7 @@
 import React from 'react'
 import { Menu } from 'lucide-react'
 import NotificationsBell from './NotificationsBell'
+import SystemStatusBadge from './SystemStatusBadge'
 import { useLanguage } from '../context/LanguageContext'
 
 interface TopbarProps {
@@ -30,6 +31,7 @@ export default function Topbar({ onMenuOpen }: TopbarProps) {
 
         {/* Right: actions */}
         <div className="flex items-center gap-2">
+          <SystemStatusBadge />
           <button
             onClick={() => setLang(lang === 'fr' ? 'ar' : 'fr')}
             title="Changer la langue / تغيير اللغة"

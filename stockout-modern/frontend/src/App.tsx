@@ -23,6 +23,9 @@ import Pricing from './pages/Pricing'
 import PaymentResult from './pages/PaymentResult'
 import NotFound from './pages/NotFound'
 import Suppliers from './pages/Suppliers'
+import QRScanner from './pages/QRScanner'
+import Simulate from './pages/Simulate'
+import CookieBanner from './components/CookieBanner'
 
 export default function App() {
   return (
@@ -55,9 +58,12 @@ export default function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/payment/success" element={<PaymentResult type="success" />} />
             <Route path="/payment/cancel" element={<PaymentResult type="cancel" />} />
+            <Route path="/scan-qr" element={<QRScanner />} />
+            <Route path="/simulate" element={<Simulate />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <CookieBanner />
       </AuthProvider>
     </ThemeProvider>
   )

@@ -19,6 +19,9 @@ from app.api import (
     payments,
     suppliers,
     stock_history,
+    scan_qr,
+    simulate,
+    system_status,
 )
 from app.core.config import settings
 from app.models.db import init_db
@@ -75,6 +78,9 @@ app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
 app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
 app.include_router(stock_history.router, prefix="/stock-history", tags=["stock-history"])
+app.include_router(scan_qr.router, prefix="/scan_qr", tags=["scan-qr"])
+app.include_router(simulate.router, prefix="/simulate", tags=["simulate"])
+app.include_router(system_status.router, prefix="/system-status", tags=["system-status"])
 
 
 @app.get("/", tags=["meta"])

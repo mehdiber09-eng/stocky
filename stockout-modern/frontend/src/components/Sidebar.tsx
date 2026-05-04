@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, PackagePlus, ShoppingCart, TrendingUp, LogOut, Activity,
   BarChart2, Upload, GitCompare, User, Sun, Moon, MessageCircle, HeartPulse,
-  CreditCard, Truck, X,
+  CreditCard, Truck, X, QrCode, FlaskConical,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -16,6 +16,8 @@ interface SidebarProps {
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/predict', label: 'Prédictions', icon: TrendingUp },
+  { to: '/scan-qr', label: 'Scan QR', icon: QrCode },
+  { to: '/simulate', label: 'Simulation', icon: FlaskConical },
   { to: '/compare', label: 'Comparer', icon: GitCompare },
   { to: '/analytics', label: 'Analytics', icon: BarChart2 },
   { to: '/inventory-health', label: 'Santé Stock', icon: HeartPulse },

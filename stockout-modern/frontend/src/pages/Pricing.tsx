@@ -79,23 +79,24 @@ export default function Pricing() {
   }
 
   return (
-    <div className="animate-fade-in space-y-10">
+    <div className="animate-fade-in space-y-12">
+
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 badge-info mb-2">
           <Sparkles size={11} /> Tarifs transparents
         </div>
         <h1 className="text-3xl md:text-4xl font-bold text-gradient">
-          Choisissez votre plan
+          Passez à StockSense Pro
         </h1>
         <p className="text-zinc-400 max-w-lg mx-auto">
           Commencez gratuitement. Passez Pro quand vous êtes prêt.
-          Paiement 100% algérien — Dahabia, CIB, Visa ou PayPal.
+          Disponible en Algérie et en France — plusieurs méthodes de paiement acceptées.
         </p>
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
 
         {/* Free */}
         <div className="card flex flex-col">
@@ -134,10 +135,14 @@ export default function Pricing() {
 
         {/* Pro */}
         <div className="card-glow flex flex-col relative overflow-hidden">
-          <div className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white"
-               style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)', borderRadius: '0 1rem 0 1rem' }}>
+          <div
+            className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white"
+            style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)', borderRadius: '0 1rem 0 1rem' }}
+          >
             ⭐ Populaire
           </div>
+
+          {/* Price header */}
           <div className="mb-6">
             <p className="text-xs font-medium text-brand-400 uppercase tracking-wider mb-1">Pro</p>
             <div className="flex items-end gap-1">
@@ -147,7 +152,8 @@ export default function Pricing() {
             <p className="text-zinc-500 text-sm mt-1">≈ {priceUsd}€ · Prédictions illimitées</p>
           </div>
 
-          <ul className="space-y-2.5 flex-1 mb-6">
+          {/* Feature list */}
+          <ul className="space-y-2.5 flex-1 mb-8">
             {PRO_FEATURES.map(f => (
               <li key={f} className="flex items-center gap-2 text-sm text-zinc-200">
                 <CheckCircle size={14} className="text-brand-400 shrink-0" />
@@ -168,19 +174,29 @@ export default function Pricing() {
                   <Zap size={14} /> Créer un compte et payer
                 </button>
               </Link>
-              <p className="text-center text-xs text-zinc-600">Déjà un compte ? <Link to="/login" className="text-brand-400">Se connecter</Link></p>
+              <p className="text-center text-xs text-zinc-600">
+                Déjà un compte ?{' '}
+                <Link to="/login" className="text-brand-400">Se connecter</Link>
+              </p>
             </div>
           ) : statusLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 size={18} className="animate-spin text-zinc-500" />
             </div>
           ) : (
-            <div className="space-y-3">
-              {/* Chargily section */}
-              <div className="space-y-2">
-                <p className="text-xs text-zinc-500 flex items-center gap-1.5">
-                  <span className="text-base">🇩🇿</span> Paiement algérien — Chargily Pay
-                </p>
+            <div className="space-y-4">
+
+              {/* ── Section Algérie ── */}
+              <div className="border border-zinc-700/50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <span className="text-base">🇩🇿</span> Paiement en Algérie
+                  </p>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">
+                    Algérie
+                  </span>
+                </div>
+
                 <Tooltip text="Paiement via votre carte postale algérienne (CCP)" position="left">
                   <button
                     onClick={() => payChargily('edahabia')}
@@ -192,7 +208,8 @@ export default function Pricing() {
                     Dahabia (Poste Algérie)
                   </button>
                 </Tooltip>
-                <Tooltip text="Paiement via votre carte bancaire algérienne CIB, Visa ou Mastercard" position="left">
+
+                <Tooltip text="Paiement via votre carte bancaire algérienne CIB" position="left">
                   <button
                     onClick={() => payChargily('cib')}
                     disabled={loading !== null || !chargilyEnabled}
@@ -200,9 +217,10 @@ export default function Pricing() {
                     style={{ background: 'linear-gradient(135deg,#1d4ed8,#1e40af)', color: '#fff', boxShadow: '0 4px 16px rgba(29,78,216,0.3)' }}
                   >
                     {loading === 'cib' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                    CIB / Visa / Mastercard
+                    CIB (banque algérienne)
                   </button>
                 </Tooltip>
+
                 {!chargilyEnabled && (
                   <p className="text-xs text-amber-500/80 flex items-center gap-1">
                     <AlertCircle size={11} /> Chargily non configuré (admin requis)
@@ -210,30 +228,70 @@ export default function Pricing() {
                 )}
               </div>
 
-              {/* Divider */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-white/8" />
-                <span className="text-xs text-zinc-600">ou</span>
-                <div className="flex-1 h-px bg-white/8" />
+              {/* Séparateur 1 */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-zinc-700/60" />
+                <span className="text-xs text-zinc-500 font-medium">— ou —</span>
+                <div className="flex-1 h-px bg-zinc-700/60" />
               </div>
 
-              {/* PayPal */}
-              <Tooltip text="Paiement international par carte ou compte PayPal" position="left">
-                <button
-                  onClick={payPaypal}
-                  disabled={loading !== null || !paypalEnabled}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: 'linear-gradient(135deg,#0070ba,#003087)', color: '#fff', boxShadow: '0 4px 16px rgba(0,112,186,0.3)' }}
-                >
-                  {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
-                  PayPal — {priceUsd}€
-                </button>
-              </Tooltip>
-              {!paypalEnabled && (
-                <p className="text-xs text-amber-500/80 flex items-center gap-1">
-                  <AlertCircle size={11} /> PayPal non configuré (admin requis)
+              {/* ── Section PayPal ── */}
+              <div className="border border-zinc-700/50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <span className="text-base">🌍</span> Paiement international
+                  </p>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 uppercase tracking-wide">
+                    France & International
+                  </span>
+                </div>
+
+                <Tooltip text="Paiement sécurisé via votre compte ou carte PayPal" position="left">
+                  <button
+                    onClick={payPaypal}
+                    disabled={loading !== null || !paypalEnabled}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ background: 'linear-gradient(135deg,#0070ba,#003087)', color: '#fff', boxShadow: '0 4px 16px rgba(0,112,186,0.3)' }}
+                  >
+                    {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
+                    PayPal — {priceUsd}€
+                  </button>
+                </Tooltip>
+
+                {!paypalEnabled && (
+                  <p className="text-xs text-amber-500/80 flex items-center gap-1">
+                    <AlertCircle size={11} /> PayPal non configuré (admin requis)
+                  </p>
+                )}
+              </div>
+
+              {/* Séparateur 2 */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-zinc-700/60" />
+                <span className="text-xs text-zinc-500 font-medium">— ou —</span>
+                <div className="flex-1 h-px bg-zinc-700/60" />
+              </div>
+
+              {/* ── Section Carte bancaire ── */}
+              <div className="border border-zinc-700/50 rounded-xl p-4 space-y-2">
+                <p className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                  <CreditCard size={13} className="text-zinc-400" /> Carte bancaire
                 </p>
-              )}
+                <p className="text-xs text-zinc-500">
+                  Visa / Mastercard via PayPal — aucun compte PayPal requis.
+                </p>
+                <Tooltip text="Payez directement par carte sans créer de compte PayPal" position="left">
+                  <button
+                    onClick={payPaypal}
+                    disabled={loading !== null || !paypalEnabled}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-600/60 text-zinc-300 hover:bg-zinc-700/40"
+                  >
+                    {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+                    Payer par carte — {priceUsd}€
+                  </button>
+                </Tooltip>
+              </div>
+
             </div>
           )}
         </div>
@@ -241,19 +299,40 @@ export default function Pricing() {
 
       {/* Trust badges */}
       <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-zinc-500 max-w-2xl mx-auto">
-        <span className="flex items-center gap-2"><Shield size={14} className="text-emerald-400" /> Paiement sécurisé SSL</span>
-        <span className="flex items-center gap-2"><Star size={14} className="text-amber-400" /> Chargily — passerelle algérienne officielle</span>
-        <span className="flex items-center gap-2"><Globe size={14} className="text-brand-400" /> Visa, Mastercard, Dahabia, CIB, PayPal</span>
+        <span className="flex items-center gap-2">
+          <Shield size={14} className="text-emerald-400" /> Paiement sécurisé SSL
+        </span>
+        <span className="flex items-center gap-2">
+          <Globe size={14} className="text-brand-400" /> Disponible en Algérie & France
+        </span>
+        <span className="flex items-center gap-2">
+          <Star size={14} className="text-amber-400" /> Support 7j/7
+        </span>
+        <span className="flex items-center gap-2">
+          <CheckCircle size={14} className="text-zinc-400" /> Sans engagement
+        </span>
       </div>
 
       {/* FAQ */}
       <div className="max-w-2xl mx-auto space-y-3">
         <h2 className="text-lg font-semibold text-zinc-200 mb-4">Questions fréquentes</h2>
         {[
-          { q: 'Comment fonctionne Chargily ?', a: "Chargily Pay est la passerelle de paiement algérienne officielle. Elle accepte Dahabia (Poste Algérie), CIB et cartes internationales. Vos données bancaires ne transitent jamais par nos serveurs." },
-          { q: 'Le plan gratuit est-il vraiment gratuit ?', a: "Oui, 5 prédictions gratuites sans carte bancaire. Aucune limite sur les produits, l'import CSV ou le conseiller IA." },
-          { q: "Puis-je annuler à tout moment ?", a: "Oui. L'abonnement Pro est mensuel sans engagement. Contactez-nous par email pour annuler." },
-          { q: "PayPal fonctionne-t-il depuis l'Algérie ?", a: "PayPal permet de payer depuis certains comptes algériens. Si vous rencontrez des difficultés, utilisez Chargily qui est optimisé pour l'Algérie." },
+          {
+            q: 'Quelles méthodes de paiement sont disponibles ?',
+            a: "En Algérie : Dahabia (Poste Algérie) et CIB via Chargily. En France et à l'international : PayPal ou carte Visa / Mastercard directement via PayPal. Vos données bancaires ne transitent jamais par nos serveurs.",
+          },
+          {
+            q: 'Le plan gratuit est-il vraiment gratuit ?',
+            a: "Oui, 5 prédictions gratuites sans carte bancaire. Aucune limite sur les produits, l'import CSV ou le conseiller IA.",
+          },
+          {
+            q: 'Puis-je annuler à tout moment ?',
+            a: "Oui. L'abonnement Pro est mensuel sans engagement. Contactez-nous par email pour annuler.",
+          },
+          {
+            q: 'Je suis en France, comment puis-je payer ?',
+            a: "Utilisez PayPal ou votre carte Visa / Mastercard via PayPal. Aucun compte PayPal n'est obligatoire pour payer par carte.",
+          },
         ].map(({ q, a }) => (
           <div key={q} className="card">
             <p className="font-medium text-zinc-200 text-sm mb-1">{q}</p>

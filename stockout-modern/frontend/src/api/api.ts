@@ -271,6 +271,68 @@ export const PaymentAPI = {
 
 export default API
 
+export interface QRScanResult {
+  product_id: number
+  product_name: string
+  sku: string
+  current_stock: number
+  risk_score: number
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  recommendation: string
+  alert_level: string
+  lead_time_days: number
+  safety_stock: number
+}
+
+export const QRScanAPI = {
+  scan: (qr_data: string) => API.post<QRScanResult>('/scan_qr/', { qr_data }),
+}
+
+export interface SimulationResult {
+  product_name: string
+  sku: string
+  current_stock: number
+  base_risk: number
+  simulated_risk: number
+  risk_delta: number
+  new_risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  recommendation: string
+  business_impact: string
+  stock_impact_days: number
+  avg_daily_demand: number
+  scenario_label: string
+}
+
+export const SimulateAPI = {
+  run: (params: {
+    product_id: number
+    horizon: number
+    demand_increase_pct: number
+    supplier_delay_days: number
+    event: string
+  }) => API.post<SimulationResult>('/simulate/', params),
+}
+
+export interface SystemStatusData {
+  status: 'SAFE' | 'WARNING' | 'CRITICAL'
+  status_color: string
+  message: string
+  stats: {
+    total_products: number
+    critical_notifications: number
+    warning_notifications: number
+    predictions_last_hour: number
+    high_risk_products_24h: number
+  }
+  high_risk_products: string[]
+  security_events: Array<{ type: string; message: string; severity: string }>
+  timestamp: string
+}
+
+export const SystemStatusAPI = {
+  get: () => API.get<SystemStatusData>('/system-status/'),
+}
+
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
