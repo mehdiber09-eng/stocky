@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import {
   AlertTriangle, CheckCircle, RefreshCw, Loader2, Package,
-  TrendingUp, TrendingDown, Minus, ArrowUpRight, Activity,
-  ShoppingBag, Clock, Layers,
+  TrendingUp, TrendingDown, Minus, Activity,
+  Clock, Layers, History, X, Edit2,
+  ArrowUp, ArrowDown,
 } from 'lucide-react'
-import { AnalyticsAPI, InventoryHealthItem, SalesVelocityItem } from '../api/api'
+import { AnalyticsAPI, StockHistoryAPI, ProductsAPI, InventoryHealthItem, SalesVelocityItem, StockMovement, Product } from '../api/api'
 import Toast from '../components/Toast'
+import EditProductModal from '../components/EditProductModal'
 
 const ABC_CONFIG = {
   A: { label: 'A', bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30', title: 'Top 70% revenus' },
@@ -55,6 +57,91 @@ function TrendBadge({ trend, pct }: { trend: string; pct: number }) {
   )
 }
 
+// ─── Stock History Modal ───────────────────────────────────────────────────────
+function StockHistoryModal({ productId, productName, onClose }: { productId: number; productName: string; onClose: () => void }) {
+  const [movements, setMovements] = useState<StockMovement[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    StockHistoryAPI.get(productId)
+      .then(res => setMovements(res.data))
+      .catch(() => setError('Impossible de charger l\'historique'))
+      .finally(() => setLoading(false))
+  }, [productId])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg card animate-fade-in max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400">
+              <History size={18} />
+            </div>
+            <div>
+              <h2 className="font-semibold text-zinc-100">Historique du stock</h2>
+              <p className="text-xs text-zinc-500 truncate max-w-[220px]">{productName}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg shrink-0">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 -mx-4 px-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-zinc-500">
+              <Loader2 size={18} className="animate-spin mr-2" /> Chargement...
+            </div>
+          ) : error ? (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-3">
+              <AlertTriangle size={14} /> {error}
+            </div>
+          ) : movements.length === 0 ? (
+            <div className="text-center py-12">
+              <History size={24} className="mx-auto text-zinc-600 mb-3" />
+              <p className="text-zinc-500 text-sm">Aucun mouvement de stock enregistré</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {movements.map(m => {
+                const isPositive = m.change > 0
+                return (
+                  <div key={m.id} className="glass-subtle rounded-xl p-3 flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      isPositive ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                    }`}>
+                      {isPositive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-semibold tabular-nums ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {isPositive ? '+' : ''}{m.change}
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {m.quantity_before} → {m.quantity_after}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500 truncate">{m.reason}</p>
+                    </div>
+                    <span className="text-[10px] text-zinc-600 shrink-0 text-right tabular-nums">
+                      {new Date(m.created_at).toLocaleDateString('fr-FR')}<br />
+                      {new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 type Filter = 'all' | 'critical' | 'warning' | 'ok' | 'overstock'
 
 export default function InventoryHealth() {
@@ -62,6 +149,8 @@ export default function InventoryHealth() {
   const [velocity, setVelocity] = useState<Record<number, SalesVelocityItem>>({})
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
+  const [historyTarget, setHistoryTarget] = useState<{ id: number; name: string } | null>(null)
+  const [editTarget, setEditTarget] = useState<Product | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
   const load = useCallback(async () => {
@@ -195,6 +284,7 @@ export default function InventoryHealth() {
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Vélocité 30j</th>
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Tendance</th>
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Statut</th>
+                  <th className="text-right px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,6 +342,33 @@ export default function InventoryHealth() {
                           {sc.label}
                         </span>
                       </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setHistoryTarget({ id: item.product_id, name: item.product_name })}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-brand-300 hover:bg-brand-500/10 transition-all"
+                            title="Voir l'historique du stock"
+                          >
+                            <History size={12} />
+                            Historique
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await ProductsAPI.get(item.product_id)
+                                setEditTarget(res.data)
+                              } catch {
+                                setToast({ msg: 'Impossible de charger le produit', type: 'error' })
+                              }
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-zinc-200 hover:bg-white/8 transition-all"
+                            title="Modifier le produit"
+                          >
+                            <Edit2 size={12} />
+                            Éditer
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   )
                 })}
@@ -302,6 +419,28 @@ export default function InventoryHealth() {
               ))}
           </div>
         </div>
+      )}
+
+      {/* Stock History Modal */}
+      {historyTarget && (
+        <StockHistoryModal
+          productId={historyTarget.id}
+          productName={historyTarget.name}
+          onClose={() => setHistoryTarget(null)}
+        />
+      )}
+
+      {/* Edit Product Modal */}
+      {editTarget && (
+        <EditProductModal
+          product={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={updated => {
+            setEditTarget(null)
+            setToast({ msg: `"${updated.name}" mis à jour`, type: 'success' })
+            load()
+          }}
+        />
       )}
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}

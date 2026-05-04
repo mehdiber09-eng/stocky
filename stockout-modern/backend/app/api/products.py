@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import get_db, get_current_user
-from app.models.schemas import ProductCreate, ProductOut
+from app.models.schemas import ProductCreate, ProductOut, ProductUpdate
 from app.models import models
 
 router = APIRouter()
@@ -65,6 +65,24 @@ async def get_product(
     if not p or p.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Produit introuvable")
     return p
+
+
+@router.put("/{product_id}", response_model=ProductOut)
+async def update_product(
+    product_id: int,
+    payload: ProductUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    product = await db.get(models.Product, product_id)
+    if not product or product.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Produit introuvable")
+    for k, v in payload.dict(exclude_unset=True).items():
+        setattr(product, k, v)
+    db.add(product)
+    await db.commit()
+    await db.refresh(product)
+    return product
 
 
 @router.delete("/{product_id}")

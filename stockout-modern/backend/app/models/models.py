@@ -18,6 +18,19 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
+class Supplier(Base):
+    __tablename__ = "suppliers"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    contact_email = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    lead_time_days = Column(Integer, default=7, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    owner = relationship("User")
+
+
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True, index=True)
@@ -26,9 +39,11 @@ class Product(Base):
     sku = Column(String(100), nullable=False)
     lead_time_days = Column(Integer, default=7, nullable=False)
     safety_stock = Column(Integer, default=0, nullable=False)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     owner = relationship("User")
+    supplier = relationship("Supplier", foreign_keys=[supplier_id])
     __table_args__ = (
         Index("ix_products_owner_sku", "owner_id", "sku", unique=True),
     )
@@ -85,6 +100,20 @@ class Notification(Base):
     title = Column(String(255), nullable=False)
     message = Column(String(1000), nullable=False)
     is_read = Column(Boolean, default=False, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+
+    product = relationship("Product")
+
+
+class StockMovement(Base):
+    __tablename__ = "stock_movements"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    quantity_before = Column(Integer, nullable=False)
+    quantity_after = Column(Integer, nullable=False)
+    change = Column(Integer, nullable=False)  # positif = entrée, négatif = sortie
+    reason = Column(String(100), nullable=False, default="manual")  # manual, sale, adjustment, reorder
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
 
     product = relationship("Product")

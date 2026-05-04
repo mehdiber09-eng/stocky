@@ -17,6 +17,8 @@ from app.api import (
     notifications,
     inventory,
     payments,
+    suppliers,
+    stock_history,
 )
 from app.core.config import settings
 from app.models.db import init_db
@@ -71,6 +73,8 @@ app.include_router(export.router, prefix="/export", tags=["export"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
+app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
+app.include_router(stock_history.router, prefix="/stock-history", tags=["stock-history"])
 
 
 @app.get("/", tags=["meta"])

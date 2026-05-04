@@ -59,6 +59,26 @@ export interface Product {
   sku: string
   lead_time_days: number
   safety_stock: number
+  supplier_id: number | null
+  created_at: string
+}
+
+export interface Supplier {
+  id: number
+  name: string
+  contact_email: string | null
+  phone: string | null
+  lead_time_days: number
+  created_at: string
+}
+
+export interface StockMovement {
+  id: number
+  product_id: number
+  quantity_before: number
+  quantity_after: number
+  change: number
+  reason: string
   created_at: string
 }
 
@@ -161,8 +181,10 @@ export const AuthAPI = {
 export const ProductsAPI = {
   list: () => API.get<Product[]>('/products/'),
   get: (id: number) => API.get<Product>(`/products/${id}`),
-  create: (data: { name: string; sku: string; lead_time_days: number; safety_stock: number; initial_stock?: number }) =>
+  create: (data: { name: string; sku: string; lead_time_days: number; safety_stock: number; initial_stock?: number; supplier_id?: number | null }) =>
     API.post<Product>('/products/', data),
+  update: (id: number, data: { name?: string; lead_time_days?: number; safety_stock?: number; supplier_id?: number | null }) =>
+    API.put<Product>(`/products/${id}`, data),
   delete: (id: number) => API.delete(`/products/${id}`),
 }
 
@@ -216,6 +238,17 @@ export const NotificationsAPI = {
 export const ChatAPI = {
   send: (messages: { role: string; content: string }[]) =>
     API.post<{ content: string }>('/chat/', { messages }),
+}
+
+export const SuppliersAPI = {
+  list: () => API.get<Supplier[]>('/suppliers/'),
+  create: (data: Omit<Supplier, 'id' | 'created_at'>) => API.post<Supplier>('/suppliers/', data),
+  update: (id: number, data: Partial<Omit<Supplier, 'id' | 'created_at'>>) => API.put<Supplier>(`/suppliers/${id}`, data),
+  delete: (id: number) => API.delete(`/suppliers/${id}`),
+}
+
+export const StockHistoryAPI = {
+  get: (productId: number, limit = 50) => API.get<StockMovement[]>(`/stock-history/${productId}?limit=${limit}`),
 }
 
 export interface PaymentStatus {

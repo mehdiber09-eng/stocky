@@ -42,10 +42,18 @@ class ProductOut(BaseModel):
     sku: str
     lead_time_days: int
     safety_stock: int
+    supplier_id: Optional[int] = None
     created_at: datetime
 
     class Config:
         orm_mode = True
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    lead_time_days: Optional[int] = Field(None, ge=0, le=365)
+    safety_stock: Optional[int] = Field(None, ge=0)
+    supplier_id: Optional[int] = None
 
 
 class SaleCreate(BaseModel):
@@ -112,3 +120,35 @@ class NotificationOut(BaseModel):
 class NotificationCount(BaseModel):
     unread: int
     total: int
+
+
+class SupplierCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    contact_email: Optional[str] = None
+    phone: Optional[str] = None
+    lead_time_days: int = Field(default=7, ge=0, le=365)
+
+
+class SupplierOut(BaseModel):
+    id: int
+    name: str
+    contact_email: Optional[str] = None
+    phone: Optional[str] = None
+    lead_time_days: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class StockMovementOut(BaseModel):
+    id: int
+    product_id: int
+    quantity_before: int
+    quantity_after: int
+    change: int
+    reason: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True

@@ -20,6 +20,7 @@ import InventoryHealth from './pages/InventoryHealth'
 import Pricing from './pages/Pricing'
 import PaymentResult from './pages/PaymentResult'
 import NotFound from './pages/NotFound'
+import Suppliers from './pages/Suppliers'
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/chat" element={<Chatbot />} />
             <Route path="/inventory-health" element={<InventoryHealth />} />
+            <Route path="/suppliers" element={<Suppliers />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/payment/success" element={<PaymentResult type="success" />} />
             <Route path="/payment/cancel" element={<PaymentResult type="cancel" />} />

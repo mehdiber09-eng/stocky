@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, PackagePlus, ShoppingCart, TrendingUp, LogOut, Activity,
   BarChart2, Upload, GitCompare, User, Sun, Moon, MessageCircle, HeartPulse,
-  CreditCard,
+  CreditCard, Truck,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/compare', label: 'Comparer', icon: GitCompare },
   { to: '/analytics', label: 'Analytics', icon: BarChart2 },
   { to: '/inventory-health', label: 'Santé Stock', icon: HeartPulse },
+  { to: '/suppliers', label: 'Fournisseurs', icon: Truck },
   { to: '/import', label: 'Import CSV', icon: Upload },
   { to: '/create-product', label: 'Produits', icon: PackagePlus },
   { to: '/add-sale', label: 'Ventes', icon: ShoppingCart },

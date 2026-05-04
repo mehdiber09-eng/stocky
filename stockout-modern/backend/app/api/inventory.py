@@ -59,6 +59,9 @@ async def update_inventory(
         select(models.Inventory).where(models.Inventory.product_id == product_id)
     )
     inv = q.scalars().first()
+
+    quantity_before = inv.quantity if inv else 0
+
     if inv:
         inv.quantity = payload.quantity
         inv.updated_at = datetime.now(timezone.utc)
@@ -69,6 +72,35 @@ async def update_inventory(
             quantity=payload.quantity,
         )
         db.add(inv)
+
+    # Enregistrer le mouvement de stock
+    movement = models.StockMovement(
+        owner_id=user.id,
+        product_id=product_id,
+        quantity_before=quantity_before,
+        quantity_after=payload.quantity,
+        change=payload.quantity - quantity_before,
+        reason="manual",
+    )
+    db.add(movement)
+
+    # Notification de réapprovisionnement si stock <= seuil de réapprovisionnement
+    reorder_point = product.safety_stock
+    if payload.quantity <= reorder_point:
+        notif = models.Notification(
+            user_id=user.id,
+            product_id=product_id,
+            kind="low_stock",
+            severity="critical",
+            title=f"Stock critique : {product.name}",
+            message=(
+                f"Le stock de « {product.name} » est à {payload.quantity} unité(s), "
+                f"en dessous du seuil de réapprovisionnement ({reorder_point}). "
+                "Pensez à passer une commande."
+            ),
+        )
+        db.add(notif)
+
     await db.commit()
     await db.refresh(inv)
     return inv

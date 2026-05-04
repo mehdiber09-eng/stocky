@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Package, Loader2 } from 'lucide-react'
-import { ProductsAPI } from '../api/api'
+import { ArrowLeft, Package, Loader2, Truck } from 'lucide-react'
+import { ProductsAPI, SuppliersAPI, Supplier } from '../api/api'
 import Toast from '../components/Toast'
 
 export default function CreateProduct() {
@@ -10,9 +10,20 @@ export default function CreateProduct() {
   const [leadTime, setLeadTime] = useState(7)
   const [safetyStock, setSafetyStock] = useState(0)
   const [initialStock, setInitialStock] = useState(0)
+  const [supplierId, setSupplierId] = useState<number | null>(null)
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [suppliersLoading, setSuppliersLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    setSuppliersLoading(true)
+    SuppliersAPI.list()
+      .then(res => setSuppliers(res.data))
+      .catch(() => {/* ignore — field just stays empty */})
+      .finally(() => setSuppliersLoading(false))
+  }, [])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -23,6 +34,7 @@ export default function CreateProduct() {
         lead_time_days: leadTime,
         safety_stock: safetyStock,
         initial_stock: initialStock,
+        supplier_id: supplierId,
       })
       setToast({ msg: 'Produit créé avec succès !', type: 'success' })
       setTimeout(() => navigate('/dashboard'), 800)
@@ -101,6 +113,40 @@ export default function CreateProduct() {
                 value={initialStock}
                 onChange={e => setInitialStock(Number(e.target.value))}
               />
+            </div>
+            <div className="col-span-2">
+              <label className="label flex items-center gap-1.5">
+                <Truck size={12} className="text-zinc-500" />
+                Fournisseur
+                <span className="text-zinc-600 font-normal">(optionnel)</span>
+              </label>
+              {suppliersLoading ? (
+                <div className="input flex items-center gap-2 text-zinc-500">
+                  <Loader2 size={13} className="animate-spin" />
+                  <span className="text-sm">Chargement...</span>
+                </div>
+              ) : (
+                <select
+                  className="input"
+                  value={supplierId ?? ''}
+                  onChange={e => setSupplierId(e.target.value ? Number(e.target.value) : null)}
+                >
+                  <option value="">— Aucun fournisseur —</option>
+                  {suppliers.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.lead_time_days}j)
+                    </option>
+                  ))}
+                </select>
+              )}
+              {suppliers.length === 0 && !suppliersLoading && (
+                <p className="text-xs text-zinc-600 mt-1.5">
+                  Aucun fournisseur disponible.{' '}
+                  <Link to="/suppliers" className="text-brand-400 hover:text-brand-300">
+                    Créer un fournisseur →
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
 
