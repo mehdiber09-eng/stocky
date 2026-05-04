@@ -71,3 +71,66 @@ def send_alert_email(to_email: str, product_name: str, probability: float, horiz
     except Exception as e:
         logger.error(f"Failed to send alert email: {e}")
         return False
+
+
+def send_reset_email(to_email: str, reset_url: str):
+    """Send password reset email."""
+    if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning("SMTP not configured — skipping reset email")
+        return False
+
+    html = f"""
+    <div style="font-family: -apple-system, sans-serif; max-width: 560px; margin: 0 auto; background: #0f0f11; color: #e4e4e7; border-radius: 12px; overflow: hidden;">
+      <div style="background: #4f46e5; padding: 24px 32px;">
+        <h1 style="margin: 0; font-size: 20px; color: white;">🔑 Réinitialisation de mot de passe</h1>
+        <p style="margin: 4px 0 0; color: #c7d2fe; font-size: 14px;">StockSense — Sécurité du compte</p>
+      </div>
+      <div style="padding: 32px;">
+        <p style="color: #a1a1aa; margin-bottom: 24px;">
+          Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en définir un nouveau.
+        </p>
+
+        <div style="text-align: center; margin-bottom: 28px;">
+          <a href="{reset_url}"
+             style="display: inline-block; background: #4f46e5; color: white; text-decoration: none;
+                    padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 600;">
+            Réinitialiser mon mot de passe
+          </a>
+        </div>
+
+        <div style="background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+          <p style="margin: 0; font-size: 13px; color: #a1a1aa;">
+            ⏱️ Ce lien est valable <strong style="color: #e4e4e7;">30 minutes</strong> et ne peut être utilisé qu'une seule fois.
+          </p>
+        </div>
+
+        <p style="color: #71717a; font-size: 13px;">
+          Si vous n'êtes pas à l'origine de cette demande, ignorez cet email — votre mot de passe ne sera pas modifié.
+        </p>
+
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #27272a;">
+          <p style="color: #52525b; font-size: 12px; margin: 0;">
+            Envoyé par StockSense · Cet email a été généré automatiquement.
+          </p>
+        </div>
+      </div>
+    </div>
+    """
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "🔑 Réinitialisation de votre mot de passe — StockSense"
+        msg["From"] = settings.SMTP_USER
+        msg["To"] = to_email
+        msg.attach(MIMEText(html, "html"))
+
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+
+        logger.info(f"Reset email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send reset email: {e}")
+        return False

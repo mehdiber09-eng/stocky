@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { SuppliersAPI, Supplier } from '../api/api'
 import Toast from '../components/Toast'
+import ConfirmModal from '../components/ConfirmModal'
 
 interface SupplierFormData {
   name: string
@@ -379,40 +380,16 @@ export default function Suppliers() {
       )}
 
       {/* Delete confirmation modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteTarget(null)} />
-          <div className="relative w-full max-w-sm card animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400">
-                <Trash2 size={18} />
-              </div>
-              <div>
-                <h2 className="font-semibold text-zinc-100">Supprimer le fournisseur</h2>
-                <p className="text-xs text-zinc-500">Cette action est irréversible</p>
-              </div>
-            </div>
-            <p className="text-sm text-zinc-400 mb-5">
-              Êtes-vous sûr de vouloir supprimer{' '}
-              <span className="font-medium text-zinc-200">"{deleteTarget.name}"</span> ?
-              Les produits associés perdront ce fournisseur.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleDelete}
-                disabled={deleteLoading}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/20 text-sm font-medium transition-all"
-              >
-                {deleteLoading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                Supprimer
-              </button>
-              <button onClick={() => setDeleteTarget(null)} className="btn-ghost text-sm">
-                Annuler
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Supprimer ce fournisseur ?"
+        message={`Êtes-vous sûr de vouloir supprimer "${deleteTarget?.name ?? ''}" ? Les produits associés perdront ce fournisseur.`}
+        confirmLabel="Supprimer"
+        danger
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
     </div>

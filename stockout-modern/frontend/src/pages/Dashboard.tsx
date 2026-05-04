@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom'
 import {
   Package, TrendingUp, ShoppingCart, Trash2, Plus, RefreshCw, Loader2,
   Sparkles, ArrowUpRight, BarChart2, Bell, Zap, AlertTriangle, Layers,
-  CheckCircle, Clock,
+  CheckCircle, Clock, Search,
 } from 'lucide-react'
 import { ProductsAPI, Product, AnalyticsAPI, PredictAPI, BatchPredictionResult, InventoryHealthItem } from '../api/api'
 import Toast from '../components/Toast'
+import { SkeletonCard } from '../components/Skeleton'
+import ConfirmModal from '../components/ConfirmModal'
 
 interface Summary {
   total_products: number
@@ -22,10 +24,12 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [batchLoading, setBatchLoading] = useState(false)
   const [batchResult, setBatchResult] = useState<BatchPredictionResult | null>(null)
   const [healthAlerts, setHealthAlerts] = useState<InventoryHealthItem[]>([])
+  const [search, setSearch] = useState('')
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -65,6 +69,7 @@ export default function Dashboard() {
 
   async function handleDelete(id: number) {
     setDeleting(id)
+    setDeleteTarget(null)
     try {
       await ProductsAPI.delete(id)
       setProducts(p => p.filter(x => x.id !== id))
@@ -75,6 +80,11 @@ export default function Dashboard() {
       setDeleting(null)
     }
   }
+
+  const filteredProducts = products.filter(p => {
+    const q = search.toLowerCase()
+    return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+  })
 
   const stats = [
     {
@@ -142,17 +152,20 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map(({ label, value, icon: Icon, gradient, iconColor, glow }) => (
-          <div key={label} className={`stat-tile bg-gradient-to-br ${gradient} ${glow} group`}>
-            <div className="flex items-center justify-between">
-              <div className={`w-10 h-10 rounded-xl glass-subtle flex items-center justify-center ${iconColor} group-hover:scale-110 transition-transform`}>
-                <Icon size={18} />
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          : stats.map(({ label, value, icon: Icon, gradient, iconColor, glow }) => (
+            <div key={label} className={`stat-tile bg-gradient-to-br ${gradient} ${glow} group`}>
+              <div className="flex items-center justify-between">
+                <div className={`w-10 h-10 rounded-xl glass-subtle flex items-center justify-center ${iconColor} group-hover:scale-110 transition-transform`}>
+                  <Icon size={18} />
+                </div>
+                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{label}</span>
               </div>
-              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{label}</span>
+              <p className="text-3xl font-semibold text-white mt-1">{value}</p>
             </div>
-            <p className="text-3xl font-semibold text-white mt-1">{value}</p>
-          </div>
-        ))}
+          ))
+        }
       </div>
 
       {/* Quick actions */}
@@ -306,17 +319,36 @@ export default function Dashboard() {
 
       {/* Products table */}
       <div className="card p-0 overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/8 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-white/8 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="font-semibold text-white">Catalogue produits</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">{products.length} entrée{products.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              {search ? `${filteredProducts.length} résultat${filteredProducts.length !== 1 ? 's' : ''} sur ${products.length}` : `${products.length} entrée${products.length !== 1 ? 's' : ''}`}
+            </p>
           </div>
+          {!loading && products.length > 0 && (
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                className="input pl-8 py-1.5 text-sm w-52"
+                placeholder="Rechercher par nom / SKU…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-zinc-500">
-            <Loader2 size={20} className="animate-spin mr-2" />
-            Chargement...
+          <div className="p-6 space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : filteredProducts.length === 0 && search ? (
+          <div className="text-center py-12">
+            <Search size={20} className="mx-auto text-zinc-600 mb-3" />
+            <p className="text-zinc-400 font-medium">Aucun résultat pour "{search}"</p>
+            <p className="text-zinc-600 text-sm mt-1">Essayez un autre nom ou SKU</p>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-16">
@@ -341,7 +373,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {filteredProducts.map((p) => (
                 <tr key={p.id} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
                   <td className="px-6 py-4 font-medium text-zinc-100">{p.name}</td>
                   <td className="px-6 py-4">
@@ -351,7 +383,7 @@ export default function Dashboard() {
                   <td className="px-6 py-4 text-zinc-400">{p.safety_stock}</td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      onClick={() => handleDelete(p.id)}
+                      onClick={() => setDeleteTarget(p.id)}
                       disabled={deleting === p.id}
                       className="p-2 rounded-lg text-zinc-500 hover:text-red-300 hover:bg-red-500/10 transition-all"
                     >
@@ -364,6 +396,17 @@ export default function Dashboard() {
           </table></div>
         )}
       </div>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Supprimer ce produit ?"
+        message={`Voulez-vous vraiment supprimer le produit "${products.find(p => p.id === deleteTarget)?.name ?? ''}" ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        danger
+        loading={deleting !== null}
+        onConfirm={() => deleteTarget !== null && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
     </div>

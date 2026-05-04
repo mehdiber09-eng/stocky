@@ -2,12 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   AlertTriangle, CheckCircle, RefreshCw, Loader2, Package,
   TrendingUp, TrendingDown, Minus, Activity,
-  Clock, Layers, History, X, Edit2,
+  Clock, Layers, History, X, Edit2, Trash2,
   ArrowUp, ArrowDown,
 } from 'lucide-react'
 import { AnalyticsAPI, StockHistoryAPI, ProductsAPI, InventoryHealthItem, SalesVelocityItem, StockMovement, Product } from '../api/api'
 import Toast from '../components/Toast'
 import EditProductModal from '../components/EditProductModal'
+import { SkeletonTable } from '../components/Skeleton'
+import ConfirmModal from '../components/ConfirmModal'
 
 const ABC_CONFIG = {
   A: { label: 'A', bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30', title: 'Top 70% revenus' },
@@ -151,6 +153,8 @@ export default function InventoryHealth() {
   const [filter, setFilter] = useState<Filter>('all')
   const [historyTarget, setHistoryTarget] = useState<{ id: number; name: string } | null>(null)
   const [editTarget, setEditTarget] = useState<Product | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
   const load = useCallback(async () => {
@@ -172,6 +176,21 @@ export default function InventoryHealth() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  async function handleDeleteProduct() {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    try {
+      await ProductsAPI.delete(deleteTarget.id)
+      setToast({ msg: `"${deleteTarget.name}" supprimé`, type: 'success' })
+      setDeleteTarget(null)
+      load()
+    } catch {
+      setToast({ msg: 'Erreur lors de la suppression', type: 'error' })
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
 
   const counts = {
     critical: items.filter(i => i.status === 'critical').length,
@@ -260,12 +279,11 @@ export default function InventoryHealth() {
       </div>
 
       {/* Table */}
-      <div className="card p-0 overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-16 text-zinc-500">
-            <Loader2 size={20} className="animate-spin mr-2" /> Chargement...
-          </div>
-        ) : displayed.length === 0 ? (
+      {loading ? (
+        <SkeletonTable rows={5} cols={6} />
+      ) : null}
+      <div className="card p-0 overflow-hidden" style={{ display: loading ? 'none' : undefined }}>
+        {!loading && displayed.length === 0 ? (
           <div className="text-center py-14">
             <Package size={28} className="mx-auto text-zinc-600 mb-3" />
             <p className="text-zinc-400 font-medium">Aucun produit trouvé</p>
@@ -367,6 +385,14 @@ export default function InventoryHealth() {
                             <Edit2 size={12} />
                             Éditer
                           </button>
+                          <button
+                            onClick={() => setDeleteTarget({ id: item.product_id, name: item.product_name })}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Supprimer le produit"
+                          >
+                            <Trash2 size={12} />
+                            Supprimer
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -420,6 +446,18 @@ export default function InventoryHealth() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Supprimer ce produit ?"
+        message={`Êtes-vous sûr de vouloir supprimer "${deleteTarget?.name ?? ''}" ? Toutes les données associées (ventes, prédictions, historique) seront perdues.`}
+        confirmLabel="Supprimer définitivement"
+        danger
+        loading={deleteLoading}
+        onConfirm={handleDeleteProduct}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Stock History Modal */}
       {historyTarget && (

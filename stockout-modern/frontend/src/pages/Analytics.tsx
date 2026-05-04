@@ -6,10 +6,12 @@ import {
 } from 'recharts'
 import {
   TrendingUp, Download, RefreshCw, Loader2, AlertTriangle,
-  CheckCircle, Info, BarChart2, ShoppingCart, Package, Activity
+  CheckCircle, Info, BarChart2, ShoppingCart, Package, Activity,
+  Printer,
 } from 'lucide-react'
 import { AnalyticsAPI, ExportAPI, downloadBlob } from '../api/api'
 import Toast from '../components/Toast'
+import Pagination from '../components/Pagination'
 
 const RISK_COLORS = { low: '#10b981', medium: '#f59e0b', high: '#ef4444' }
 
@@ -46,13 +48,15 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [exporting, setExporting] = useState<string | null>(null)
+  const [historyPage, setHistoryPage] = useState(1)
+  const HISTORY_PER_PAGE = 10
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const [s, h, sp, br] = await Promise.all([
         AnalyticsAPI.summary(),
-        AnalyticsAPI.history(10),
+        AnalyticsAPI.history(200),
         AnalyticsAPI.salesByProduct(),
         AnalyticsAPI.byRisk(),
       ])
@@ -109,14 +113,21 @@ export default function Analytics() {
             <p className="text-sm text-zinc-500">Vue détaillée de vos données</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={load} className="btn-ghost flex items-center gap-2 text-sm" disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
           <button
+            onClick={() => window.print()}
+            className="btn-glass flex items-center gap-2 text-sm print:hidden"
+          >
+            <Printer size={14} />
+            Exporter PDF
+          </button>
+          <button
             onClick={() => handleExport('predictions')}
             disabled={!!exporting}
-            className="btn-ghost flex items-center gap-2 text-sm"
+            className="btn-ghost flex items-center gap-2 text-sm print:hidden"
           >
             {exporting === 'predictions' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             Prédictions CSV
@@ -124,7 +135,7 @@ export default function Analytics() {
           <button
             onClick={() => handleExport('sales')}
             disabled={!!exporting}
-            className="btn-primary flex items-center gap-2 text-sm"
+            className="btn-primary flex items-center gap-2 text-sm print:hidden"
           >
             {exporting === 'sales' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             Ventes CSV
@@ -196,7 +207,14 @@ export default function Analytics() {
           {/* Prediction history table */}
           <div className="card p-0 overflow-hidden">
             <div className="px-6 py-4 border-b border-surface-border flex items-center justify-between">
-              <h2 className="font-medium text-zinc-100">Historique des prédictions</h2>
+              <div>
+                <h2 className="font-medium text-zinc-100">Historique des prédictions</h2>
+                {history.length > 0 && (
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    {history.length} prédiction{history.length !== 1 ? 's' : ''} au total
+                  </p>
+                )}
+              </div>
               <Link to="/predict" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
                 Nouvelle prédiction →
               </Link>
@@ -204,39 +222,51 @@ export default function Analytics() {
             {history.length === 0 ? (
               <div className="text-center py-12 text-zinc-600 text-sm">Aucune prédiction effectuée</div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-surface-border">
-                    <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Date</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Produit</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Horizon</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Probabilité</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Risque</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((row) => (
-                    <tr key={row.id} className="border-b border-surface-border last:border-0 hover:bg-surface-tertiary/50 transition-colors">
-                      <td className="px-6 py-3 text-zinc-500 text-xs">{new Date(row.predicted_at).toLocaleString('fr-FR')}</td>
-                      <td className="px-6 py-3 font-medium text-zinc-200">{row.product_name}</td>
-                      <td className="px-6 py-3 text-zinc-400">{row.horizon}j</td>
-                      <td className="px-6 py-3 font-semibold" style={{ color: row.probability >= 0.7 ? '#ef4444' : row.probability >= 0.4 ? '#f59e0b' : '#10b981' }}>
-                        {(row.probability * 100).toFixed(1)}%
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className={`flex items-center gap-1 text-xs w-fit px-2 py-0.5 rounded-full ${
-                          row.risk === 'high' ? 'bg-red-500/10 text-red-400' :
-                          row.risk === 'medium' ? 'bg-amber-500/10 text-amber-400' :
-                          'bg-emerald-500/10 text-emerald-400'
-                        }`}>
-                          {riskIcon(row.risk)}
-                          {row.risk === 'high' ? 'Élevé' : row.risk === 'medium' ? 'Modéré' : 'Faible'}
-                        </span>
-                      </td>
+              <>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-surface-border">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Date</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Produit</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Horizon</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Probabilité</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Risque</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {history
+                      .slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE)
+                      .map((row) => (
+                        <tr key={row.id} className="border-b border-surface-border last:border-0 hover:bg-surface-tertiary/50 transition-colors">
+                          <td className="px-6 py-3 text-zinc-500 text-xs">{new Date(row.predicted_at).toLocaleString('fr-FR')}</td>
+                          <td className="px-6 py-3 font-medium text-zinc-200">{row.product_name}</td>
+                          <td className="px-6 py-3 text-zinc-400">{row.horizon}j</td>
+                          <td className="px-6 py-3 font-semibold" style={{ color: row.probability >= 0.7 ? '#ef4444' : row.probability >= 0.4 ? '#f59e0b' : '#10b981' }}>
+                            {(row.probability * 100).toFixed(1)}%
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className={`flex items-center gap-1 text-xs w-fit px-2 py-0.5 rounded-full ${
+                              row.risk === 'high' ? 'bg-red-500/10 text-red-400' :
+                              row.risk === 'medium' ? 'bg-amber-500/10 text-amber-400' :
+                              'bg-emerald-500/10 text-emerald-400'
+                            }`}>
+                              {riskIcon(row.risk)}
+                              {row.risk === 'high' ? 'Élevé' : row.risk === 'medium' ? 'Modéré' : 'Faible'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                <div className="px-6 pb-4">
+                  <Pagination
+                    page={historyPage}
+                    total={history.length}
+                    perPage={HISTORY_PER_PAGE}
+                    onChange={p => setHistoryPage(p)}
+                  />
+                </div>
+              </>
             )}
           </div>
         </>
