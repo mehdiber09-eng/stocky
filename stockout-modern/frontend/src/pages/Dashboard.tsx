@@ -141,8 +141,8 @@ export default function Dashboard() {
             <div className="inline-flex items-center gap-2 badge-info mb-3">
               <Sparkles size={11} /> StockSense v3
             </div>
-            <h1 className="text-3xl font-semibold text-gradient leading-tight">Dashboard</h1>
-            <p className="text-sm text-zinc-400 mt-2">Vue d'ensemble en temps réel · {products.length} produit{products.length !== 1 ? 's' : ''} suivi{products.length !== 1 ? 's' : ''}</p>
+            <h1 className="text-3xl font-semibold text-gradient leading-tight">{t('dash_title')}</h1>
+            <p className="text-sm text-zinc-400 mt-2">{t('dash_overview')} · {products.length} produit{products.length !== 1 ? 's' : ''} suivi{products.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={fetchAll} className="btn-glass flex items-center gap-2 text-sm transition-all duration-150" disabled={loading}>
@@ -305,7 +305,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <AlertTriangle size={15} className="text-amber-400" />
-              <h2 className="text-sm font-semibold text-amber-300">Alertes stock</h2>
+              <h2 className="text-sm font-semibold text-amber-300">{t('dash_alerts')}</h2>
             </div>
             <Link to="/inventory-health" className="text-xs text-amber-500 hover:text-amber-400 flex items-center gap-1">
               Voir tout <ArrowUpRight size={12} />
@@ -343,8 +343,8 @@ export default function Dashboard() {
               <Zap size={16} />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-zinc-200">Analyse rapide — tous les produits</h2>
-              <p className="text-xs text-zinc-600">Prédictions de rupture sur 30 jours</p>
+              <h2 className="text-sm font-semibold text-zinc-200">{t('dash_batch_title')}</h2>
+              <p className="text-xs text-zinc-600">{t('dash_batch_sub')}</p>
             </div>
           </div>
           <Tooltip text="Analyser tous vos produits en une seule fois pour détecter les risques de rupture">
@@ -414,7 +414,7 @@ export default function Dashboard() {
       <div className="card p-0 overflow-hidden">
         <div className="px-6 py-4 border-b border-white/8 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 className="font-semibold text-white">Catalogue produits</h2>
+            <h2 className="font-semibold text-white">{t('dash_catalog')}</h2>
             <p className="text-xs text-zinc-500 mt-0.5">
               {search ? `${filteredProducts.length} résultat${filteredProducts.length !== 1 ? 's' : ''} sur ${products.length}` : `${products.length} entrée${products.length !== 1 ? 's' : ''}`}
             </p>

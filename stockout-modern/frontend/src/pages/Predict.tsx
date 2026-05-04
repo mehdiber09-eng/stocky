@@ -140,8 +140,8 @@ export default function Predict() {
           <TrendingUp size={20} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100">Prédiction de rupture</h1>
-          <p className="text-sm text-zinc-500">Analysez le risque de rupture de stock</p>
+          <h1 className="text-xl font-semibold text-zinc-100">{t('pred_title')}</h1>
+          <p className="text-sm text-zinc-500">{t('pred_subtitle')}</p>
         </div>
       </div>
 

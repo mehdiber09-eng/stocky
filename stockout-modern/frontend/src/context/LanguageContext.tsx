@@ -145,6 +145,30 @@ const translations = {
     sup_optional: '(optionnel)',
     sup_loading: 'Chargement...',
 
+    // Dashboard titles
+    dash_overview: "Vue d'ensemble en temps réel",
+    dash_alerts: 'Alertes stock',
+    dash_batch_title: 'Analyse rapide — tous les produits',
+    dash_batch_sub: 'Prédictions de rupture sur 30 jours',
+    dash_catalog: 'Catalogue produits',
+
+    // Predict subtitle
+    pred_subtitle: 'Analysez le risque de rupture de stock',
+
+    // QR Scanner
+    scan_title: 'Scanner produit',
+    scan_subtitle: 'QR Code · EAN-13 · Code 128 · UPC · et plus',
+    scan_point: 'Pointez vers un QR code ou code-barres',
+    scan_camera_start: 'Démarrer la caméra',
+    scan_manual_label: 'SKU, ID produit ou numéro de code-barres',
+    scan_analyze: 'Analyser',
+    scan_new_scan: 'Scanner un autre produit',
+    scan_new_search: 'Nouvelle recherche',
+    scan_no_code: 'Entrez un SKU, un ID ou un numéro de code-barres',
+    scan_loading: 'Analyse IA en cours...',
+    scan_camera_mode: 'Caméra',
+    scan_manual_mode: 'Manuel',
+
     // Common
     status_subscribed: 'Pro actif',
     status_free: 'Plan gratuit',
@@ -298,6 +322,30 @@ const translations = {
     sup_lead_label: 'مدة التسليم',
     sup_optional: '(اختياري)',
     sup_loading: 'جار التحميل...',
+
+    // Dashboard titles
+    dash_overview: 'نظرة عامة في الوقت الفعلي',
+    dash_alerts: 'تنبيهات المخزون',
+    dash_batch_title: 'تحليل سريع — جميع المنتجات',
+    dash_batch_sub: 'توقعات النفاد لـ 30 يوماً',
+    dash_catalog: 'كتالوج المنتجات',
+
+    // Predict subtitle
+    pred_subtitle: 'حلّل خطر نفاد المخزون',
+
+    // QR Scanner
+    scan_title: 'مسح المنتج',
+    scan_subtitle: 'QR Code · EAN-13 · Code 128 · UPC · والمزيد',
+    scan_point: 'وجّه نحو QR code أو الباركود',
+    scan_camera_start: 'تشغيل الكاميرا',
+    scan_manual_label: 'SKU أو معرف المنتج أو رقم الباركود',
+    scan_analyze: 'تحليل',
+    scan_new_scan: 'مسح منتج آخر',
+    scan_new_search: 'بحث جديد',
+    scan_no_code: 'أدخل SKU أو معرفاً أو رقم باركود',
+    scan_loading: 'التحليل الذكي جارٍ...',
+    scan_camera_mode: 'الكاميرا',
+    scan_manual_mode: 'يدوي',
 
     // Common
     status_subscribed: 'Pro نشط',
