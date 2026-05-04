@@ -92,7 +92,7 @@ export default function QRScanner() {
       if (!ctx) return
       ctx.drawImage(video, 0, 0)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' })
       if (code && code.data && code.data !== lastScanned) {
         setLastScanned(code.data)
         handleAnalyze(code.data)

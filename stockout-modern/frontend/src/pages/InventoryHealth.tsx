@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { AnalyticsAPI, StockHistoryAPI, ProductsAPI, InventoryHealthItem, SalesVelocityItem, StockMovement, Product } from '../api/api'
 import Toast from '../components/Toast'
+import { useLanguage } from '../context/LanguageContext'
 import EditProductModal from '../components/EditProductModal'
 import { SkeletonTable } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
@@ -148,6 +149,7 @@ function StockHistoryModal({ productId, productName, onClose }: { productId: num
 type Filter = 'all' | 'critical' | 'warning' | 'ok' | 'overstock'
 
 export default function InventoryHealth() {
+  const { t } = useLanguage()
   const [items, setItems] = useState<InventoryHealthItem[]>([])
   const [velocity, setVelocity] = useState<Record<number, SalesVelocityItem>>({})
   const [loading, setLoading] = useState(true)
@@ -203,11 +205,11 @@ export default function InventoryHealth() {
   const displayed = filter === 'all' ? items : items.filter(i => i.status === filter)
 
   const filterTabs: { key: Filter; label: string; count: number; color: string }[] = [
-    { key: 'all', label: 'Tout', count: items.length, color: 'text-zinc-300' },
-    { key: 'critical', label: 'Critique', count: counts.critical, color: 'text-red-400' },
-    { key: 'warning', label: 'Réappro. nécessaire', count: counts.warning, color: 'text-amber-400' },
-    { key: 'ok', label: 'Sain', count: counts.ok, color: 'text-emerald-400' },
-    { key: 'overstock', label: 'Surstock', count: counts.overstock, color: 'text-sky-400' },
+    { key: 'all', label: t('inv_filter_all'), count: items.length, color: 'text-zinc-300' },
+    { key: 'critical', label: t('inv_filter_critical'), count: counts.critical, color: 'text-red-400' },
+    { key: 'warning', label: t('inv_filter_warning'), count: counts.warning, color: 'text-amber-400' },
+    { key: 'ok', label: t('inv_filter_ok'), count: counts.ok, color: 'text-emerald-400' },
+    { key: 'overstock', label: t('inv_filter_overstock'), count: counts.overstock, color: 'text-sky-400' },
   ]
 
   return (
@@ -218,14 +220,14 @@ export default function InventoryHealth() {
         <div className="relative flex items-center justify-between gap-4 flex-wrap">
           <div>
             <div className="inline-flex items-center gap-2 badge-info mb-2">
-              <Layers size={10} /> Santé du stock
+              <Layers size={10} /> {t('inv_title')}
             </div>
-            <h1 className="text-2xl font-semibold text-gradient">Inventaire & Santé Stock</h1>
-            <p className="text-sm text-zinc-400 mt-1">ABC · Points de réappro · Couverture · Vélocité</p>
+            <h1 className="text-2xl font-semibold text-gradient">{t('inv_title')}</h1>
+            <p className="text-sm text-zinc-400 mt-1">{t('inv_abc')} · {t('inv_reorder')} · {t('inv_coverage')} · {t('inv_daily_sales')}</p>
           </div>
           <button onClick={load} className="btn-glass flex items-center gap-2 text-sm transition-all duration-150" disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            Actualiser
+            {t('btn_refresh')}
           </button>
         </div>
       </div>
@@ -265,18 +267,18 @@ export default function InventoryHealth() {
 
       {/* Filter tabs */}
       <div className="flex items-center gap-1 flex-wrap">
-        {filterTabs.map(t => (
+        {filterTabs.map(tab => (
           <button
-            key={t.key}
-            onClick={() => setFilter(t.key)}
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
-              filter === t.key
+              filter === tab.key
                 ? 'bg-white/10 text-white'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
             }`}
           >
-            <span className={t.color}>{t.count}</span>
-            {t.label}
+            <span className={tab.color}>{tab.count}</span>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -289,35 +291,35 @@ export default function InventoryHealth() {
         {!loading && displayed.length === 0 ? (
           <div className="text-center py-14">
             <Package size={28} className="mx-auto text-zinc-600 mb-3" />
-            <p className="text-zinc-400 font-medium">Aucun produit trouvé</p>
-            <p className="text-zinc-600 text-sm mt-1">Créez des produits et enregistrez des ventes pour voir les données</p>
+            <p className="text-zinc-400 font-medium">{t('inv_no_products')}</p>
+            <p className="text-zinc-600 text-sm mt-1">{t('inv_no_products_sub')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/8">
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Produit</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{t('inv_product')}</th>
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
                     <Tooltip text="Classification ABC : A = produits les plus vendus (70% du CA), B = moyens (20%), C = faibles (10%)">
                       <span className="cursor-help border-b border-dashed border-zinc-600">ABC</span>
                     </Tooltip>
                   </th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Stock</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{t('inv_stock')}</th>
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden sm:table-cell">
                     <Tooltip text="Quantité minimale avant de recommander une nouvelle commande">
-                      <span className="cursor-help border-b border-dashed border-zinc-600">Pt. Réappro</span>
+                      <span className="cursor-help border-b border-dashed border-zinc-600">{t('inv_reorder')}</span>
                     </Tooltip>
                   </th>
                   <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden sm:table-cell">
                     <Tooltip text="Nombre de jours avant rupture de stock au rythme de vente actuel">
-                      <span className="cursor-help border-b border-dashed border-zinc-600">Couverture</span>
+                      <span className="cursor-help border-b border-dashed border-zinc-600">{t('inv_coverage')}</span>
                     </Tooltip>
                   </th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Vélocité 30j</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Tendance</th>
-                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Statut</th>
-                  <th className="text-right px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">{t('inv_daily_sales')}</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">{t('inv_trend')}</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{t('inv_status')}</th>
+                  <th className="text-right px-5 py-3 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{t('inv_actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -383,7 +385,7 @@ export default function InventoryHealth() {
                               className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-brand-300 hover:bg-brand-500/10 transition-all duration-150"
                             >
                               <History size={12} />
-                              <span className="hidden sm:inline">Historique</span>
+                              <span className="hidden sm:inline">{t('inv_history')}</span>
                             </button>
                           </Tooltip>
                           <Tooltip text="Modifier les paramètres de ce produit">
@@ -399,7 +401,7 @@ export default function InventoryHealth() {
                               className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-zinc-200 hover:bg-white/8 transition-all duration-150"
                             >
                               <Edit2 size={12} />
-                              <span className="hidden sm:inline">Éditer</span>
+                              <span className="hidden sm:inline">{t('inv_edit')}</span>
                             </button>
                           </Tooltip>
                           <Tooltip text="Supprimer ce produit définitivement">

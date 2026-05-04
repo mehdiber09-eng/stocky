@@ -113,6 +113,38 @@ const translations = {
     prof_danger_zone: 'Zone dangereuse',
     prof_danger_sub: 'Déconnectez-vous de tous les appareils.',
 
+    // Predict page extras
+    pred_params: 'Paramètres',
+    pred_back: 'Retour au dashboard',
+    pred_gauge: 'Jauge de risque',
+    pred_chart: 'Évolution du risque',
+    pred_days_rupture: 'Jours avant rupture estimée',
+    pred_rupture_date: 'Date de rupture estimée',
+    pred_confidence: 'Intervalle de confiance',
+    pred_analysis: 'Analyse...',
+
+    // Inventory Health extras
+    inv_refresh: 'Actualiser',
+    inv_filter_all: 'Tout',
+    inv_filter_critical: 'Critique',
+    inv_filter_warning: 'Réappro.',
+    inv_filter_ok: 'Sain',
+    inv_filter_overstock: 'Surstock',
+    inv_abc: 'Classification ABC',
+    inv_score_velocity: 'Score vélocité',
+    inv_history_title: 'Historique du stock',
+    inv_no_movements: 'Aucun mouvement enregistré',
+    inv_add_stock: 'Ajouter du stock',
+    inv_delete: 'Supprimer',
+
+    // Suppliers extras
+    sup_refresh: 'Actualiser',
+    sup_contact_email: 'Email de contact',
+    sup_phone_label: 'Téléphone',
+    sup_lead_label: 'Délai de livraison',
+    sup_optional: '(optionnel)',
+    sup_loading: 'Chargement...',
+
     // Common
     status_subscribed: 'Pro actif',
     status_free: 'Plan gratuit',
@@ -234,6 +266,38 @@ const translations = {
     prof_update_pwd: 'تحديث',
     prof_danger_zone: 'المنطقة الخطرة',
     prof_danger_sub: 'تسجيل الخروج من جميع الأجهزة.',
+
+    // Predict page extras
+    pred_params: 'المعاملات',
+    pred_back: 'العودة إلى لوحة التحكم',
+    pred_gauge: 'مقياس الخطر',
+    pred_chart: 'تطور الخطر',
+    pred_days_rupture: 'أيام حتى النفاد المتوقع',
+    pred_rupture_date: 'تاريخ النفاد المتوقع',
+    pred_confidence: 'فترة الثقة',
+    pred_analysis: 'تحليل...',
+
+    // Inventory Health extras
+    inv_refresh: 'تحديث',
+    inv_filter_all: 'الكل',
+    inv_filter_critical: 'حرج',
+    inv_filter_warning: 'إعادة طلب',
+    inv_filter_ok: 'جيد',
+    inv_filter_overstock: 'مخزون زائد',
+    inv_abc: 'تصنيف ABC',
+    inv_score_velocity: 'سرعة المبيعات',
+    inv_history_title: 'سجل المخزون',
+    inv_no_movements: 'لا توجد حركات مسجلة',
+    inv_add_stock: 'إضافة مخزون',
+    inv_delete: 'حذف',
+
+    // Suppliers extras
+    sup_refresh: 'تحديث',
+    sup_contact_email: 'بريد الاتصال',
+    sup_phone_label: 'الهاتف',
+    sup_lead_label: 'مدة التسليم',
+    sup_optional: '(اختياري)',
+    sup_loading: 'جار التحميل...',
 
     // Common
     status_subscribed: 'Pro نشط',

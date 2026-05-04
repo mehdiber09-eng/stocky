@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -43,12 +44,12 @@ async def scan_qr(
         if candidate and candidate.owner_id == user.id:
             product = candidate
 
-    # Try SKU
+    # Try SKU (case-insensitive)
     if product is None:
         q = await db.execute(
             select(models.Product).where(
                 models.Product.owner_id == user.id,
-                models.Product.sku == qr_data.upper(),
+                func.lower(models.Product.sku) == qr_data.lower(),
             )
         )
         product = q.scalars().first()
@@ -63,9 +64,25 @@ async def scan_qr(
     inventory = inv_q.scalars().first()
     current_stock = inventory.quantity if inventory else 0
 
+    # Fetch recent sales for realistic prediction
+    sales_q2 = await db.execute(
+        select(models.Sale)
+        .where(models.Sale.product_id == product.id, models.Sale.owner_id == user.id)
+        .order_by(models.Sale.sold_at.asc())
+        .limit(90)
+    )
+    sales_data = [s.quantity for s in sales_q2.scalars().all()]
+
     # IA prediction
     try:
-        res = run_prediction(product.id, horizon=30)
+        res = run_prediction(
+            product.id,
+            horizon=30,
+            sales_data=sales_data,
+            current_stock=current_stock,
+            safety_stock=product.safety_stock,
+            lead_time_days=product.lead_time_days,
+        )
     except Exception:
         res = {"probability": 0.5, "lower": 0.4, "upper": 0.6}
 

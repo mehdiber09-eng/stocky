@@ -48,8 +48,32 @@ async def predict(
     if not product or product.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Produit introuvable")
 
+    # Fetch recent sales (90 days) for statistical prediction
+    sales_q = await db.execute(
+        select(models.Sale)
+        .where(models.Sale.product_id == payload.product_id, models.Sale.owner_id == user.id)
+        .order_by(models.Sale.sold_at.asc())
+        .limit(90)
+    )
+    sales_rows = sales_q.scalars().all()
+    sales_data = [s.quantity for s in sales_rows]
+
+    # Fetch current inventory
+    inv_q = await db.execute(
+        select(models.Inventory).where(models.Inventory.product_id == payload.product_id)
+    )
+    inventory = inv_q.scalars().first()
+    current_stock = inventory.quantity if inventory else 0
+
     try:
-        res = run_prediction(payload.product_id, payload.horizon)
+        res = run_prediction(
+            payload.product_id,
+            payload.horizon,
+            sales_data=sales_data,
+            current_stock=current_stock,
+            safety_stock=product.safety_stock,
+            lead_time_days=product.lead_time_days,
+        )
     except Exception as e:
         logger.exception(f"ML prediction failed: {e}")
         raise HTTPException(status_code=500, detail="Service de prédiction indisponible")
@@ -127,10 +151,33 @@ async def predict_batch(
     if not products:
         return {"results": [], "summary": {"high": 0, "medium": 0, "low": 0, "total": 0}}
 
+    # Pre-fetch all sales and inventories for efficiency
+    all_sales_q = await db.execute(
+        select(models.Sale)
+        .where(models.Sale.owner_id == user.id)
+        .order_by(models.Sale.sold_at.asc())
+    )
+    all_sales = all_sales_q.scalars().all()
+    sales_by_product: dict = {}
+    for s in all_sales:
+        sales_by_product.setdefault(s.product_id, []).append(s.quantity)
+
+    all_inv_q = await db.execute(
+        select(models.Inventory).where(models.Inventory.owner_id == user.id)
+    )
+    inv_by_product = {i.product_id: i.quantity for i in all_inv_q.scalars().all()}
+
     results = []
     for product in products:
         try:
-            res = run_prediction(product.id, horizon)
+            res = run_prediction(
+                product.id,
+                horizon,
+                sales_data=sales_by_product.get(product.id, []),
+                current_stock=inv_by_product.get(product.id, 0),
+                safety_stock=product.safety_stock,
+                lead_time_days=product.lead_time_days,
+            )
         except Exception:
             res = {"probability": 0.5, "lower": 0.4, "upper": 0.6}
 

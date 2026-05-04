@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import API, { PaymentAPI } from '../api/api'
 import Toast from '../components/Toast'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Profile() {
   const { logout } = useAuth()
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [currentPwd, setCurrentPwd] = useState('')
@@ -67,17 +69,17 @@ export default function Profile() {
             <User size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Mon profil</h1>
+            <h1 className="text-xl font-semibold text-zinc-100">{t('prof_title')}</h1>
             <p className="text-sm text-zinc-500">{email}</p>
           </div>
         </div>
         {isSubscribed ? (
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/30 text-amber-300 text-sm font-medium">
-            <Crown size={14} /> Plan Pro actif
+            <Crown size={14} /> {t('prof_pro_active')}
           </span>
         ) : (
           <Link to="/pricing" className="btn-primary flex items-center gap-2 text-sm">
-            <Zap size={14} /> Passer Pro <ArrowUpRight size={13} />
+            <Zap size={14} /> {t('prof_upgrade')} <ArrowUpRight size={13} />
           </Link>
         )}
       </div>
@@ -102,29 +104,29 @@ export default function Profile() {
       <div className="card">
         <div className="flex items-center gap-2 mb-5">
           <Lock size={16} className="text-zinc-400" />
-          <h2 className="font-medium text-zinc-200">Changer le mot de passe</h2>
+          <h2 className="font-medium text-zinc-200">{t('prof_change_pwd')}</h2>
         </div>
         <form onSubmit={changePassword} className="space-y-4">
           <div>
-            <label className="label">Mot de passe actuel</label>
+            <label className="label">{t('prof_current_pwd')}</label>
             <input type="password" className="input" value={currentPwd}
               onChange={e => setCurrentPwd(e.target.value)} placeholder="••••••••" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Nouveau mot de passe</label>
+              <label className="label">{t('prof_new_pwd')}</label>
               <input type="password" className="input" value={newPwd}
                 onChange={e => setNewPwd(e.target.value)} placeholder="Min. 6 caractères" required />
             </div>
             <div>
-              <label className="label">Confirmer</label>
+              <label className="label">{t('prof_confirm_pwd')}</label>
               <input type="password" className="input" value={confirmPwd}
                 onChange={e => setConfirmPwd(e.target.value)} placeholder="••••••••" required />
             </div>
           </div>
           <button type="submit" className="btn-primary flex items-center gap-2" disabled={loadingPwd}>
             {loadingPwd ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
-            Mettre à jour
+            {t('prof_update_pwd')}
           </button>
         </form>
       </div>
@@ -133,12 +135,12 @@ export default function Profile() {
       <div className="card">
         <div className="flex items-center gap-2 mb-5">
           <Bell size={16} className="text-zinc-400" />
-          <h2 className="font-medium text-zinc-200">Préférences d'alertes</h2>
+          <h2 className="font-medium text-zinc-200">{t('prof_alert_pref')}</h2>
         </div>
         <form onSubmit={saveAlerts} className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="label mb-0">Seuil d'alerte email</label>
+              <label className="label mb-0">{t('prof_alert_threshold')}</label>
               <span className="text-xs text-brand-400 font-mono">{alertThreshold}%</span>
             </div>
             <input type="range" min={10} max={90} step={5} value={alertThreshold}
@@ -152,17 +154,17 @@ export default function Profile() {
           </div>
           <button type="submit" className="btn-primary flex items-center gap-2" disabled={loading}>
             {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-            Sauvegarder
+            {t('btn_save')}
           </button>
         </form>
       </div>
 
       {/* Danger zone */}
       <div className="card border-red-500/20">
-        <h2 className="font-medium text-red-400 mb-4">Zone dangereuse</h2>
-        <p className="text-zinc-500 text-sm mb-4">Déconnectez-vous de tous les appareils.</p>
+        <h2 className="font-medium text-red-400 mb-4">{t('prof_danger_zone')}</h2>
+        <p className="text-zinc-500 text-sm mb-4">{t('prof_danger_sub')}</p>
         <button onClick={() => logout()} className="px-4 py-2 rounded-lg text-sm font-medium text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-all">
-          Se déconnecter
+          {t('prof_logout')}
         </button>
       </div>
 

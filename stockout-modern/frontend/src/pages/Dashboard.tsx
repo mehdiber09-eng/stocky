@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom'
 import {
   Package, TrendingUp, ShoppingCart, Trash2, Plus, RefreshCw, Loader2,
   Sparkles, ArrowUpRight, BarChart2, Bell, Zap, AlertTriangle, Layers,
-  CheckCircle, Clock, Search, Info, Rocket, PackageCheck, Brain,
+  CheckCircle, Clock, Search, Info, Rocket, PackageCheck, Brain, QrCode,
 } from 'lucide-react'
 import { ProductsAPI, Product, AnalyticsAPI, PredictAPI, BatchPredictionResult, InventoryHealthItem } from '../api/api'
 import Toast from '../components/Toast'
 import { SkeletonCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
 import Tooltip from '../components/Tooltip'
+import QRProductModal from '../components/QRProductModal'
+import { useLanguage } from '../context/LanguageContext'
 
 interface Summary {
   total_products: number
@@ -20,14 +22,8 @@ interface Summary {
   recent_sales_qty: number
 }
 
-const STAT_TOOLTIPS: Record<string, string> = {
-  'Produits': 'Nombre total de produits suivis dans votre catalogue',
-  'Prédictions': 'Nombre total de prédictions de rupture effectuées',
-  'Risque élevé': 'Produits avec une probabilité de rupture supérieure à 70%',
-  'Ventes 30j': 'Quantité totale vendue au cours des 30 derniers jours',
-}
-
 export default function Dashboard() {
+  const { t } = useLanguage()
   const [products, setProducts] = useState<Product[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,6 +34,7 @@ export default function Dashboard() {
   const [batchResult, setBatchResult] = useState<BatchPredictionResult | null>(null)
   const [healthAlerts, setHealthAlerts] = useState<InventoryHealthItem[]>([])
   const [search, setSearch] = useState('')
+  const [qrProduct, setQrProduct] = useState<Product | null>(null)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -96,7 +93,8 @@ export default function Dashboard() {
 
   const stats = [
     {
-      label: 'Produits',
+      label: t('dash_products'),
+      tooltip: 'Nombre total de produits suivis dans votre catalogue',
       value: summary?.total_products ?? products.length,
       icon: Package,
       gradient: 'from-brand-500/20 to-brand-700/10',
@@ -104,7 +102,8 @@ export default function Dashboard() {
       glow: 'shadow-glow',
     },
     {
-      label: 'Prédictions',
+      label: t('dash_predictions'),
+      tooltip: 'Nombre total de prédictions de rupture effectuées',
       value: summary?.total_predictions ?? '—',
       icon: TrendingUp,
       gradient: 'from-cyan-500/20 to-cyan-700/10',
@@ -112,7 +111,8 @@ export default function Dashboard() {
       glow: 'shadow-glow-cyan',
     },
     {
-      label: 'Risque élevé',
+      label: t('dash_high_risk'),
+      tooltip: 'Produits avec une probabilité de rupture supérieure à 70%',
       value: summary?.high_risk_predictions ?? 0,
       icon: Bell,
       gradient: 'from-red-500/20 to-magenta-500/10',
@@ -120,7 +120,8 @@ export default function Dashboard() {
       glow: 'shadow-glow-red',
     },
     {
-      label: 'Ventes 30j',
+      label: t('dash_recent_sales'),
+      tooltip: 'Quantité totale vendue au cours des 30 derniers jours',
       value: summary?.recent_sales_qty ?? 0,
       icon: BarChart2,
       gradient: 'from-magenta-500/20 to-magenta-700/10',
@@ -146,13 +147,13 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={fetchAll} className="btn-glass flex items-center gap-2 text-sm transition-all duration-150" disabled={loading}>
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              Actualiser
+              {t('btn_refresh')}
             </button>
             <Tooltip text="Ajouter un nouveau produit à votre inventaire">
               <Link to="/create-product">
                 <button className="btn-primary flex items-center gap-2 text-sm transition-all duration-150">
                   <Plus size={14} />
-                  Nouveau produit
+                  {t('dash_new_product')}
                 </button>
               </Link>
             </Tooltip>
@@ -237,7 +238,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-          : stats.map(({ label, value, icon: Icon, gradient, iconColor, glow }) => (
+          : stats.map(({ label, tooltip, value, icon: Icon, gradient, iconColor, glow }) => (
             <div key={label} className={`stat-tile bg-gradient-to-br ${gradient} ${glow} group`}>
               <div className="flex items-center justify-between">
                 <div className={`w-10 h-10 rounded-xl glass-subtle flex items-center justify-center ${iconColor} group-hover:scale-110 transition-transform`}>
@@ -245,7 +246,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{label}</span>
-                  <Tooltip text={STAT_TOOLTIPS[label] ?? label} position="left">
+                  <Tooltip text={tooltip} position="left">
                     <span className="text-zinc-600 hover:text-zinc-400 cursor-help transition-colors">
                       <Info size={11} />
                     </span>
@@ -353,7 +354,7 @@ export default function Dashboard() {
               className="btn-primary flex items-center gap-2 text-sm transition-all duration-150"
             >
               {batchLoading ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-              {batchLoading ? 'Analyse...' : 'Prédire tout'}
+              {batchLoading ? t('btn_loading') : t('dash_predict_all')}
             </button>
           </Tooltip>
         </div>
@@ -424,7 +425,7 @@ export default function Dashboard() {
               <input
                 type="text"
                 className="input pl-8 py-1.5 text-sm w-52"
-                placeholder="Rechercher par nom ou référence (SKU)..."
+                placeholder={t('dash_search_placeholder')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -447,10 +448,10 @@ export default function Dashboard() {
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl glass-subtle flex items-center justify-center">
               <Package size={20} className="text-zinc-500" />
             </div>
-            <p className="text-zinc-300 font-medium">Aucun produit</p>
-            <p className="text-zinc-500 text-sm mt-1">Commencez par créer un produit pour suivre votre stock</p>
+            <p className="text-zinc-300 font-medium">{t('dash_no_products')}</p>
+            <p className="text-zinc-500 text-sm mt-1">{t('dash_no_products_sub')}</p>
             <Link to="/create-product">
-              <button className="btn-primary mt-5 text-sm">Créer un produit</button>
+              <button className="btn-primary mt-5 text-sm">{t('dash_create_product_btn')}</button>
             </Link>
           </div>
         ) : (
@@ -475,15 +476,25 @@ export default function Dashboard() {
                     <td className="px-6 py-4 text-zinc-400 hidden md:table-cell">{p.lead_time_days}j</td>
                     <td className="px-6 py-4 text-zinc-400 hidden md:table-cell">{p.safety_stock}</td>
                     <td className="px-6 py-4 text-right">
-                      <Tooltip text="Supprimer définitivement ce produit et tout son historique" position="left">
-                        <button
-                          onClick={() => setDeleteTarget(p.id)}
-                          disabled={deleting === p.id}
-                          className="p-2 rounded-lg text-zinc-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-150"
-                        >
-                          {deleting === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                        </button>
-                      </Tooltip>
+                      <div className="flex items-center justify-end gap-1">
+                        <Tooltip text="Générer le QR code de ce produit" position="left">
+                          <button
+                            onClick={() => setQrProduct(p)}
+                            className="p-2 rounded-lg text-zinc-500 hover:text-brand-300 hover:bg-brand-500/10 transition-all duration-150"
+                          >
+                            <QrCode size={14} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Supprimer définitivement ce produit et tout son historique" position="left">
+                          <button
+                            onClick={() => setDeleteTarget(p.id)}
+                            disabled={deleting === p.id}
+                            className="p-2 rounded-lg text-zinc-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-150"
+                          >
+                            {deleting === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          </button>
+                        </Tooltip>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -503,6 +514,8 @@ export default function Dashboard() {
         onConfirm={() => deleteTarget !== null && handleDelete(deleteTarget)}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      <QRProductModal product={qrProduct} onClose={() => setQrProduct(null)} />
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
     </div>

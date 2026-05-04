@@ -8,6 +8,7 @@ import {
 import { ProductsAPI, PredictAPI, Product, PredictionResult } from '../api/api'
 import Toast from '../components/Toast'
 import HintTooltip from '../components/Tooltip'
+import { useLanguage } from '../context/LanguageContext'
 
 function getRiskLevel(prob: number) {
   if (prob >= 0.7) return { label: 'Risque élevé', color: 'text-red-400', badge: 'badge-risk-high', icon: <AlertTriangle size={16} /> }
@@ -86,6 +87,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 }
 
 export default function Predict() {
+  const { t } = useLanguage()
   const [products, setProducts] = useState<Product[]>([])
   const [productId, setProductId] = useState<number | ''>('')
   const [horizon, setHorizon] = useState(30)
@@ -130,7 +132,7 @@ export default function Predict() {
   return (
     <div className="animate-fade-in space-y-6">
       <Link to="/" className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
-        <ArrowLeft size={14} /> Retour au dashboard
+        <ArrowLeft size={14} /> {t('pred_back')}
       </Link>
 
       <div className="flex items-center gap-3">
@@ -145,7 +147,7 @@ export default function Predict() {
 
       <div className="grid grid-cols-3 gap-6">
         <div className="card col-span-1 space-y-4">
-          <h2 className="font-medium text-zinc-200">Paramètres</h2>
+          <h2 className="font-medium text-zinc-200">{t('pred_params')}</h2>
           {loadingProducts ? (
             <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
               <Loader2 size={14} className="animate-spin" /> Chargement...
@@ -153,14 +155,14 @@ export default function Predict() {
           ) : (
             <form onSubmit={submit} className="space-y-4">
               <div>
-                <label className="label">Produit</label>
+                <label className="label">{t('pred_select_product')}</label>
                 <select className="input text-sm" value={productId} onChange={e => setProductId(Number(e.target.value))}>
                   {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="label mb-0">Horizon</label>
+                  <label className="label mb-0">{t('pred_horizon')}</label>
                   <span className="text-xs text-brand-400 font-mono">{horizon}j</span>
                 </div>
                 <input
@@ -180,14 +182,14 @@ export default function Predict() {
                   disabled={loading || !productId}
                 >
                   {loading ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />}
-                  {loading ? 'Analyse...' : 'Lancer la prédiction'}
+                  {loading ? t('pred_analysis') : t('pred_run')}
                 </button>
               </HintTooltip>
             </form>
           )}
           {result && (
             <div className="pt-2 border-t border-surface-border">
-              <p className="text-xs text-zinc-500 mb-2 text-center">Jauge de risque</p>
+              <p className="text-xs text-zinc-500 mb-2 text-center">{t('pred_gauge')}</p>
               <Gauge probability={result.probability} />
             </div>
           )}
@@ -198,7 +200,7 @@ export default function Predict() {
             <>
               <div className="grid grid-cols-3 gap-3">
                 <div className="card">
-                  <p className="text-xs text-zinc-500 mb-1">Probabilité</p>
+                  <p className="text-xs text-zinc-500 mb-1">{t('pred_probability')}</p>
                   <p className={`text-2xl font-semibold ${risk.color}`}>
                     {(result.probability * 100).toFixed(1)}%
                   </p>

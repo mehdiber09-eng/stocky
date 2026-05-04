@@ -55,12 +55,12 @@ export default function App() {
             <Route path="/chat" element={<Chatbot />} />
             <Route path="/inventory-health" element={<InventoryHealth />} />
             <Route path="/suppliers" element={<Suppliers />} />
-            <Route path="/pricing" element={<Pricing />} />
             <Route path="/payment/success" element={<PaymentResult type="success" />} />
             <Route path="/payment/cancel" element={<PaymentResult type="cancel" />} />
             <Route path="/scan-qr" element={<QRScanner />} />
             <Route path="/simulate" element={<Simulate />} />
           </Route>
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <CookieBanner />

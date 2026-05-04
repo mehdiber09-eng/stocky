@@ -6,6 +6,7 @@ import {
 import { SuppliersAPI, Supplier } from '../api/api'
 import Toast from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
+import { useLanguage } from '../context/LanguageContext'
 
 interface SupplierFormData {
   name: string
@@ -30,6 +31,7 @@ function SupplierModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useLanguage()
   const isEdit = supplier !== null
   const [form, setForm] = useState<SupplierFormData>(
     supplier
@@ -83,10 +85,10 @@ function SupplierModal({
             </div>
             <div>
               <h2 className="font-semibold text-zinc-100">
-                {isEdit ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}
+                {isEdit ? t('sup_edit') : t('sup_new')}
               </h2>
               <p className="text-xs text-zinc-500">
-                {isEdit ? `Édition de ${supplier!.name}` : 'Ajoutez un fournisseur à votre liste'}
+                {isEdit ? `${t('inv_edit')} : ${supplier!.name}` : t('sup_no_suppliers_sub')}
               </p>
             </div>
           </div>
@@ -97,7 +99,7 @@ function SupplierModal({
 
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="label">Nom du fournisseur</label>
+            <label className="label">{t('sup_name')}</label>
             <input
               className="input"
               placeholder="ex: Fournisseur Express SARL"
@@ -110,8 +112,8 @@ function SupplierModal({
           <div>
             <label className="label flex items-center gap-1.5">
               <Mail size={12} className="text-zinc-500" />
-              Email de contact
-              <span className="text-zinc-600 font-normal">(optionnel)</span>
+              {t('sup_contact_email')}
+              <span className="text-zinc-600 font-normal">{t('sup_optional')}</span>
             </label>
             <input
               className="input"
@@ -125,8 +127,8 @@ function SupplierModal({
           <div>
             <label className="label flex items-center gap-1.5">
               <Phone size={12} className="text-zinc-500" />
-              Téléphone
-              <span className="text-zinc-600 font-normal">(optionnel)</span>
+              {t('sup_phone_label')}
+              <span className="text-zinc-600 font-normal">{t('sup_optional')}</span>
             </label>
             <input
               className="input"
@@ -140,8 +142,8 @@ function SupplierModal({
           <div>
             <label className="label flex items-center gap-1.5">
               <Clock size={12} className="text-zinc-500" />
-              Délai de livraison
-              <span className="text-zinc-600 font-normal">(jours)</span>
+              {t('sup_lead_label')}
+              <span className="text-zinc-600 font-normal">({t('pred_days')})</span>
             </label>
             <input
               className="input"
@@ -164,10 +166,10 @@ function SupplierModal({
           <div className="flex items-center gap-3 pt-1">
             <button type="submit" className="btn-primary flex items-center gap-2" disabled={loading}>
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {isEdit ? 'Enregistrer' : 'Créer le fournisseur'}
+              {isEdit ? t('sup_save_btn') : t('sup_create_btn')}
             </button>
             <button type="button" className="btn-ghost text-sm" onClick={onClose}>
-              Annuler
+              {t('btn_cancel')}
             </button>
           </div>
         </form>
@@ -270,6 +272,7 @@ function SupplierCard({
 }
 
 export default function Suppliers() {
+  const { t } = useLanguage()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<'create' | Supplier | null>(null)
@@ -320,9 +323,9 @@ export default function Suppliers() {
         <div className="relative flex items-center justify-between gap-4 flex-wrap">
           <div>
             <div className="inline-flex items-center gap-2 badge-info mb-2">
-              <Truck size={10} /> Fournisseurs
+              <Truck size={10} /> {t('sup_title')}
             </div>
-            <h1 className="text-2xl font-semibold text-gradient">Gestion des fournisseurs</h1>
+            <h1 className="text-2xl font-semibold text-gradient">{t('sup_title')}</h1>
             <p className="text-sm text-zinc-400 mt-1">
               {suppliers.length} fournisseur{suppliers.length !== 1 ? 's' : ''} enregistré{suppliers.length !== 1 ? 's' : ''}
             </p>
@@ -330,11 +333,11 @@ export default function Suppliers() {
           <div className="flex items-center gap-2">
             <button onClick={load} className="btn-glass flex items-center gap-2 text-sm" disabled={loading}>
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              Actualiser
+              {t('btn_refresh')}
             </button>
             <button onClick={() => setModal('create')} className="btn-primary flex items-center gap-2 text-sm">
               <Plus size={14} />
-              Ajouter un fournisseur
+              {t('sup_add')}
             </button>
           </div>
         </div>
@@ -350,11 +353,11 @@ export default function Suppliers() {
           <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-400 mx-auto mb-4">
             <Truck size={26} />
           </div>
-          <p className="text-zinc-300 font-medium">Aucun fournisseur enregistré</p>
-          <p className="text-zinc-600 text-sm mt-1 mb-5">Ajoutez vos fournisseurs pour les associer à vos produits</p>
+          <p className="text-zinc-300 font-medium">{t('sup_no_suppliers')}</p>
+          <p className="text-zinc-600 text-sm mt-1 mb-5">{t('sup_no_suppliers_sub')}</p>
           <button onClick={() => setModal('create')} className="btn-primary inline-flex items-center gap-2 text-sm mx-auto">
             <Plus size={14} />
-            Ajouter un fournisseur
+            {t('sup_add')}
           </button>
         </div>
       ) : (
