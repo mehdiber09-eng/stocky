@@ -1,42 +1,5 @@
-import { useState } from 'react'
-
-export type Currency = 'DZD' | 'EUR' | 'USD'
-
-export const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  DZD: 'DA',
-  EUR: '€',
-  USD: '$',
-}
-
-export const CURRENCY_LABELS: Record<Currency, string> = {
-  DZD: 'curr_dzd',
-  EUR: 'curr_eur',
-  USD: 'curr_usd',
-}
-
-export function useCurrency() {
-  const [currency, setCurrencyState] = useState<Currency>(
-    () => (localStorage.getItem('app_currency') as Currency) || 'DZD'
-  )
-
-  function setCurrency(c: Currency) {
-    setCurrencyState(c)
-    localStorage.setItem('app_currency', c)
-  }
-
-  function formatPrice(amount: number): string {
-    if (currency === 'DZD') return `${Math.round(amount).toLocaleString('fr-DZ')} DA`
-    if (currency === 'EUR') return `${amount.toFixed(2)} €`
-    return `$${amount.toFixed(2)}`
-  }
-
-  return { currency, setCurrency, symbol: CURRENCY_SYMBOLS[currency], formatPrice }
-}
-
-export function getUnitPrice(productId: number): number | null {
-  const val = localStorage.getItem(`unitprice_${productId}`)
-  return val ? parseFloat(val) : null
-}
+// Re-export useCurrency from the context (shared global state)
+export { useCurrency, type Currency, CURRENCY_SYMBOLS } from '../context/CurrencyContext'
 
 export function saveUnitPrice(productId: number, price: string) {
   if (price && !isNaN(parseFloat(price)) && parseFloat(price) > 0) {
@@ -66,7 +29,6 @@ export function getAlgerianHolidays(horizonDays: number): HolidayKey[] {
     return start <= end && finish >= now
   }
 
-  // Fixed national holidays (check current + next year)
   const fixed: { month: number; day: number; key: HolidayKey }[] = [
     { month: 1, day: 1, key: 'sim_new_year_tag' },
     { month: 5, day: 1, key: 'sim_labor_tag' },
@@ -81,7 +43,6 @@ export function getAlgerianHolidays(horizonDays: number): HolidayKey[] {
     }
   }
 
-  // Islamic periods (hardcoded approximations 2025-2027)
   const islamic: { start: Date; end: Date; key: HolidayKey }[] = [
     { start: new Date(2025, 2, 1),  end: new Date(2025, 2, 29), key: 'sim_ramadan_tag' },
     { start: new Date(2025, 2, 30), end: new Date(2025, 3, 1),  key: 'sim_aid_fitr_tag' },

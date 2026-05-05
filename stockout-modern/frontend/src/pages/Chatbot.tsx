@@ -9,7 +9,7 @@ interface Message {
 }
 
 export default function Chatbot() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
 
   const SUGGESTIONS = [
     t('chat_suggest1'),
@@ -38,8 +38,12 @@ export default function Chatbot() {
     setLoading(true)
 
     try {
+      const arabicPrefix: Message[] = lang === 'ar' ? [
+        { role: 'user', content: 'من الآن فصاعداً، أجب دائماً باللغة العربية فقط. أنت مستشار ذكي متخصص في إدارة المخزون وسلاسل التوريد.' },
+        { role: 'assistant', content: 'حسناً، سأجيب دائماً باللغة العربية. أنا مستشارك الذكي لإدارة المخزون وتحليل بيانات المبيعات.' },
+      ] : []
       const res = await API.post('/chat/', {
-        messages: newMessages.map(m => ({ role: m.role, content: m.content }))
+        messages: [...arabicPrefix, ...newMessages.map(m => ({ role: m.role, content: m.content }))]
       })
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.content }])
     } catch (err: any) {

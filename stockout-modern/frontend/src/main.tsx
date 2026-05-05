@@ -3,13 +3,16 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { LanguageProvider } from './context/LanguageContext'
+import { CurrencyProvider } from './context/CurrencyContext'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <LanguageProvider>
-        <App />
+        <CurrencyProvider>
+          <App />
+        </CurrencyProvider>
       </LanguageProvider>
     </BrowserRouter>
   </React.StrictMode>
