@@ -7,6 +7,7 @@ import { ProductsAPI, Product } from '../api/api'
 import API from '../api/api'
 import Toast from '../components/Toast'
 import { useLanguage } from '../context/LanguageContext'
+import { getAlgerianHolidays } from '../hooks/useCurrency'
 
 interface SimResult {
   product_name: string
@@ -215,6 +216,39 @@ export default function Simulate() {
             style={{ background: `linear-gradient(to right, #f97316 ${(supplierDelay / 30) * 100}%, rgba(255,255,255,0.1) 0%)` }}
           />
         </div>
+
+        {/* Algerian holidays banner */}
+        {(() => {
+          const holidays = getAlgerianHolidays(horizon)
+          if (holidays.length === 0) return null
+          const isRamadan = holidays.some(h => h === 'sim_ramadan_tag')
+          return (
+            <div className={`rounded-xl border p-4 flex items-start gap-3 ${
+              isRamadan
+                ? 'border-amber-500/30 bg-amber-500/8'
+                : 'border-brand-500/30 bg-brand-500/8'
+            }`}>
+              <span className="text-lg shrink-0">{isRamadan ? '🌙' : '📅'}</span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-semibold mb-2 ${isRamadan ? 'text-amber-300' : 'text-brand-300'}`}>
+                  {t('sim_holidays_title')}
+                </p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {holidays.map(key => (
+                    <span key={key} className={`text-[11px] px-2 py-0.5 rounded-full font-medium border ${
+                      key === 'sim_ramadan_tag' ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                      : key === 'sim_aid_fitr_tag' || key === 'sim_aid_adha_tag' ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                      : 'bg-brand-500/15 border-brand-500/30 text-brand-300'
+                    }`}>
+                      {t(key as any)}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[11px] text-zinc-400">⚡ {t('sim_holidays_tip')}</p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Event selector */}
         <div className="space-y-2">

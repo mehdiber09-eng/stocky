@@ -396,6 +396,39 @@ const translations = {
     chat_suggest3: 'Quand dois-je passer ma prochaine commande ?',
     chat_suggest4: 'Comment interpréter une probabilité de 70% ?',
     chat_error: 'Erreur de connexion. Réessayez.',
+
+    // Currency & stock value
+    curr_title: 'Devise',
+    curr_dzd: 'Dinar algérien (DA)',
+    curr_eur: 'Euro (€)',
+    curr_usd: 'Dollar US ($)',
+    curr_saved: 'Devise sauvegardée',
+    curr_stock_value: 'Valeur du stock',
+    curr_unit_price: 'Prix unitaire',
+    curr_set_prices: 'Prix unitaires & valeur du stock',
+    curr_set_prices_sub: 'Entrez le prix d\'achat pour calculer la valeur de votre stock',
+    curr_total_value: 'Valeur totale estimée',
+
+    // EOQ / Reorder recommendation
+    inv_order_rec: 'Commander ~',
+    inv_order_unit: 'u.',
+    inv_eoq_tip: 'Quantité recommandée basée sur la vélocité et le délai fournisseur',
+
+    // WhatsApp alert
+    inv_whatsapp: 'WhatsApp',
+    inv_wa_alert: 'Alerter',
+
+    // Algerian holidays in Simulate
+    sim_holidays_title: 'Événements détectés dans cette période',
+    sim_holidays_tip: 'Anticipez une forte variation de demande !',
+    sim_ramadan_tag: 'Ramadan',
+    sim_aid_fitr_tag: 'Aïd el-Fitr',
+    sim_aid_adha_tag: 'Aïd el-Adha',
+    sim_independence_tag: '5 Juillet — Indépendance',
+    sim_revolution_tag: '1 Novembre — Révolution',
+    sim_labor_tag: '1 Mai — Fête du travail',
+    sim_new_year_tag: '1 Janvier — Nouvel An',
+    sim_sovereignty_tag: '19 Juin — Souveraineté nationale',
   },
   ar: {
     // Navigation sidebar
@@ -790,6 +823,39 @@ const translations = {
     chat_suggest3: 'متى يجب أن أضع طلبيتي القادمة؟',
     chat_suggest4: 'كيف أفسر احتمالية 70%؟',
     chat_error: 'خطأ في الاتصال. حاول مجدداً.',
+
+    // Currency & stock value
+    curr_title: 'العملة',
+    curr_dzd: 'دينار جزائري (دج)',
+    curr_eur: 'يورو (€)',
+    curr_usd: 'دولار أمريكي ($)',
+    curr_saved: 'تم حفظ العملة',
+    curr_stock_value: 'قيمة المخزون',
+    curr_unit_price: 'سعر الوحدة',
+    curr_set_prices: 'أسعار الوحدات وقيمة المخزون',
+    curr_set_prices_sub: 'أدخل سعر الشراء لحساب قيمة مخزونك',
+    curr_total_value: 'القيمة الإجمالية المقدرة',
+
+    // EOQ / Reorder recommendation
+    inv_order_rec: 'اطلب ~',
+    inv_order_unit: 'و.',
+    inv_eoq_tip: 'الكمية الموصى بها بناءً على السرعة ومدة التوريد',
+
+    // WhatsApp alert
+    inv_whatsapp: 'واتساب',
+    inv_wa_alert: 'تنبيه',
+
+    // Algerian holidays in Simulate
+    sim_holidays_title: 'أحداث مكتشفة في هذه الفترة',
+    sim_holidays_tip: 'توقع تغيراً كبيراً في الطلب!',
+    sim_ramadan_tag: 'رمضان',
+    sim_aid_fitr_tag: 'عيد الفطر',
+    sim_aid_adha_tag: 'عيد الأضحى',
+    sim_independence_tag: '5 يوليو — الاستقلال',
+    sim_revolution_tag: '1 نوفمبر — الثورة',
+    sim_labor_tag: '1 مايو — عيد العمال',
+    sim_new_year_tag: '1 يناير — رأس السنة',
+    sim_sovereignty_tag: '19 يونيو — السيادة الوطنية',
   },
 }
 

@@ -3,7 +3,7 @@ import {
   AlertTriangle, CheckCircle, RefreshCw, Loader2, Package,
   TrendingUp, TrendingDown, Minus, Activity,
   Clock, Layers, History, X, Edit2, Trash2,
-  ArrowUp, ArrowDown,
+  ArrowUp, ArrowDown, ShoppingCart, DollarSign, MessageCircle,
 } from 'lucide-react'
 import { AnalyticsAPI, StockHistoryAPI, ProductsAPI, InventoryHealthItem, SalesVelocityItem, StockMovement, Product } from '../api/api'
 import Toast from '../components/Toast'
@@ -12,6 +12,7 @@ import EditProductModal from '../components/EditProductModal'
 import { SkeletonTable } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
 import Tooltip from '../components/Tooltip'
+import { useCurrency, saveUnitPrice, calcEOQ } from '../hooks/useCurrency'
 
 const ABC_CONFIG = {
   A: { label: 'A', bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30', title: 'Top 70% revenus' },
@@ -28,11 +29,9 @@ const STATUS_CONFIG = {
 
 function CoverageMeter({ days, reorderPoint, stock }: { days: number | null; reorderPoint: number; stock: number }) {
   if (days === null) return <span className="text-zinc-600 text-xs">—</span>
-
   const capped = Math.min(days, 120)
   const pct = (capped / 120) * 100
   const color = days <= 7 ? 'bg-red-500' : days <= 30 ? 'bg-amber-500' : days <= 90 ? 'bg-emerald-500' : 'bg-sky-500'
-
   return (
     <div className="flex items-center gap-2">
       <div className="w-20 h-1.5 rounded-full bg-white/8 overflow-hidden">
@@ -61,7 +60,6 @@ function TrendBadge({ trend, pct }: { trend: string; pct: number }) {
   )
 }
 
-// ─── Stock History Modal ───────────────────────────────────────────────────────
 function StockHistoryModal({ productId, productName, onClose }: { productId: number; productName: string; onClose: () => void }) {
   const [movements, setMovements] = useState<StockMovement[]>([])
   const [loading, setLoading] = useState(true)
@@ -70,7 +68,7 @@ function StockHistoryModal({ productId, productName, onClose }: { productId: num
   useEffect(() => {
     StockHistoryAPI.get(productId)
       .then(res => setMovements(res.data))
-      .catch(() => setError('Impossible de charger l\'historique'))
+      .catch(() => setError("Impossible de charger l'historique"))
       .finally(() => setLoading(false))
   }, [productId])
 
@@ -78,7 +76,6 @@ function StockHistoryModal({ productId, productName, onClose }: { productId: num
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg card animate-fade-in max-h-[85vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between mb-4 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400">
@@ -89,12 +86,8 @@ function StockHistoryModal({ productId, productName, onClose }: { productId: num
               <p className="text-xs text-zinc-500 truncate max-w-[220px]">{productName}</p>
             </div>
           </div>
-          <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg shrink-0">
-            <X size={16} />
-          </button>
+          <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg shrink-0"><X size={16} /></button>
         </div>
-
-        {/* Body */}
         <div className="overflow-y-auto flex-1 -mx-4 px-4">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-zinc-500">
@@ -125,9 +118,7 @@ function StockHistoryModal({ productId, productName, onClose }: { productId: num
                         <span className={`text-sm font-semibold tabular-nums ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
                           {isPositive ? '+' : ''}{m.change}
                         </span>
-                        <span className="text-xs text-zinc-500">
-                          {m.quantity_before} → {m.quantity_after}
-                        </span>
+                        <span className="text-xs text-zinc-500">{m.quantity_before} → {m.quantity_after}</span>
                       </div>
                       <p className="text-xs text-zinc-500 truncate">{m.reason}</p>
                     </div>
@@ -150,6 +141,7 @@ type Filter = 'all' | 'critical' | 'warning' | 'ok' | 'overstock'
 
 export default function InventoryHealth() {
   const { t } = useLanguage()
+  const { currency, symbol, formatPrice } = useCurrency()
   const [items, setItems] = useState<InventoryHealthItem[]>([])
   const [velocity, setVelocity] = useState<Record<number, SalesVelocityItem>>({})
   const [loading, setLoading] = useState(true)
@@ -159,6 +151,7 @@ export default function InventoryHealth() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [localPrices, setLocalPrices] = useState<Record<number, string>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -180,6 +173,27 @@ export default function InventoryHealth() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    if (items.length === 0) return
+    const prices: Record<number, string> = {}
+    for (const item of items) {
+      const val = localStorage.getItem(`unitprice_${item.product_id}`)
+      if (val) prices[item.product_id] = val
+    }
+    setLocalPrices(prices)
+  }, [items])
+
+  function setLocalPrice(productId: number, value: string) {
+    setLocalPrices(prev => ({ ...prev, [productId]: value }))
+    saveUnitPrice(productId, value)
+  }
+
+  const totalValue = items.reduce((sum, item) => {
+    const price = localPrices[item.product_id]
+    if (!price || isNaN(parseFloat(price))) return sum
+    return sum + item.current_stock * parseFloat(price)
+  }, 0)
+
   async function handleDeleteProduct() {
     if (!deleteTarget) return
     setDeleteLoading(true)
@@ -193,6 +207,11 @@ export default function InventoryHealth() {
     } finally {
       setDeleteLoading(false)
     }
+  }
+
+  function getWhatsAppLink(item: InventoryHealthItem): string {
+    const msg = `🚨 ALERTE RUPTURE DE STOCK\n\nProduit: ${item.product_name}\nSKU: ${item.sku}\nStock actuel: ${item.current_stock} unités\nPoint de réappro: ${item.reorder_point} unités\n\n⚡ Action requise: Commander des stocks maintenant !\n\n📊 Géré via StockSense`
+    return `https://wa.me/?text=${encodeURIComponent(msg)}`
   }
 
   const counts = {
@@ -272,9 +291,7 @@ export default function InventoryHealth() {
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
-              filter === tab.key
-                ? 'bg-white/10 text-white'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              filter === tab.key ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
             }`}
           >
             <span className={tab.color}>{tab.count}</span>
@@ -284,9 +301,7 @@ export default function InventoryHealth() {
       </div>
 
       {/* Table */}
-      {loading ? (
-        <SkeletonTable rows={5} cols={6} />
-      ) : null}
+      {loading ? <SkeletonTable rows={5} cols={6} /> : null}
       <div className="card p-0 overflow-hidden" style={{ display: loading ? 'none' : undefined }}>
         {!loading && displayed.length === 0 ? (
           <div className="text-center py-14">
@@ -327,6 +342,8 @@ export default function InventoryHealth() {
                   const sc = STATUS_CONFIG[item.status]
                   const abc = ABC_CONFIG[item.abc_class]
                   const vel = velocity[item.product_id]
+                  const needsAction = item.status === 'critical' || item.status === 'warning'
+                  const eoq = needsAction ? calcEOQ(item.avg_daily_sales_30d, item.lead_time_days, item.safety_stock) : null
                   return (
                     <tr key={item.product_id} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
                       <td className="px-5 py-3.5">
@@ -334,10 +351,7 @@ export default function InventoryHealth() {
                         <code className="text-[10px] text-zinc-600 font-mono">{item.sku}</code>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border text-xs font-bold ${abc.bg}`}
-                          title={abc.title}
-                        >
+                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border text-xs font-bold ${abc.bg}`} title={abc.title}>
                           {item.abc_class}
                         </span>
                       </td>
@@ -345,31 +359,31 @@ export default function InventoryHealth() {
                         <span className={`font-semibold tabular-nums ${item.current_stock === 0 ? 'text-red-400' : item.needs_reorder ? 'text-amber-300' : 'text-zinc-200'}`}>
                           {item.current_stock}
                         </span>
+                        {eoq !== null && (
+                          <Tooltip text={t('inv_eoq_tip')}>
+                            <div className="flex items-center gap-1 mt-0.5 cursor-help">
+                              <ShoppingCart size={10} className="text-emerald-500" />
+                              <span className="text-[10px] text-emerald-500 font-medium">
+                                {t('inv_order_rec')}{eoq} {t('inv_order_unit')}
+                              </span>
+                            </div>
+                          </Tooltip>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-zinc-400 tabular-nums hidden sm:table-cell">
                         {item.reorder_point}
                         <span className="text-zinc-600 text-xs ml-1">{t('inv_units')}</span>
                       </td>
                       <td className="px-5 py-3.5 hidden sm:table-cell">
-                        <CoverageMeter
-                          days={item.days_of_coverage}
-                          reorderPoint={item.reorder_point}
-                          stock={item.current_stock}
-                        />
+                        <CoverageMeter days={item.days_of_coverage} reorderPoint={item.reorder_point} stock={item.current_stock} />
                       </td>
                       <td className="px-5 py-3.5 text-zinc-300 tabular-nums hidden md:table-cell">
                         {item.avg_daily_sales_30d > 0 ? (
                           <span>{item.avg_daily_sales_30d}<span className="text-zinc-600 text-xs">/j</span></span>
-                        ) : (
-                          <span className="text-zinc-600">—</span>
-                        )}
+                        ) : <span className="text-zinc-600">—</span>}
                       </td>
                       <td className="px-5 py-3.5 hidden md:table-cell">
-                        {vel ? (
-                          <TrendBadge trend={vel.trend} pct={Math.abs(vel.trend_pct)} />
-                        ) : (
-                          <span className="text-zinc-600 text-xs">—</span>
-                        )}
+                        {vel ? <TrendBadge trend={vel.trend} pct={Math.abs(vel.trend_pct)} /> : <span className="text-zinc-600 text-xs">—</span>}
                       </td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border ${sc.bg} ${sc.color}`}>
@@ -379,6 +393,19 @@ export default function InventoryHealth() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-end gap-1">
+                          {needsAction && (
+                            <Tooltip text={`Envoyer une alerte WhatsApp pour ${item.product_name}`}>
+                              <a
+                                href={getWhatsAppLink(item)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-150"
+                              >
+                                <MessageCircle size={12} />
+                                <span className="hidden sm:inline">{t('inv_whatsapp')}</span>
+                              </a>
+                            </Tooltip>
+                          )}
                           <Tooltip text="Voir l'évolution du stock dans le temps">
                             <button
                               onClick={() => setHistoryTarget({ id: item.product_id, name: item.product_name })}
@@ -424,7 +451,7 @@ export default function InventoryHealth() {
         )}
       </div>
 
-      {/* Velocity detail section */}
+      {/* Velocity section */}
       {Object.keys(velocity).length > 0 && (
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
@@ -467,7 +494,66 @@ export default function InventoryHealth() {
         </div>
       )}
 
-      {/* Delete Confirm Modal */}
+      {/* Stock value section */}
+      {items.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <DollarSign size={16} />
+              </div>
+              <div>
+                <h2 className="font-medium text-zinc-200 text-sm">{t('curr_set_prices')}</h2>
+                <p className="text-xs text-zinc-600">{t('curr_set_prices_sub')}</p>
+              </div>
+            </div>
+            <span className="text-xs px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-zinc-400 font-mono">
+              {symbol}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {items.map(item => {
+              const price = localPrices[item.product_id] ?? ''
+              const value = price && !isNaN(parseFloat(price)) ? item.current_stock * parseFloat(price) : null
+              return (
+                <div key={item.product_id} className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-300 truncate">{item.product_name}</p>
+                    <span className="text-[10px] text-zinc-600 font-mono">{item.sku} · {item.current_stock} {t('inv_units')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        value={price}
+                        onChange={e => setLocalPrice(item.product_id, e.target.value)}
+                        placeholder={t('curr_unit_price')}
+                        className="w-24 px-2 py-1.5 text-xs rounded-lg bg-white/5 border border-white/10 text-zinc-200 focus:outline-none focus:border-brand-500/50 transition-colors"
+                      />
+                      <span className="text-xs text-zinc-500">{symbol}</span>
+                    </div>
+                    {value !== null && (
+                      <span className="text-xs font-semibold text-emerald-400 w-28 text-right">
+                        = {formatPrice(value)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {totalValue > 0 && (
+            <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between">
+              <span className="text-sm text-zinc-400 font-medium">{t('curr_total_value')}</span>
+              <span className="text-xl font-bold text-emerald-400">{formatPrice(totalValue)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <ConfirmModal
         open={deleteTarget !== null}
         title="Supprimer ce produit ?"
@@ -479,7 +565,6 @@ export default function InventoryHealth() {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      {/* Stock History Modal */}
       {historyTarget && (
         <StockHistoryModal
           productId={historyTarget.id}
@@ -488,7 +573,6 @@ export default function InventoryHealth() {
         />
       )}
 
-      {/* Edit Product Modal */}
       {editTarget && (
         <EditProductModal
           product={editTarget}

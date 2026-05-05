@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { User, Lock, Bell, Loader2, CheckCircle, AlertCircle, Crown, Zap, ArrowUpRight } from 'lucide-react'
+import { User, Lock, Bell, Loader2, CheckCircle, AlertCircle, Crown, Zap, ArrowUpRight, DollarSign } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import API, { PaymentAPI } from '../api/api'
 import Toast from '../components/Toast'
 import { useLanguage } from '../context/LanguageContext'
+import { useCurrency, type Currency } from '../hooks/useCurrency'
 
 export default function Profile() {
   const { logout } = useAuth()
   const { t } = useLanguage()
+  const { currency, setCurrency } = useCurrency()
   const [email, setEmail] = useState('')
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [currentPwd, setCurrentPwd] = useState('')
@@ -157,6 +159,35 @@ export default function Profile() {
             {t('btn_save')}
           </button>
         </form>
+      </div>
+
+      {/* Currency selector */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-5">
+          <DollarSign size={16} className="text-zinc-400" />
+          <h2 className="font-medium text-zinc-200">{t('curr_title')}</h2>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {(['DZD', 'EUR', 'USD'] as Currency[]).map(c => (
+            <button
+              key={c}
+              onClick={() => { setCurrency(c); setToast({ msg: t('curr_saved'), type: 'success' }) }}
+              className={`py-3 rounded-xl border text-sm font-semibold transition-all ${
+                currency === c
+                  ? 'bg-brand-500/20 border-brand-500/50 text-white'
+                  : 'bg-white/3 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
+              }`}
+            >
+              {c === 'DZD' ? '🇩🇿 DA' : c === 'EUR' ? '🇪🇺 €' : '🇺🇸 $'}
+              <p className="text-[10px] font-normal text-zinc-500 mt-0.5">
+                {t(c === 'DZD' ? 'curr_dzd' : c === 'EUR' ? 'curr_eur' : 'curr_usd')}
+              </p>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-zinc-600 mt-3">
+          Utilisé dans la page <strong className="text-zinc-400">Santé du Stock</strong> pour calculer la valeur de votre stock.
+        </p>
       </div>
 
       {/* Danger zone */}
