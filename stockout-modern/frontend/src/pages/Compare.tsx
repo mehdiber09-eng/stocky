@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { BarChart2, TrendingUp, Loader2, Plus, X } from 'lucide-react'
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { ProductsAPI, PredictAPI, Product } from '../api/api'
 import Toast from '../components/Toast'
+import { useLanguage } from '../context/LanguageContext'
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
@@ -15,6 +16,7 @@ interface ProductResult {
 }
 
 export default function Compare() {
+  const { t } = useLanguage()
   const [products, setProducts] = useState<Product[]>([])
   const [selected, setSelected] = useState<number[]>([])
   const [horizon, setHorizon] = useState(30)
@@ -34,7 +36,7 @@ export default function Compare() {
   }
 
   async function runComparison() {
-    if (selected.length < 2) { setToast({ msg: 'Sélectionnez au moins 2 produits', type: 'error' }); return }
+    if (selected.length < 2) { setToast({ msg: t('cmp_min_2'), type: 'error' }); return }
     setLoading(true)
     setResults([])
     try {
@@ -49,7 +51,7 @@ export default function Compare() {
       )
       setResults(res.sort((a, b) => b.probability - a.probability))
     } catch (err: any) {
-      setToast({ msg: err.response?.data?.detail || 'Erreur lors de la comparaison', type: 'error' })
+      setToast({ msg: err.response?.data?.detail || t('cmp_error'), type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -61,12 +63,6 @@ export default function Compare() {
     fill: COLORS[i % COLORS.length],
   }))
 
-  const radarData = results.length > 0 ? [
-    { metric: 'Risque', ...Object.fromEntries(results.map(r => [r.product.name.slice(0, 8), r.probability * 100])) },
-    { metric: 'Délai', ...Object.fromEntries(results.map(r => [r.product.name.slice(0, 8), Math.min(100, r.product.lead_time_days * 3)])) },
-    { metric: 'Stock min', ...Object.fromEntries(results.map(r => [r.product.name.slice(0, 8), Math.min(100, r.product.safety_stock)])) },
-  ] : []
-
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center gap-3">
@@ -74,19 +70,19 @@ export default function Compare() {
           <BarChart2 size={20} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100">Comparaison multi-produits</h1>
-          <p className="text-sm text-zinc-500">Comparez le risque de rupture sur plusieurs produits</p>
+          <h1 className="text-xl font-semibold text-zinc-100">{t('cmp_title')}</h1>
+          <p className="text-sm text-zinc-500">{t('cmp_subtitle')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
         {/* Selection */}
         <div className="card col-span-1 space-y-4">
-          <h2 className="font-medium text-zinc-200">Sélection <span className="text-zinc-600 text-xs">({selected.length}/5)</span></h2>
+          <h2 className="font-medium text-zinc-200">{t('cmp_selection')} <span className="text-zinc-600 text-xs">({selected.length}/5)</span></h2>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="label mb-0">Horizon</label>
+              <label className="label mb-0">{t('cmp_horizon')}</label>
               <span className="text-xs text-brand-400 font-mono">{horizon}j</span>
             </div>
             <input type="range" min={7} max={90} step={7} value={horizon}
@@ -94,7 +90,7 @@ export default function Compare() {
           </div>
 
           {loadingProducts ? (
-            <div className="flex items-center gap-2 text-zinc-500 text-sm"><Loader2 size={14} className="animate-spin" /> Chargement...</div>
+            <div className="flex items-center gap-2 text-zinc-500 text-sm"><Loader2 size={14} className="animate-spin" /> {t('cmp_loading')}</div>
           ) : (
             <div className="space-y-2">
               {products.map((p, i) => {
@@ -124,7 +120,7 @@ export default function Compare() {
             className="btn-primary w-full flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />}
-            {loading ? 'Analyse...' : 'Comparer'}
+            {loading ? t('cmp_comparing') : t('cmp_compare')}
           </button>
         </div>
 
@@ -134,7 +130,7 @@ export default function Compare() {
             <>
               {/* Ranking */}
               <div className="card">
-                <h3 className="font-medium text-zinc-200 mb-4 text-sm">Classement par risque</h3>
+                <h3 className="font-medium text-zinc-200 mb-4 text-sm">{t('cmp_ranking')}</h3>
                 <div className="space-y-3">
                   {results.map((r, i) => (
                     <div key={r.product.id} className="flex items-center gap-3">
@@ -163,13 +159,13 @@ export default function Compare() {
 
               {/* Bar chart */}
               <div className="card">
-                <h3 className="font-medium text-zinc-200 mb-4 text-sm">Probabilité de rupture (%)</h3>
+                <h3 className="font-medium text-zinc-200 mb-4 text-sm">{t('cmp_probability')}</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={barData} margin={{ left: -20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                     <XAxis dataKey="name" tick={{ fill: '#71717a', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: '#71717a', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                    <Tooltip formatter={(v: any) => [`${v}%`, 'Risque']} contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }} />
+                    <Tooltip formatter={(v: any) => [`${v}%`, t('cmp_radar_risk')]} contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }} />
                     {barData.map((entry, i) => (
                       <Bar key={i} dataKey="probability" fill={entry.fill} radius={[4, 4, 0, 0]} />
                     ))}
@@ -180,8 +176,8 @@ export default function Compare() {
           ) : (
             <div className="card flex flex-col items-center justify-center py-20 text-center">
               <BarChart2 size={40} className="text-zinc-700 mb-3" />
-              <p className="text-zinc-400 font-medium">Aucune comparaison</p>
-              <p className="text-zinc-600 text-sm mt-1">Sélectionnez 2 à 5 produits et lancez la comparaison</p>
+              <p className="text-zinc-400 font-medium">{t('cmp_no_results')}</p>
+              <p className="text-zinc-600 text-sm mt-1">{t('cmp_no_results_hint')}</p>
             </div>
           )}
         </div>

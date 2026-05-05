@@ -12,6 +12,16 @@ const FORMATS = [
   BarcodeFormat.UPC_E, BarcodeFormat.ITF, BarcodeFormat.DATA_MATRIX,
 ]
 
+// Native BarcodeDetector (Chrome/Android) — preferred over ZXing
+let _nativeDetector: any = null
+if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+  try {
+    _nativeDetector = new (window as any).BarcodeDetector({
+      formats: ['qr_code','ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','data_matrix'],
+    })
+  } catch { _nativeDetector = null }
+}
+
 let _reader: MultiFormatReader | null = null
 function getReader(): MultiFormatReader {
   if (!_reader) {
@@ -67,6 +77,8 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
   }, [])
 
   useEffect(() => {
+    let decoding = false
+
     function tick() {
       const video = videoRef.current
       const canvas = canvasRef.current
@@ -76,10 +88,37 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
       }
       frameRef.current++
       if (frameRef.current % 2 !== 0) { rafRef.current = requestAnimationFrame(tick); return }
+      if (decoding) { rafRef.current = requestAnimationFrame(tick); return }
 
       const vw = video.videoWidth
       const vh = video.videoHeight
 
+      // Try native BarcodeDetector first
+      if (_nativeDetector) {
+        decoding = true
+        _nativeDetector.detect(video)
+          .then((barcodes: any[]) => {
+            decoding = false
+            if (barcodes.length > 0 && !doneRef.current) {
+              const code = barcodes[0].rawValue
+              if (code) {
+                doneRef.current = true
+                setDetected(code)
+                stopStream()
+                setTimeout(() => { onDetected(code); onClose() }, 600)
+                return
+              }
+            }
+            if (!doneRef.current) rafRef.current = requestAnimationFrame(tick)
+          })
+          .catch(() => {
+            decoding = false
+            if (!doneRef.current) rafRef.current = requestAnimationFrame(tick)
+          })
+        return
+      }
+
+      // ZXing fallback
       const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
         canvas.width = sw; canvas.height = sh
         const ctx = canvas.getContext('2d', { willReadFrequently: true })

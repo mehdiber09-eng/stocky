@@ -1,22 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, Bot, User, Sparkles } from 'lucide-react'
 import API from '../api/api'
+import { useLanguage } from '../context/LanguageContext'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
 }
 
-const SUGGESTIONS = [
-  'Comment réduire mon risque de rupture ?',
-  'Quelle quantité commander pour 30 jours ?',
-  'Quand dois-je passer ma prochaine commande ?',
-  'Comment interpréter une probabilité de 70% ?',
-]
-
 export default function Chatbot() {
+  const { t } = useLanguage()
+
+  const SUGGESTIONS = [
+    t('chat_suggest1'),
+    t('chat_suggest2'),
+    t('chat_suggest3'),
+    t('chat_suggest4'),
+  ]
+
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Bonjour ! Je suis votre conseiller IA en gestion de stock. Posez-moi vos questions sur vos ruptures, commandes ou stratégies de stock.' }
+    { role: 'assistant', content: t('chat_welcome') }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,7 +45,7 @@ export default function Chatbot() {
     } catch (err: any) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: err.response?.data?.detail || 'Erreur de connexion. Réessayez.'
+        content: err.response?.data?.detail || t('chat_error')
       }])
     } finally {
       setLoading(false)
@@ -56,8 +59,8 @@ export default function Chatbot() {
           <Sparkles size={20} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100">Conseiller IA</h1>
-          <p className="text-sm text-zinc-500">Expert en gestion de stock et supply chain</p>
+          <h1 className="text-xl font-semibold text-zinc-100">{t('chat_title')}</h1>
+          <p className="text-sm text-zinc-500">{t('chat_subtitle')}</p>
         </div>
       </div>
 
@@ -105,7 +108,7 @@ export default function Chatbot() {
       )}
 
       <div className="flex gap-3">
-        <input className="input flex-1" placeholder="Posez votre question..."
+        <input className="input flex-1" placeholder={t('chat_placeholder')}
           value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
           disabled={loading} />

@@ -6,7 +6,6 @@ import {
   RGBLuminanceSource,
   BinaryBitmap,
   HybridBinarizer,
-  NotFoundException,
 } from '@zxing/library'
 import {
   QrCode, Camera, CameraOff, Search, AlertTriangle, CheckCircle,
@@ -43,7 +42,17 @@ const FORMAT_LABEL: Record<string, string> = {
   PDF_417: 'PDF 417',
 }
 
-// ── Module-level ZXing reader (initialised once) ─────────────────────────────
+// ── Native BarcodeDetector (Chrome/Android) — preferred ─────────────────────
+let nativeDetector: any = null
+if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+  try {
+    nativeDetector = new (window as any).BarcodeDetector({
+      formats: ['qr_code','ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','data_matrix'],
+    })
+  } catch { nativeDetector = null }
+}
+
+// ── Module-level ZXing reader (fallback) ─────────────────────────────────────
 let _zxingReader: MultiFormatReader | null = null
 function getReader(): MultiFormatReader {
   if (!_zxingReader) {
@@ -135,6 +144,7 @@ export default function QRScanner() {
   // ── ZXing decode loop ────────────────────────────────────────────────────
   useEffect(() => {
     if (!scanning || !cameraActive) return
+    let decoding = false
 
     function tick() {
       const video = videoRef.current
@@ -150,10 +160,40 @@ export default function QRScanner() {
         return
       }
 
+      if (decoding) {
+        rafRef.current = requestAnimationFrame(tick)
+        return
+      }
+
       const vw = video.videoWidth
       const vh = video.videoHeight
 
-      // Attempt decode of a region; reset reader before each call
+      // ── Native BarcodeDetector (faster, hardware-accelerated) ────────────
+      if (nativeDetector) {
+        decoding = true
+        nativeDetector.detect(video)
+          .then((barcodes: any[]) => {
+            decoding = false
+            if (barcodes.length > 0) {
+              const code = barcodes[0].rawValue
+              if (code && code !== lastScanned) {
+                const fmt = (barcodes[0].format as string).replace(/_/g, '-').toUpperCase()
+                setDetectedFormat(FORMAT_LABEL[fmt.replace(/-/g, '_')] ?? fmt)
+                setLastScanned(code)
+                handleAnalyze(code)
+                return
+              }
+            }
+            rafRef.current = requestAnimationFrame(tick)
+          })
+          .catch(() => {
+            decoding = false
+            rafRef.current = requestAnimationFrame(tick)
+          })
+        return
+      }
+
+      // ── ZXing fallback ────────────────────────────────────────────────────
       const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
         canvas.width = sw
         canvas.height = sh
@@ -172,12 +212,10 @@ export default function QRScanner() {
         }
       }
 
-      // 1. Wide center crop (80% × 70%) — good for both QR and 1D barcodes
       let decoded = tryRegion(
         Math.round(vw * 0.10), Math.round(vh * 0.15),
         Math.round(vw * 0.80), Math.round(vh * 0.70),
       )
-      // 2. Fallback: full frame
       if (!decoded) decoded = tryRegion(0, 0, vw, vh)
 
       if (decoded) {

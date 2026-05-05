@@ -13,6 +13,7 @@ import { AnalyticsAPI, ExportAPI, downloadBlob } from '../api/api'
 import Toast from '../components/Toast'
 import Pagination from '../components/Pagination'
 import HintTooltip from '../components/Tooltip'
+import { useLanguage } from '../context/LanguageContext'
 
 const RISK_COLORS = { low: '#10b981', medium: '#f59e0b', high: '#ef4444' }
 
@@ -31,17 +32,18 @@ function StatCard({ label, value, sub, icon: Icon, color }: any) {
   )
 }
 
-const CustomBarTooltip = ({ active, payload, label }: any) => {
+const CustomBarTooltip = ({ active, payload, label, salesLabel }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-surface-secondary border border-surface-border rounded-xl p-3 text-xs shadow-xl">
       <p className="text-zinc-400 mb-1">{label}</p>
-      <p className="text-brand-400 font-semibold">{payload[0]?.value} ventes</p>
+      <p className="text-brand-400 font-semibold">{payload[0]?.value} {salesLabel}</p>
     </div>
   )
 }
 
 export default function Analytics() {
+  const { t } = useLanguage()
   const [summary, setSummary] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([])
   const [salesByProduct, setSalesByProduct] = useState<any[]>([])
@@ -66,7 +68,7 @@ export default function Analytics() {
       setSalesByProduct(sp.data)
       setByRisk(br.data)
     } catch {
-      setToast({ msg: 'Erreur de chargement des analytics', type: 'error' })
+      setToast({ msg: t('ana_error'), type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -81,24 +83,30 @@ export default function Analytics() {
         ? await ExportAPI.predictionsCSV()
         : await ExportAPI.salesCSV()
       downloadBlob(res.data, `stocksense_${type}_${new Date().toISOString().slice(0, 10)}.csv`)
-      setToast({ msg: 'Export téléchargé !', type: 'success' })
+      setToast({ msg: t('ana_export_ok'), type: 'success' })
     } catch {
-      setToast({ msg: 'Erreur lors de l\'export', type: 'error' })
+      setToast({ msg: t('ana_export_error'), type: 'error' })
     } finally {
       setExporting(null)
     }
   }
 
   const riskPieData = byRisk ? [
-    { name: 'Faible', value: byRisk.low, color: RISK_COLORS.low },
-    { name: 'Modéré', value: byRisk.medium, color: RISK_COLORS.medium },
-    { name: 'Élevé', value: byRisk.high, color: RISK_COLORS.high },
+    { name: t('risk_low'), value: byRisk.low, color: RISK_COLORS.low },
+    { name: t('risk_medium'), value: byRisk.medium, color: RISK_COLORS.medium },
+    { name: t('risk_high'), value: byRisk.high, color: RISK_COLORS.high },
   ].filter(d => d.value > 0) : []
 
   const riskIcon = (risk: string) => {
     if (risk === 'high') return <AlertTriangle size={12} className="text-red-400" />
     if (risk === 'medium') return <Info size={12} className="text-amber-400" />
     return <CheckCircle size={12} className="text-emerald-400" />
+  }
+
+  const riskLabel = (risk: string) => {
+    if (risk === 'high') return t('risk_high')
+    if (risk === 'medium') return t('risk_medium')
+    return t('risk_low')
   }
 
   return (
@@ -110,41 +118,41 @@ export default function Analytics() {
             <BarChart2 size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Analytics</h1>
-            <p className="text-sm text-zinc-500">Vue détaillée de vos données</p>
+            <h1 className="text-xl font-semibold text-zinc-100">{t('ana_title')}</h1>
+            <p className="text-sm text-zinc-500">{t('ana_subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={load} className="btn-ghost flex items-center gap-2 text-sm" disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-          <HintTooltip text="Imprimer ou sauvegarder vos analytics en PDF">
+          <HintTooltip text={t('ana_tooltip_pdf')}>
             <button
               onClick={() => window.print()}
               className="btn-glass flex items-center gap-2 text-sm print:hidden transition-all duration-150"
             >
               <Printer size={14} />
-              Exporter PDF
+              {t('ana_export_pdf')}
             </button>
           </HintTooltip>
-          <HintTooltip text="Télécharger vos données dans Excel ou Google Sheets">
+          <HintTooltip text={t('ana_tooltip_csv')}>
             <button
               onClick={() => handleExport('predictions')}
               disabled={!!exporting}
               className="btn-ghost flex items-center gap-2 text-sm print:hidden transition-all duration-150"
             >
               {exporting === 'predictions' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              Prédictions CSV
+              {t('ana_export_pred')}
             </button>
           </HintTooltip>
-          <HintTooltip text="Télécharger vos données dans Excel ou Google Sheets">
+          <HintTooltip text={t('ana_tooltip_csv')}>
             <button
               onClick={() => handleExport('sales')}
               disabled={!!exporting}
               className="btn-primary flex items-center gap-2 text-sm print:hidden transition-all duration-150"
             >
               {exporting === 'sales' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              Ventes CSV
+              {t('ana_export_sales')}
             </button>
           </HintTooltip>
         </div>
@@ -152,35 +160,35 @@ export default function Analytics() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-zinc-500">
-          <Loader2 size={24} className="animate-spin mr-3" /> Chargement...
+          <Loader2 size={24} className="animate-spin mr-3" /> {t('btn_loading')}
         </div>
       ) : (
         <>
           {/* Summary stats */}
           {summary && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <StatCard label="Produits" value={summary.total_products} icon={Package} color="text-brand-400 bg-brand-500/10" />
-              <StatCard label="Prédictions totales" value={summary.total_predictions}
-                sub={`${summary.high_risk_predictions} à risque élevé`} icon={TrendingUp} color="text-amber-400 bg-amber-500/10" />
-              <StatCard label="Probabilité moyenne" value={`${(summary.avg_probability * 100).toFixed(1)}%`}
-                sub={`${summary.recent_sales_qty} ventes ce mois`} icon={Activity} color="text-emerald-400 bg-emerald-500/10" />
+              <StatCard label={t('ana_products')} value={summary.total_products} icon={Package} color="text-brand-400 bg-brand-500/10" />
+              <StatCard label={t('ana_predictions')} value={summary.total_predictions}
+                sub={`${summary.high_risk_predictions} ${t('ana_high_risk_sub')}`} icon={TrendingUp} color="text-amber-400 bg-amber-500/10" />
+              <StatCard label={t('ana_avg_prob')} value={`${(summary.avg_probability * 100).toFixed(1)}%`}
+                sub={`${summary.recent_sales_qty} ${t('ana_recent_sales_sub')}`} icon={Activity} color="text-emerald-400 bg-emerald-500/10" />
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Sales by product */}
             <div className="card col-span-3">
-              <h2 className="font-medium text-zinc-200 mb-4 text-sm">Ventes par produit</h2>
+              <h2 className="font-medium text-zinc-200 mb-4 text-sm">{t('ana_sales_by_product')}</h2>
               {salesByProduct.length === 0 ? (
                 <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">
-                  <ShoppingCart size={20} className="mr-2" /> Aucune vente enregistrée
+                  <ShoppingCart size={20} className="mr-2" /> {t('ana_no_sales')}
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={salesByProduct} margin={{ left: -20 }}>
                     <XAxis dataKey="product" tick={{ fill: '#71717a', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: '#71717a', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<CustomBarTooltip />} />
+                    <Tooltip content={(props) => <CustomBarTooltip {...props} salesLabel={t('ana_sales_count')} />} />
                     <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -189,10 +197,10 @@ export default function Analytics() {
 
             {/* Risk distribution pie */}
             <div className="card col-span-2">
-              <h2 className="font-medium text-zinc-200 mb-4 text-sm">Répartition des risques</h2>
+              <h2 className="font-medium text-zinc-200 mb-4 text-sm">{t('ana_risk_dist')}</h2>
               {riskPieData.length === 0 ? (
                 <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">
-                  Aucune prédiction
+                  {t('ana_no_preds')}
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={200}>
@@ -204,7 +212,7 @@ export default function Analytics() {
                       ))}
                     </Pie>
                     <Legend formatter={(val) => <span className="text-xs text-zinc-400">{val}</span>} />
-                    <Tooltip formatter={(val: any) => [`${val} prédictions`]} />
+                    <Tooltip formatter={(val: any) => [`${val} ${t('ana_preds_count')}`]} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -215,30 +223,30 @@ export default function Analytics() {
           <div className="card p-0 overflow-hidden">
             <div className="px-6 py-4 border-b border-surface-border flex items-center justify-between">
               <div>
-                <h2 className="font-medium text-zinc-100">Historique des prédictions</h2>
+                <h2 className="font-medium text-zinc-100">{t('ana_history_title')}</h2>
                 {history.length > 0 && (
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    {history.length} prédiction{history.length !== 1 ? 's' : ''} au total
+                    {history.length} {t('ana_preds_count')} {t('ana_total')}
                   </p>
                 )}
               </div>
               <Link to="/predict" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
-                Nouvelle prédiction →
+                {t('ana_new_prediction')}
               </Link>
             </div>
             {history.length === 0 ? (
-              <div className="text-center py-12 text-zinc-600 text-sm">Aucune prédiction effectuée</div>
+              <div className="text-center py-12 text-zinc-600 text-sm">{t('ana_no_history')}</div>
             ) : (
               <>
                 <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-surface-border">
-                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Date</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Produit</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide hidden sm:table-cell">Horizon</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Probabilité</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Risque</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('ana_date')}</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('ana_products')}</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide hidden sm:table-cell">{t('ana_horizon')}</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('ana_probability')}</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('ana_risk')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -259,7 +267,7 @@ export default function Analytics() {
                               'bg-emerald-500/10 text-emerald-400'
                             }`}>
                               {riskIcon(row.risk)}
-                              {row.risk === 'high' ? 'Élevé' : row.risk === 'medium' ? 'Modéré' : 'Faible'}
+                              {riskLabel(row.risk)}
                             </span>
                           </td>
                         </tr>
