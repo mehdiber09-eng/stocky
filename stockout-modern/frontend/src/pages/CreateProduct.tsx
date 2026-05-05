@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Package, Loader2, Truck } from 'lucide-react'
+import { ArrowLeft, Package, Loader2, Truck, Barcode } from 'lucide-react'
 import { ProductsAPI, SuppliersAPI, Supplier } from '../api/api'
 import Toast from '../components/Toast'
+import BarcodeScanModal from '../components/BarcodeScanModal'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function CreateProduct() {
+  const { t } = useLanguage()
   const [name, setName] = useState('')
   const [sku, setSku] = useState('')
   const [leadTime, setLeadTime] = useState(7)
@@ -14,6 +17,7 @@ export default function CreateProduct() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [suppliersLoading, setSuppliersLoading] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [scanOpen, setScanOpen] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const navigate = useNavigate()
 
@@ -21,7 +25,7 @@ export default function CreateProduct() {
     setSuppliersLoading(true)
     SuppliersAPI.list()
       .then(res => setSuppliers(res.data))
-      .catch(() => {/* ignore — field just stays empty */})
+      .catch(() => {})
       .finally(() => setSuppliersLoading(false))
   }, [])
 
@@ -36,10 +40,10 @@ export default function CreateProduct() {
         initial_stock: initialStock,
         supplier_id: supplierId,
       })
-      setToast({ msg: 'Produit créé avec succès !', type: 'success' })
+      setToast({ msg: t('cp_success'), type: 'success' })
       setTimeout(() => navigate('/dashboard'), 800)
     } catch (err: any) {
-      setToast({ msg: err.response?.data?.detail || 'Erreur lors de la création', type: 'error' })
+      setToast({ msg: err.response?.data?.detail || t('cp_error'), type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -48,7 +52,7 @@ export default function CreateProduct() {
   return (
     <div className="animate-fade-in max-w-xl">
       <Link to="/" className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 mb-6 transition-colors">
-        <ArrowLeft size={14} /> Retour au dashboard
+        <ArrowLeft size={14} /> {t('cp_back')}
       </Link>
 
       <div className="flex items-center gap-3 mb-8">
@@ -56,8 +60,8 @@ export default function CreateProduct() {
           <Package size={20} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100">Nouveau produit</h1>
-          <p className="text-sm text-zinc-500">Ajoutez un produit à votre catalogue</p>
+          <h1 className="text-xl font-semibold text-zinc-100">{t('cp_title')}</h1>
+          <p className="text-sm text-zinc-500">{t('cp_subtitle')}</p>
         </div>
       </div>
 
@@ -65,7 +69,7 @@ export default function CreateProduct() {
         <form onSubmit={submit} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="label">Nom du produit</label>
+              <label className="label">{t('cp_name')}</label>
               <input
                 className="input"
                 placeholder="ex: Écran 27 pouces 4K"
@@ -75,18 +79,28 @@ export default function CreateProduct() {
               />
             </div>
             <div className="col-span-2">
-              <label className="label">SKU <span className="text-zinc-600">(référence unique)</span></label>
-              <input
-                className="input font-mono"
-                placeholder="ex: SCRN-27-4K-001"
-                value={sku}
-                onChange={e => setSku(e.target.value.toUpperCase())}
-                required
-              />
-              <p className="text-xs text-zinc-600 mt-1.5">Code unique du produit (ex : PROD-001). Ne peut pas être modifié après création.</p>
+              <label className="label">{t('cp_sku')} <span className="text-zinc-600">({t('cp_sku_note')})</span></label>
+              <div className="flex gap-2">
+                <input
+                  className="input font-mono flex-1"
+                  placeholder="ex: SCRN-27-4K-001"
+                  value={sku}
+                  onChange={e => setSku(e.target.value.toUpperCase())}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setScanOpen(true)}
+                  className="px-3 py-2 rounded-xl border border-white/10 text-zinc-400 hover:text-brand-300 hover:border-brand-500/40 hover:bg-brand-500/8 transition-all flex items-center gap-1.5 text-xs font-medium shrink-0"
+                  title={t('cp_scan_sku')}
+                >
+                  <Barcode size={14} /> {t('cp_scan_sku')}
+                </button>
+              </div>
+              <p className="text-xs text-zinc-600 mt-1.5">{t('cp_sku_hint')}</p>
             </div>
             <div>
-              <label className="label">Délai de livraison <span className="text-zinc-600">(jours)</span></label>
+              <label className="label">{t('cp_lead_time')} <span className="text-zinc-600">({t('cp_lead_unit')})</span></label>
               <input
                 type="number"
                 className="input"
@@ -94,10 +108,10 @@ export default function CreateProduct() {
                 value={leadTime}
                 onChange={e => setLeadTime(Number(e.target.value))}
               />
-              <p className="text-xs text-zinc-600 mt-1.5">Délai moyen en jours entre la commande fournisseur et la réception en stock</p>
+              <p className="text-xs text-zinc-600 mt-1.5">{t('cp_lead_hint')}</p>
             </div>
             <div>
-              <label className="label">Stock de sécurité <span className="text-zinc-600">(unités)</span></label>
+              <label className="label">{t('cp_safety')} <span className="text-zinc-600">({t('cp_safety_unit')})</span></label>
               <input
                 type="number"
                 className="input"
@@ -105,10 +119,10 @@ export default function CreateProduct() {
                 value={safetyStock}
                 onChange={e => setSafetyStock(Number(e.target.value))}
               />
-              <p className="text-xs text-zinc-600 mt-1.5">Quantité minimale à toujours garder en stock pour les imprévus</p>
+              <p className="text-xs text-zinc-600 mt-1.5">{t('cp_safety_hint')}</p>
             </div>
             <div className="col-span-2">
-              <label className="label">Stock initial <span className="text-zinc-600">(quantité actuellement disponible)</span></label>
+              <label className="label">{t('cp_initial_stock')} <span className="text-zinc-600">({t('cp_initial_hint')})</span></label>
               <input
                 type="number"
                 className="input"
@@ -120,13 +134,13 @@ export default function CreateProduct() {
             <div className="col-span-2">
               <label className="label flex items-center gap-1.5">
                 <Truck size={12} className="text-zinc-500" />
-                Fournisseur
-                <span className="text-zinc-600 font-normal">(optionnel)</span>
+                {t('cp_supplier')}
+                <span className="text-zinc-600 font-normal">({t('sup_optional')})</span>
               </label>
               {suppliersLoading ? (
                 <div className="input flex items-center gap-2 text-zinc-500">
                   <Loader2 size={13} className="animate-spin" />
-                  <span className="text-sm">Chargement...</span>
+                  <span className="text-sm">{t('sup_loading')}</span>
                 </div>
               ) : (
                 <select
@@ -134,7 +148,7 @@ export default function CreateProduct() {
                   value={supplierId ?? ''}
                   onChange={e => setSupplierId(e.target.value ? Number(e.target.value) : null)}
                 >
-                  <option value="">— Aucun fournisseur —</option>
+                  <option value="">{t('cp_no_supplier')}</option>
                   {suppliers.map(s => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.lead_time_days}j)
@@ -144,9 +158,9 @@ export default function CreateProduct() {
               )}
               {suppliers.length === 0 && !suppliersLoading && (
                 <p className="text-xs text-zinc-600 mt-1.5">
-                  Aucun fournisseur disponible.{' '}
+                  {t('cp_supplier_no_data')}{' '}
                   <Link to="/suppliers" className="text-brand-400 hover:text-brand-300">
-                    Créer un fournisseur →
+                    {t('cp_supplier_create')} →
                   </Link>
                 </p>
               )}
@@ -156,14 +170,21 @@ export default function CreateProduct() {
           <div className="flex items-center gap-3 pt-2">
             <button type="submit" className="btn-primary flex items-center gap-2" disabled={loading}>
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
-              Créer le produit
+              {t('cp_submit')}
             </button>
             <Link to="/">
-              <button type="button" className="btn-ghost text-sm">Annuler</button>
+              <button type="button" className="btn-ghost text-sm">{t('btn_cancel')}</button>
             </Link>
           </div>
         </form>
       </div>
+
+      {scanOpen && (
+        <BarcodeScanModal
+          onDetected={code => setSku(code.toUpperCase())}
+          onClose={() => setScanOpen(false)}
+        />
+      )}
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
     </div>

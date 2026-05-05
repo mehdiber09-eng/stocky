@@ -180,10 +180,10 @@ export default function Dashboard() {
                 {
                   icon: Package,
                   step: '1',
-                  title: 'Créer votre premier produit',
-                  desc: 'Ajoutez un produit à votre catalogue avec son SKU et délai fournisseur.',
+                  title: t('dash_step1_title'),
+                  desc: t('dash_step1_desc'),
                   href: '/create-product',
-                  cta: 'Créer un produit',
+                  cta: t('dash_step1_cta'),
                   color: 'text-brand-300',
                   bg: 'bg-brand-500/10',
                   btnClass: 'btn-primary',
@@ -191,10 +191,10 @@ export default function Dashboard() {
                 {
                   icon: PackageCheck,
                   step: '2',
-                  title: 'Saisir votre stock initial',
-                  desc: 'Enregistrez vos premières ventes ou importez votre historique CSV.',
+                  title: t('dash_step2_title'),
+                  desc: t('dash_step2_desc'),
                   href: '/add-sale',
-                  cta: 'Saisir une vente',
+                  cta: t('dash_step2_cta'),
                   color: 'text-emerald-300',
                   bg: 'bg-emerald-500/10',
                   btnClass: 'btn-glass border border-emerald-500/30 hover:border-emerald-500/50',
@@ -202,10 +202,10 @@ export default function Dashboard() {
                 {
                   icon: Brain,
                   step: '3',
-                  title: 'Lancer votre première prédiction IA',
-                  desc: 'Obtenez la probabilité de rupture et la date estimée pour chaque produit.',
+                  title: t('dash_step3_title'),
+                  desc: t('dash_step3_desc'),
                   href: '/predict',
-                  cta: 'Prédire maintenant',
+                  cta: t('dash_step3_cta'),
                   color: 'text-purple-300',
                   bg: 'bg-purple-500/10',
                   btnClass: 'btn-glass border border-purple-500/30 hover:border-purple-500/50',
@@ -216,7 +216,7 @@ export default function Dashboard() {
                     <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}>
                       <Icon size={16} className={color} />
                     </div>
-                    <span className="text-xs font-bold text-zinc-600">Étape {step}</span>
+                    <span className="text-xs font-bold text-zinc-600">{t('dash_step_label')} {step}</span>
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-zinc-200 mb-1">{title}</p>
@@ -267,8 +267,8 @@ export default function Dashboard() {
               <TrendingUp size={18} />
             </div>
             <div>
-              <p className="text-sm font-medium text-zinc-100">Lancer une prédiction</p>
-              <p className="text-xs text-zinc-500">Anticiper les ruptures</p>
+              <p className="text-sm font-medium text-zinc-100">{t('dash_qa_predict')}</p>
+              <p className="text-xs text-zinc-500">{t('dash_qa_predict_sub')}</p>
             </div>
           </div>
           <ArrowUpRight size={16} className="text-zinc-600 group-hover:text-brand-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
@@ -279,8 +279,8 @@ export default function Dashboard() {
               <ShoppingCart size={18} />
             </div>
             <div>
-              <p className="text-sm font-medium text-zinc-100">Enregistrer une vente</p>
-              <p className="text-xs text-zinc-500">Mettre à jour l'inventaire</p>
+              <p className="text-sm font-medium text-zinc-100">{t('dash_qa_sale')}</p>
+              <p className="text-xs text-zinc-500">{t('dash_qa_sale_sub')}</p>
             </div>
           </div>
           <ArrowUpRight size={16} className="text-zinc-600 group-hover:text-emerald-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
@@ -291,8 +291,8 @@ export default function Dashboard() {
               <BarChart2 size={18} />
             </div>
             <div>
-              <p className="text-sm font-medium text-zinc-100">Voir les analytics</p>
-              <p className="text-xs text-zinc-500">Historique & graphiques</p>
+              <p className="text-sm font-medium text-zinc-100">{t('dash_qa_analytics')}</p>
+              <p className="text-xs text-zinc-500">{t('dash_qa_analytics_sub')}</p>
             </div>
           </div>
           <ArrowUpRight size={16} className="text-zinc-600 group-hover:text-magenta-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
@@ -308,7 +308,7 @@ export default function Dashboard() {
               <h2 className="text-sm font-semibold text-amber-300">{t('dash_alerts')}</h2>
             </div>
             <Link to="/inventory-health" className="text-xs text-amber-500 hover:text-amber-400 flex items-center gap-1">
-              Voir tout <ArrowUpRight size={12} />
+              {t('dash_see_all')} <ArrowUpRight size={12} />
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -319,15 +319,15 @@ export default function Dashboard() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-zinc-200 truncate">{item.product_name}</p>
                   <p className="text-xs text-zinc-500">
-                    Stock: <span className={item.current_stock === 0 ? 'text-red-400 font-semibold' : 'text-amber-400'}>{item.current_stock}</span>
+                    {t('dash_alert_stock')} <span className={item.current_stock === 0 ? 'text-red-400 font-semibold' : 'text-amber-400'}>{item.current_stock}</span>
                     <span className="mx-1 text-zinc-700">·</span>
-                    Réappro: {item.reorder_point}
+                    {t('dash_alert_reorder')} {item.reorder_point}
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ml-2 ${
                   item.status === 'critical' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
                 }`}>
-                  {item.status === 'critical' ? 'Critique' : 'Réappro.'}
+                  {item.status === 'critical' ? t('dash_alert_critical') : t('dash_alert_warning')}
                 </span>
               </div>
             ))}
@@ -364,9 +364,9 @@ export default function Dashboard() {
             {/* Summary */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'Risque élevé', count: batchResult.summary.high, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', icon: AlertTriangle },
-                { label: 'Risque modéré', count: batchResult.summary.medium, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', icon: Clock },
-                { label: 'Risque faible', count: batchResult.summary.low, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle },
+                { label: t('pred_result_high'), count: batchResult.summary.high, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', icon: AlertTriangle },
+                { label: t('pred_result_medium'), count: batchResult.summary.medium, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', icon: Clock },
+                { label: t('pred_result_low'), count: batchResult.summary.low, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle },
               ].map(({ label, count, color, bg, icon: Icon }) => (
                 <div key={label} className={`flex items-center gap-3 p-3 rounded-xl border ${bg}`}>
                   <Icon size={16} className={color} />
@@ -380,7 +380,7 @@ export default function Dashboard() {
             {/* Top risk products */}
             {batchResult.results.filter(r => r.risk !== 'low').length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-xs text-zinc-600 font-medium uppercase tracking-wider">Top risques</p>
+                <p className="text-xs text-zinc-600 font-medium uppercase tracking-wider">{t('dash_top_risks')}</p>
                 {batchResult.results.filter(r => r.risk !== 'low').slice(0, 5).map(r => (
                   <div key={r.product_id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/3 hover:bg-white/5 transition-colors">
                     <div>
@@ -394,7 +394,7 @@ export default function Dashboard() {
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         r.risk === 'high' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
                       }`}>
-                        {r.risk === 'high' ? 'Élevé' : 'Modéré'}
+                        {r.risk === 'high' ? t('dash_badge_high') : t('dash_badge_medium')}
                       </span>
                     </div>
                   </div>
@@ -405,7 +405,7 @@ export default function Dashboard() {
         ) : (
           <div className="flex items-center justify-center py-8 text-zinc-600 text-sm gap-2">
             <Layers size={16} />
-            Cliquez sur "Prédire tout" pour analyser {products.length} produit{products.length !== 1 ? 's' : ''} en une fois
+            {t('dash_batch_empty')} {products.length} produit{products.length !== 1 ? 's' : ''}
           </div>
         )}
       </div>
@@ -459,10 +459,10 @@ export default function Dashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/8">
-                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Produit</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">{t('dash_prod_col')}</th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden sm:table-cell">SKU</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Délai</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Stock min.</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">{t('dash_delay_col')}</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">{t('dash_safety_col')}</th>
                   <th className="px-6 py-3"></th>
                 </tr>
               </thead>

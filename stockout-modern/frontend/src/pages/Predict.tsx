@@ -10,10 +10,10 @@ import Toast from '../components/Toast'
 import HintTooltip from '../components/Tooltip'
 import { useLanguage } from '../context/LanguageContext'
 
-function getRiskLevel(prob: number) {
-  if (prob >= 0.7) return { label: 'Risque élevé', color: 'text-red-400', badge: 'badge-risk-high', icon: <AlertTriangle size={16} /> }
-  if (prob >= 0.4) return { label: 'Risque modéré', color: 'text-amber-400', badge: 'badge-risk-medium', icon: <Info size={16} /> }
-  return { label: 'Risque faible', color: 'text-emerald-400', badge: 'badge-risk-low', icon: <CheckCircle size={16} /> }
+function getRiskLevel(prob: number, t: (k: string) => string) {
+  if (prob >= 0.7) return { label: t('pred_result_high'), color: 'text-red-400', badge: 'badge-risk-high', icon: <AlertTriangle size={16} /> }
+  if (prob >= 0.4) return { label: t('pred_result_medium'), color: 'text-amber-400', badge: 'badge-risk-medium', icon: <Info size={16} /> }
+  return { label: t('pred_result_low'), color: 'text-emerald-400', badge: 'badge-risk-low', icon: <CheckCircle size={16} /> }
 }
 
 function estimateDaysToRupture(prob: number, horizon: number): number | null {
@@ -121,7 +121,7 @@ export default function Predict() {
     }
   }
 
-  const risk = result ? getRiskLevel(result.probability) : null
+  const risk = result ? getRiskLevel(result.probability, t) : null
   const chartData = result ? buildChartData(result, horizon) : []
   const daysToRupture = result ? estimateDaysToRupture(result.probability, horizon) : null
   const ruptureDate = daysToRupture
@@ -150,7 +150,7 @@ export default function Predict() {
           <h2 className="font-medium text-zinc-200">{t('pred_params')}</h2>
           {loadingProducts ? (
             <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
-              <Loader2 size={14} className="animate-spin" /> Chargement...
+              <Loader2 size={14} className="animate-spin" /> {t('btn_loading')}
             </div>
           ) : (
             <form onSubmit={submit} className="space-y-4">
@@ -209,34 +209,34 @@ export default function Predict() {
                   </span>
                 </div>
                 <div className="card">
-                  <p className="text-xs text-zinc-500 mb-1">Intervalle confiance</p>
+                  <p className="text-xs text-zinc-500 mb-1">{t('pred_confidence_label')}</p>
                   <p className="text-sm font-semibold text-zinc-200 mt-1">
                     {(result.lower * 100).toFixed(1)}% — {(result.upper * 100).toFixed(1)}%
                   </p>
-                  <p className="text-xs text-zinc-600 mt-1">IC 95%</p>
+                  <p className="text-xs text-zinc-600 mt-1">{t('pred_ic_label')}</p>
                 </div>
                 <div className="card">
                   <p className="text-xs text-zinc-500 mb-1 flex items-center gap-1">
-                    <Calendar size={10} /> Rupture estimée
+                    <Calendar size={10} /> {t('pred_rupture_label')}
                   </p>
                   {daysToRupture ? (
                     <>
-                      <p className={`text-xl font-semibold ${risk.color} mt-1`}>~{daysToRupture} jours</p>
+                      <p className={`text-xl font-semibold ${risk.color} mt-1`}>~{daysToRupture} {t('pred_days')}</p>
                       <p className="text-xs text-zinc-600 mt-1">{ruptureDate}</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-xl font-semibold text-emerald-400 mt-1">Stable</p>
-                      <p className="text-xs text-zinc-600 mt-1">Pas de risque immédiat</p>
+                      <p className="text-xl font-semibold text-emerald-400 mt-1">{t('pred_stable')}</p>
+                      <p className="text-xs text-zinc-600 mt-1">{t('pred_no_risk')}</p>
                     </>
                   )}
                 </div>
               </div>
 
               <div className="card">
-                <h3 className="font-medium text-zinc-300 mb-1 text-sm">Évolution sur {horizon} jours</h3>
+                <h3 className="font-medium text-zinc-300 mb-1 text-sm">{t('pred_evolution')} {horizon} {t('pred_days')}</h3>
                 {criticalDay && (
-                  <p className="text-xs text-red-400 mb-3">Zone critique atteinte vers J+{criticalDay}</p>
+                  <p className="text-xs text-red-400 mb-3">{t('pred_critical_zone')} J+{criticalDay}</p>
                 )}
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -272,8 +272,8 @@ export default function Predict() {
           ) : (
             <div className="card flex flex-col items-center justify-center py-20 text-center">
               <TrendingUp size={40} className="text-zinc-700 mb-3" />
-              <p className="text-zinc-400 font-medium">Aucune prédiction</p>
-              <p className="text-zinc-600 text-sm mt-1">Sélectionnez un produit et lancez l'analyse</p>
+              <p className="text-zinc-400 font-medium">{t('pred_no_result')}</p>
+              <p className="text-zinc-600 text-sm mt-1">{t('pred_hint')}</p>
             </div>
           )}
         </div>

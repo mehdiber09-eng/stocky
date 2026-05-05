@@ -235,10 +235,10 @@ export default function InventoryHealth() {
       {/* Summary tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Critique (stock 0)', value: counts.critical, icon: AlertTriangle, gradient: 'from-red-500/20 to-red-700/10', color: 'text-red-300', glow: 'shadow-glow-red' },
-          { label: 'Réappro. urgente', value: counts.warning, icon: Clock, gradient: 'from-amber-500/20 to-amber-700/10', color: 'text-amber-300', glow: '' },
-          { label: 'Stock sain', value: counts.ok, icon: CheckCircle, gradient: 'from-emerald-500/20 to-emerald-700/10', color: 'text-emerald-300', glow: '' },
-          { label: 'Surstock', value: counts.overstock, icon: Package, gradient: 'from-sky-500/20 to-sky-700/10', color: 'text-sky-300', glow: '' },
+          { label: t('inv_tile_critical'), value: counts.critical, icon: AlertTriangle, gradient: 'from-red-500/20 to-red-700/10', color: 'text-red-300', glow: 'shadow-glow-red' },
+          { label: t('inv_tile_warning'), value: counts.warning, icon: Clock, gradient: 'from-amber-500/20 to-amber-700/10', color: 'text-amber-300', glow: '' },
+          { label: t('inv_tile_ok'), value: counts.ok, icon: CheckCircle, gradient: 'from-emerald-500/20 to-emerald-700/10', color: 'text-emerald-300', glow: '' },
+          { label: t('inv_tile_overstock'), value: counts.overstock, icon: Package, gradient: 'from-sky-500/20 to-sky-700/10', color: 'text-sky-300', glow: '' },
         ].map(({ label, value, icon: Icon, gradient, color, glow }) => (
           <div key={label} className={`stat-tile bg-gradient-to-br ${gradient} ${glow}`}>
             <div className="flex items-center justify-between">
@@ -348,7 +348,7 @@ export default function InventoryHealth() {
                       </td>
                       <td className="px-5 py-3.5 text-zinc-400 tabular-nums hidden sm:table-cell">
                         {item.reorder_point}
-                        <span className="text-zinc-600 text-xs ml-1">unités</span>
+                        <span className="text-zinc-600 text-xs ml-1">{t('inv_units')}</span>
                       </td>
                       <td className="px-5 py-3.5 hidden sm:table-cell">
                         <CoverageMeter
@@ -410,7 +410,7 @@ export default function InventoryHealth() {
                               className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
                             >
                               <Trash2 size={12} />
-                              <span className="hidden sm:inline">Supprimer</span>
+                              <span className="hidden sm:inline">{t('btn_delete')}</span>
                             </button>
                           </Tooltip>
                         </div>
@@ -432,8 +432,8 @@ export default function InventoryHealth() {
               <Activity size={16} />
             </div>
             <div>
-              <h2 className="font-medium text-zinc-200 text-sm">Vélocité des ventes par produit</h2>
-              <p className="text-xs text-zinc-600">Ventes journalières moyennes sur 3 fenêtres</p>
+              <h2 className="font-medium text-zinc-200 text-sm">{t('inv_velocity_title')}</h2>
+              <p className="text-xs text-zinc-600">{t('inv_velocity_sub')}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

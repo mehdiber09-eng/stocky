@@ -71,10 +71,10 @@ interface ScanResult {
 }
 
 const RISK_CONFIG = {
-  LOW:      { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', bar: 'bg-emerald-400',  icon: CheckCircle,    label: 'Faible' },
-  MEDIUM:   { color: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/30',   bar: 'bg-amber-400',    icon: AlertTriangle,  label: 'Modéré' },
-  HIGH:     { color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/30',  bar: 'bg-orange-400',   icon: AlertTriangle,  label: 'Élevé' },
-  CRITICAL: { color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/30',     bar: 'bg-red-400',      icon: AlertTriangle,  label: 'Critique' },
+  LOW:      { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', bar: 'bg-emerald-400',  icon: CheckCircle,    labelKey: 'risk_low' as const },
+  MEDIUM:   { color: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/30',   bar: 'bg-amber-400',    icon: AlertTriangle,  labelKey: 'risk_medium' as const },
+  HIGH:     { color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/30',  bar: 'bg-orange-400',   icon: AlertTriangle,  labelKey: 'risk_high' as const },
+  CRITICAL: { color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/30',     bar: 'bg-red-400',      icon: AlertTriangle,  labelKey: 'risk_critical' as const },
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -114,11 +114,11 @@ export default function QRScanner() {
       }
     } catch (err: any) {
       if (err.name === 'NotAllowedError') {
-        setCameraError("Permission caméra refusée. Autorisez l'accès dans les paramètres du navigateur.")
+        setCameraError(t('scan_err_denied'))
       } else if (err.name === 'NotFoundError') {
-        setCameraError('Aucune caméra détectée sur cet appareil.')
+        setCameraError(t('scan_err_no_cam'))
       } else {
-        setCameraError("Impossible d'accéder à la caméra. Essayez le mode manuel.")
+        setCameraError(t('scan_err_generic'))
       }
       setMode('text')
     }
@@ -136,39 +136,51 @@ export default function QRScanner() {
   useEffect(() => {
     if (!scanning || !cameraActive) return
 
-    const reader = getReader()
-
     function tick() {
       const video = videoRef.current
       const canvas = canvasRef.current
-      if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA || !video.videoWidth || !video.videoHeight) {
         rafRef.current = requestAnimationFrame(tick)
         return
       }
 
-      // Throttle: decode every 2nd frame
       frameRef.current++
       if (frameRef.current % 2 !== 0) {
         rafRef.current = requestAnimationFrame(tick)
         return
       }
 
-      // Crop to center scan region (60% wide × 50% tall) — improves 1D barcode detection
-      const sx = Math.round(video.videoWidth * 0.20)
-      const sy = Math.round(video.videoHeight * 0.25)
-      const sw = Math.round(video.videoWidth * 0.60)
-      const sh = Math.round(video.videoHeight * 0.50)
-      canvas.width = sw
-      canvas.height = sh
-      const ctx = canvas.getContext('2d', { willReadFrequently: true })
-      if (!ctx) { rafRef.current = requestAnimationFrame(tick); return }
-      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
+      const vw = video.videoWidth
+      const vh = video.videoHeight
 
-      const imageData = ctx.getImageData(0, 0, sw, sh)
-      try {
-        const luminance = new RGBLuminanceSource(imageData.data, canvas.width, canvas.height)
-        const bitmap = new BinaryBitmap(new HybridBinarizer(luminance))
-        const decoded = reader.decode(bitmap)
+      // Attempt decode of a region; reset reader before each call
+      const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
+        canvas.width = sw
+        canvas.height = sh
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        if (!ctx) return null
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
+        const imgData = ctx.getImageData(0, 0, sw, sh)
+        const reader = getReader()
+        try {
+          reader.reset()
+          const src = new RGBLuminanceSource(imgData.data, sw, sh)
+          const bmp = new BinaryBitmap(new HybridBinarizer(src))
+          return reader.decode(bmp)
+        } catch {
+          return null
+        }
+      }
+
+      // 1. Wide center crop (80% × 70%) — good for both QR and 1D barcodes
+      let decoded = tryRegion(
+        Math.round(vw * 0.10), Math.round(vh * 0.15),
+        Math.round(vw * 0.80), Math.round(vh * 0.70),
+      )
+      // 2. Fallback: full frame
+      if (!decoded) decoded = tryRegion(0, 0, vw, vh)
+
+      if (decoded) {
         const text = decoded.getText()
         if (text && text !== lastScanned) {
           const fmt = BarcodeFormat[decoded.getBarcodeFormat()] ?? 'UNKNOWN'
@@ -177,8 +189,6 @@ export default function QRScanner() {
           handleAnalyze(text)
           return
         }
-      } catch (e) {
-        // NotFoundException / ChecksumException — no code in frame, continue
       }
       rafRef.current = requestAnimationFrame(tick)
     }
@@ -203,7 +213,7 @@ export default function QRScanner() {
       setResult(res.data)
       stopCamera()
     } catch (err: any) {
-      setToast({ msg: err.response?.data?.detail || 'Produit introuvable pour ce code', type: 'error' })
+      setToast({ msg: err.response?.data?.detail || t('scan_not_found'), type: 'error' })
       setTimeout(() => {
         setLastScanned(null)
         setScanning(true)
@@ -313,7 +323,7 @@ export default function QRScanner() {
                 <p className="text-sm text-zinc-300">{t('scan_loading')}</p>
                 {detectedFormat && (
                   <span className="inline-flex items-center gap-1.5 text-xs text-brand-300 bg-brand-500/20 px-3 py-1 rounded-full">
-                    <Barcode size={11} /> {detectedFormat} détecté
+                    <Barcode size={11} /> {detectedFormat} {t('scan_detected')}
                   </span>
                 )}
               </div>
@@ -412,14 +422,14 @@ export default function QRScanner() {
               </div>
             </div>
             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${cfg.border} ${cfg.color}`}>
-              {cfg.label}
+              {t(cfg.labelKey)}
             </span>
           </div>
 
           {/* Risk bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-zinc-400">
-              <span>Risque de rupture (30j)</span>
+              <span>{t('scan_risk_label')}</span>
               <span className={`font-bold ${cfg.color}`}>{Math.round(result.risk_score * 100)}%</span>
             </div>
             <div className="h-2 bg-white/8 rounded-full overflow-hidden">
@@ -432,18 +442,18 @@ export default function QRScanner() {
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white/5 rounded-xl p-3 text-center">
               <p className="text-xl font-bold text-white">{result.current_stock}</p>
-              <p className="text-xs text-zinc-400 mt-0.5">Stock</p>
+              <p className="text-xs text-zinc-400 mt-0.5">{t('scan_stock_label')}</p>
             </div>
             <div className="bg-white/5 rounded-xl p-3 text-center">
               <p className="text-xl font-bold text-white">{result.safety_stock}</p>
-              <p className="text-xs text-zinc-400 mt-0.5">Sécu.</p>
+              <p className="text-xs text-zinc-400 mt-0.5">{t('scan_safety_label')}</p>
             </div>
             <div className="bg-white/5 rounded-xl p-3 text-center flex flex-col items-center">
               <div className="flex items-center gap-1">
                 <Clock size={12} className="text-zinc-400" />
                 <p className="text-xl font-bold text-white">{result.lead_time_days}j</p>
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5">Délai</p>
+              <p className="text-xs text-zinc-400 mt-0.5">{t('scan_delay_label')}</p>
             </div>
           </div>
 
