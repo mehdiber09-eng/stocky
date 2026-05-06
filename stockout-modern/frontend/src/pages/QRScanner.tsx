@@ -214,6 +214,39 @@ export default function QRScanner() {
       const vw = video.videoWidth
       const vh = video.videoHeight
 
+      const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
+        canvas.width = sw; canvas.height = sh
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        if (!ctx) return null
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
+        const imgData = ctx.getImageData(0, 0, sw, sh)
+        const reader = getReader()
+        try {
+          reader.reset()
+          const src = new RGBLuminanceSource(imgData.data, sw, sh)
+          return reader.decode(new BinaryBitmap(new HybridBinarizer(src)))
+        } catch { return null }
+      }
+
+      const tryZXing = () =>
+        tryRegion(Math.round(vw * 0.10), Math.round(vh * 0.15), Math.round(vw * 0.80), Math.round(vh * 0.70))
+        ?? tryRegion(0, 0, vw, vh)
+
+      const handleZXing = () => {
+        const decoded = tryZXing()
+        if (decoded) {
+          const text = decoded.getText()
+          if (text && text !== lastScanned) {
+            const fmt = BarcodeFormat[decoded.getBarcodeFormat()] ?? 'UNKNOWN'
+            setDetectedFormat(FORMAT_LABEL[fmt] ?? fmt)
+            setLastScanned(text)
+            handleAnalyze(text)
+            return true
+          }
+        }
+        return false
+      }
+
       if (nativeDetector) {
         decoding = true
         nativeDetector.detect(video)
@@ -229,40 +262,16 @@ export default function QRScanner() {
                 return
               }
             }
-            rafRef.current = requestAnimationFrame(tick)
+            if (!handleZXing()) rafRef.current = requestAnimationFrame(tick)
           })
-          .catch(() => { decoding = false; rafRef.current = requestAnimationFrame(tick) })
+          .catch(() => {
+            decoding = false
+            if (!handleZXing()) rafRef.current = requestAnimationFrame(tick)
+          })
         return
       }
 
-      const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
-        canvas.width = sw; canvas.height = sh
-        const ctx = canvas.getContext('2d', { willReadFrequently: true })
-        if (!ctx) return null
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
-        const imgData = ctx.getImageData(0, 0, sw, sh)
-        const reader = getReader()
-        try {
-          reader.reset()
-          const src = new RGBLuminanceSource(imgData.data, sw, sh)
-          return reader.decode(new BinaryBitmap(new HybridBinarizer(src)))
-        } catch { return null }
-      }
-
-      let decoded = tryRegion(Math.round(vw * 0.10), Math.round(vh * 0.15), Math.round(vw * 0.80), Math.round(vh * 0.70))
-      if (!decoded) decoded = tryRegion(0, 0, vw, vh)
-
-      if (decoded) {
-        const text = decoded.getText()
-        if (text && text !== lastScanned) {
-          const fmt = BarcodeFormat[decoded.getBarcodeFormat()] ?? 'UNKNOWN'
-          setDetectedFormat(FORMAT_LABEL[fmt] ?? fmt)
-          setLastScanned(text)
-          handleAnalyze(text)
-          return
-        }
-      }
-      rafRef.current = requestAnimationFrame(tick)
+      if (!handleZXing()) rafRef.current = requestAnimationFrame(tick)
     }
 
     rafRef.current = requestAnimationFrame(tick)
