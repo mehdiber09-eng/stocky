@@ -220,10 +220,16 @@ export default function QRScanner() {
         if (!ctx) return null
         ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
         const imgData = ctx.getImageData(0, 0, sw, sh)
+        // RGBLuminanceSource needs 1 byte per pixel (grayscale), not 4-byte RGBA
+        const rgba = imgData.data
+        const lum = new Uint8ClampedArray(sw * sh)
+        for (let i = 0, j = 0; i < lum.length; i++, j += 4) {
+          lum[i] = (rgba[j] * 77 + rgba[j + 1] * 151 + rgba[j + 2] * 28) >> 8
+        }
         const reader = getReader()
         try {
           reader.reset()
-          const src = new RGBLuminanceSource(imgData.data, sw, sh)
+          const src = new RGBLuminanceSource(lum, sw, sh)
           return reader.decode(new BinaryBitmap(new HybridBinarizer(src)))
         } catch { return null }
       }
@@ -313,7 +319,7 @@ export default function QRScanner() {
     setLastScanned(null)
     setDetectedFormat(null)
     setManualInput('')
-    if (mode === 'camera') setScanning(true)
+    if (mode === 'camera') startCamera()
   }
 
   const cfg = result ? RISK_CONFIG[result.risk_level] : null
