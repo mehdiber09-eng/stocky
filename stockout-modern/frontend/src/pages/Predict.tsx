@@ -166,6 +166,7 @@ export default function Predict() {
                   <span className="text-xs text-brand-400 font-mono">{horizon}j</span>
                 </div>
                 <input
+                  dir="ltr"
                   type="range" min={7} max={90} step={7} value={horizon}
                   onChange={e => setHorizon(Number(e.target.value))}
                   className="w-full accent-brand-500"

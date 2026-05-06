@@ -173,6 +173,7 @@ export default function Simulate() {
             <span className="text-sm font-bold text-white">{horizon} {t('sim_days')}</span>
           </div>
           <input
+            dir="ltr"
             type="range" min={7} max={90} step={1} value={horizon}
             onChange={e => setHorizon(Number(e.target.value))}
             className="w-full h-2 rounded-full appearance-none cursor-pointer accent-brand-500"
@@ -194,6 +195,7 @@ export default function Simulate() {
             </span>
           </div>
           <input
+            dir="ltr"
             type="range" min={-30} max={200} step={5} value={demandPct}
             onChange={e => setDemandPct(Number(e.target.value))}
             className="w-full h-2 rounded-full appearance-none cursor-pointer"
@@ -210,6 +212,7 @@ export default function Simulate() {
             <span className="text-sm font-bold text-white">+{supplierDelay} {t('sim_days')}</span>
           </div>
           <input
+            dir="ltr"
             type="range" min={0} max={30} step={1} value={supplierDelay}
             onChange={e => setSupplierDelay(Number(e.target.value))}
             className="w-full h-2 rounded-full appearance-none cursor-pointer accent-orange-500"

@@ -12,6 +12,155 @@ const FORMATS = [
   BarcodeFormat.UPC_E, BarcodeFormat.ITF, BarcodeFormat.DATA_MATRIX,
 ]
 
+// EAN-13 country prefix table (GS1)
+const EAN_COUNTRIES: { prefix: string; flag: string; name: string }[] = [
+  { prefix: '613', flag: '🇩🇿', name: 'Algérie' },
+  { prefix: '611', flag: '🇲🇦', name: 'Maroc' },
+  { prefix: '619', flag: '🇹🇳', name: 'Tunisie' },
+  { prefix: '622', flag: '🇪🇬', name: 'Égypte' },
+  { prefix: '624', flag: '🇱🇾', name: 'Libye' },
+  { prefix: '628', flag: '🇸🇦', name: 'Arabie Saoudite' },
+  { prefix: '629', flag: '🇦🇪', name: 'Émirats Arabes Unis' },
+  { prefix: '626', flag: '🇮🇷', name: 'Iran' },
+  { prefix: '625', flag: '🇯🇴', name: 'Jordanie' },
+  { prefix: '627', flag: '🇰🇼', name: 'Koweït' },
+  { prefix: '528', flag: '🇱🇧', name: 'Liban' },
+  { prefix: '621', flag: '🇸🇾', name: 'Syrie' },
+  { prefix: '300', flag: '🇫🇷', name: 'France' },
+  { prefix: '301', flag: '🇫🇷', name: 'France' },
+  { prefix: '302', flag: '🇫🇷', name: 'France' },
+  { prefix: '303', flag: '🇫🇷', name: 'France' },
+  { prefix: '304', flag: '🇫🇷', name: 'France' },
+  { prefix: '305', flag: '🇫🇷', name: 'France' },
+  { prefix: '306', flag: '🇫🇷', name: 'France' },
+  { prefix: '307', flag: '🇫🇷', name: 'France' },
+  { prefix: '308', flag: '🇫🇷', name: 'France' },
+  { prefix: '309', flag: '🇫🇷', name: 'France' },
+  { prefix: '310', flag: '🇫🇷', name: 'France' },
+  { prefix: '311', flag: '🇫🇷', name: 'France' },
+  { prefix: '312', flag: '🇫🇷', name: 'France' },
+  { prefix: '313', flag: '🇫🇷', name: 'France' },
+  { prefix: '314', flag: '🇫🇷', name: 'France' },
+  { prefix: '315', flag: '🇫🇷', name: 'France' },
+  { prefix: '316', flag: '🇫🇷', name: 'France' },
+  { prefix: '317', flag: '🇫🇷', name: 'France' },
+  { prefix: '318', flag: '🇫🇷', name: 'France' },
+  { prefix: '319', flag: '🇫🇷', name: 'France' },
+  { prefix: '320', flag: '🇫🇷', name: 'France' },
+  { prefix: '321', flag: '🇫🇷', name: 'France' },
+  { prefix: '322', flag: '🇫🇷', name: 'France' },
+  { prefix: '323', flag: '🇫🇷', name: 'France' },
+  { prefix: '324', flag: '🇫🇷', name: 'France' },
+  { prefix: '325', flag: '🇫🇷', name: 'France' },
+  { prefix: '326', flag: '🇫🇷', name: 'France' },
+  { prefix: '327', flag: '🇫🇷', name: 'France' },
+  { prefix: '328', flag: '🇫🇷', name: 'France' },
+  { prefix: '329', flag: '🇫🇷', name: 'France' },
+  { prefix: '330', flag: '🇫🇷', name: 'France' },
+  { prefix: '331', flag: '🇫🇷', name: 'France' },
+  { prefix: '332', flag: '🇫🇷', name: 'France' },
+  { prefix: '333', flag: '🇫🇷', name: 'France' },
+  { prefix: '334', flag: '🇫🇷', name: 'France' },
+  { prefix: '335', flag: '🇫🇷', name: 'France' },
+  { prefix: '336', flag: '🇫🇷', name: 'France' },
+  { prefix: '337', flag: '🇫🇷', name: 'France' },
+  { prefix: '338', flag: '🇫🇷', name: 'France' },
+  { prefix: '339', flag: '🇫🇷', name: 'France' },
+  { prefix: '340', flag: '🇫🇷', name: 'France' },
+  { prefix: '341', flag: '🇫🇷', name: 'France' },
+  { prefix: '342', flag: '🇫🇷', name: 'France' },
+  { prefix: '343', flag: '🇫🇷', name: 'France' },
+  { prefix: '344', flag: '🇫🇷', name: 'France' },
+  { prefix: '345', flag: '🇫🇷', name: 'France' },
+  { prefix: '346', flag: '🇫🇷', name: 'France' },
+  { prefix: '347', flag: '🇫🇷', name: 'France' },
+  { prefix: '348', flag: '🇫🇷', name: 'France' },
+  { prefix: '349', flag: '🇫🇷', name: 'France' },
+  { prefix: '350', flag: '🇫🇷', name: 'France' },
+  { prefix: '351', flag: '🇫🇷', name: 'France' },
+  { prefix: '352', flag: '🇫🇷', name: 'France' },
+  { prefix: '353', flag: '🇫🇷', name: 'France' },
+  { prefix: '354', flag: '🇫🇷', name: 'France' },
+  { prefix: '355', flag: '🇫🇷', name: 'France' },
+  { prefix: '356', flag: '🇫🇷', name: 'France' },
+  { prefix: '357', flag: '🇫🇷', name: 'France' },
+  { prefix: '358', flag: '🇫🇷', name: 'France' },
+  { prefix: '359', flag: '🇫🇷', name: 'France' },
+  { prefix: '360', flag: '🇫🇷', name: 'France' },
+  { prefix: '361', flag: '🇫🇷', name: 'France' },
+  { prefix: '362', flag: '🇫🇷', name: 'France' },
+  { prefix: '363', flag: '🇫🇷', name: 'France' },
+  { prefix: '364', flag: '🇫🇷', name: 'France' },
+  { prefix: '365', flag: '🇫🇷', name: 'France' },
+  { prefix: '366', flag: '🇫🇷', name: 'France' },
+  { prefix: '367', flag: '🇫🇷', name: 'France' },
+  { prefix: '368', flag: '🇫🇷', name: 'France' },
+  { prefix: '369', flag: '🇫🇷', name: 'France' },
+  { prefix: '370', flag: '🇫🇷', name: 'France' },
+  { prefix: '371', flag: '🇫🇷', name: 'France' },
+  { prefix: '372', flag: '🇫🇷', name: 'France' },
+  { prefix: '373', flag: '🇫🇷', name: 'France' },
+  { prefix: '374', flag: '🇫🇷', name: 'France' },
+  { prefix: '375', flag: '🇫🇷', name: 'France' },
+  { prefix: '376', flag: '🇫🇷', name: 'France' },
+  { prefix: '377', flag: '🇫🇷', name: 'France' },
+  { prefix: '378', flag: '🇫🇷', name: 'France' },
+  { prefix: '379', flag: '🇫🇷', name: 'France' },
+  { prefix: '690', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '691', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '692', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '693', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '694', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '695', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '696', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '697', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '698', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '699', flag: '🇨🇳', name: 'Chine' },
+  { prefix: '890', flag: '🇮🇳', name: 'Inde' },
+  { prefix: '868', flag: '🇹🇷', name: 'Turquie' },
+  { prefix: '869', flag: '🇹🇷', name: 'Turquie' },
+  { prefix: '880', flag: '🇰🇷', name: 'Corée du Sud' },
+  { prefix: '885', flag: '🇹🇭', name: 'Thaïlande' },
+  { prefix: '893', flag: '🇻🇳', name: 'Vietnam' },
+  { prefix: '500', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '501', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '502', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '503', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '504', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '505', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '506', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '507', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '508', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '509', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { prefix: '400', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '401', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '402', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '403', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '404', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '405', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '406', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '407', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '408', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '409', flag: '🇩🇪', name: 'Allemagne' },
+  { prefix: '800', flag: '🇮🇹', name: 'Italie' },
+  { prefix: '801', flag: '🇮🇹', name: 'Italie' },
+  { prefix: '802', flag: '🇮🇹', name: 'Italie' },
+  { prefix: '803', flag: '🇮🇹', name: 'Italie' },
+  { prefix: '804', flag: '🇮🇹', name: 'Italie' },
+  { prefix: '840', flag: '🇪🇸', name: 'Espagne' },
+  { prefix: '841', flag: '🇪🇸', name: 'Espagne' },
+  { prefix: '842', flag: '🇪🇸', name: 'Espagne' },
+  { prefix: '843', flag: '🇪🇸', name: 'Espagne' },
+  { prefix: '844', flag: '🇪🇸', name: 'Espagne' },
+]
+
+function getEANCountry(code: string): { flag: string; name: string } | null {
+  if (code.length < 3) return null
+  const p3 = code.slice(0, 3)
+  const match = EAN_COUNTRIES.find(c => c.prefix === p3)
+  return match ? { flag: match.flag, name: match.name } : null
+}
+
 // Native BarcodeDetector (Chrome/Android) — preferred over ZXing
 let _nativeDetector: any = null
 if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
@@ -93,64 +242,67 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
       const vw = video.videoWidth
       const vh = video.videoHeight
 
-      // Try native BarcodeDetector first
+      const tryZXing = () => {
+        const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
+          canvas.width = sw; canvas.height = sh
+          const ctx = canvas.getContext('2d', { willReadFrequently: true })
+          if (!ctx) return null
+          ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
+          const img = ctx.getImageData(0, 0, sw, sh)
+          const reader = getReader()
+          try {
+            reader.reset()
+            const src = new RGBLuminanceSource(img.data, sw, sh)
+            return reader.decode(new BinaryBitmap(new HybridBinarizer(src)))
+          } catch { return null }
+        }
+        return tryRegion(Math.round(vw * 0.10), Math.round(vh * 0.15), Math.round(vw * 0.80), Math.round(vh * 0.70))
+          ?? tryRegion(0, 0, vw, vh)
+      }
+
+      const handleCode = (code: string) => {
+        doneRef.current = true
+        setDetected(code)
+        stopStream()
+        setTimeout(() => { onDetected(code); onClose() }, 900)
+      }
+
+      // Try native BarcodeDetector first, then ZXing as fallback regardless
       if (_nativeDetector) {
         decoding = true
         _nativeDetector.detect(video)
           .then((barcodes: any[]) => {
             decoding = false
-            if (barcodes.length > 0 && !doneRef.current) {
-              const code = barcodes[0].rawValue
-              if (code) {
-                doneRef.current = true
-                setDetected(code)
-                stopStream()
-                setTimeout(() => { onDetected(code); onClose() }, 600)
-                return
-              }
+            if (doneRef.current) return
+            if (barcodes.length > 0 && barcodes[0].rawValue) {
+              handleCode(barcodes[0].rawValue)
+              return
             }
+            // Native found nothing — try ZXing on same frame
+            const zResult = tryZXing()
+            if (zResult) { handleCode(zResult.getText()); return }
             if (!doneRef.current) rafRef.current = requestAnimationFrame(tick)
           })
           .catch(() => {
             decoding = false
+            if (doneRef.current) return
+            const zResult = tryZXing()
+            if (zResult) { handleCode(zResult.getText()); return }
             if (!doneRef.current) rafRef.current = requestAnimationFrame(tick)
           })
         return
       }
 
-      // ZXing fallback
-      const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
-        canvas.width = sw; canvas.height = sh
-        const ctx = canvas.getContext('2d', { willReadFrequently: true })
-        if (!ctx) return null
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
-        const img = ctx.getImageData(0, 0, sw, sh)
-        const reader = getReader()
-        try {
-          reader.reset()
-          const src = new RGBLuminanceSource(img.data, sw, sh)
-          return reader.decode(new BinaryBitmap(new HybridBinarizer(src)))
-        } catch { return null }
-      }
-
-      const result = tryRegion(Math.round(vw * 0.10), Math.round(vh * 0.15), Math.round(vw * 0.80), Math.round(vh * 0.70))
-        ?? tryRegion(0, 0, vw, vh)
-
-      if (result) {
-        const code = result.getText()
-        if (code) {
-          doneRef.current = true
-          setDetected(code)
-          stopStream()
-          setTimeout(() => { onDetected(code); onClose() }, 600)
-          return
-        }
-      }
+      // ZXing only (no native support)
+      const result = tryZXing()
+      if (result) { handleCode(result.getText()); return }
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
   }, [])
+
+  const country = detected ? getEANCountry(detected) : null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -198,9 +350,15 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
 
           {detected && (
             <div className="absolute inset-0 bg-emerald-900/70 flex items-center justify-center">
-              <div className="text-center space-y-1">
+              <div className="text-center space-y-2">
                 <Loader2 size={24} className="text-emerald-400 animate-spin mx-auto" />
                 <p className="text-sm text-emerald-300 font-mono">{detected}</p>
+                {country && (
+                  <div className="inline-flex items-center gap-1.5 bg-black/40 rounded-full px-3 py-1">
+                    <span className="text-base leading-none">{country.flag}</span>
+                    <span className="text-xs text-emerald-200 font-medium">{country.name}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -85,7 +85,7 @@ export default function Compare() {
               <label className="label mb-0">{t('cmp_horizon')}</label>
               <span className="text-xs text-brand-400 font-mono">{horizon}j</span>
             </div>
-            <input type="range" min={7} max={90} step={7} value={horizon}
+            <input dir="ltr" type="range" min={7} max={90} step={7} value={horizon}
               onChange={e => setHorizon(Number(e.target.value))} className="w-full accent-brand-500" />
           </div>
 

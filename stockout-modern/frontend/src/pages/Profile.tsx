@@ -145,7 +145,7 @@ export default function Profile() {
               <label className="label mb-0">{t('prof_alert_threshold')}</label>
               <span className="text-xs text-brand-400 font-mono">{alertThreshold}%</span>
             </div>
-            <input type="range" min={10} max={90} step={5} value={alertThreshold}
+            <input dir="ltr" type="range" min={10} max={90} step={5} value={alertThreshold}
               onChange={e => setAlertThreshold(Number(e.target.value))} className="w-full accent-brand-500" />
             <div className="flex justify-between text-xs text-zinc-600 mt-1">
               <span>10%</span><span>90%</span>
