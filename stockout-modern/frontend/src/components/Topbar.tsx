@@ -1,15 +1,17 @@
 import React from 'react'
-import { Menu } from 'lucide-react'
+import { Menu, Bell, BellOff, BellRing } from 'lucide-react'
 import NotificationsBell from './NotificationsBell'
 import SystemStatusBadge from './SystemStatusBadge'
 import { useLanguage } from '../context/LanguageContext'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 interface TopbarProps {
   onMenuOpen?: () => void
 }
 
 export default function Topbar({ onMenuOpen }: TopbarProps) {
-  const { lang, setLang } = useLanguage()
+  const { lang, setLang, isRTL } = useLanguage()
+  const { state: pushState, subscribe, unsubscribe } = usePushNotifications()
 
   return (
     <div className="sticky top-0 z-30 px-4 sm:px-8 py-4">
@@ -32,6 +34,34 @@ export default function Topbar({ onMenuOpen }: TopbarProps) {
         {/* Right: actions */}
         <div className="flex items-center gap-2">
           <SystemStatusBadge />
+
+          {/* Push notification toggle */}
+          {pushState !== 'unsupported' && pushState !== 'denied' && (
+            <button
+              onClick={pushState === 'subscribed' ? unsubscribe : subscribe}
+              title={
+                pushState === 'subscribed'
+                  ? (isRTL ? 'إيقاف الإشعارات' : 'Désactiver les notifications')
+                  : (isRTL ? 'تفعيل الإشعارات' : 'Activer les notifications push')
+              }
+              className={`relative p-2 rounded-lg text-xs font-medium transition-all border ${
+                pushState === 'subscribed'
+                  ? 'text-brand-300 bg-brand-500/10 border-brand-500/30 hover:bg-brand-500/20'
+                  : 'text-zinc-400 border-transparent hover:text-zinc-100 hover:bg-white/8 hover:border-white/10'
+              }`}
+            >
+              {pushState === 'loading'
+                ? <BellRing size={16} className="animate-pulse" />
+                : pushState === 'subscribed'
+                  ? <Bell size={16} />
+                  : <BellOff size={16} />
+              }
+              {pushState === 'subscribed' && (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-brand-400" />
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => setLang(lang === 'fr' ? 'ar' : 'fr')}
             title="Changer la langue / تغيير اللغة"

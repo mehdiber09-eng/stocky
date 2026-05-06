@@ -22,6 +22,7 @@ from app.api import (
     scan_qr,
     simulate,
     system_status,
+    push,
 )
 from app.core.config import settings
 from app.models.db import init_db
@@ -81,6 +82,7 @@ app.include_router(stock_history.router, prefix="/stock-history", tags=["stock-h
 app.include_router(scan_qr.router, prefix="/scan_qr", tags=["scan-qr"])
 app.include_router(simulate.router, prefix="/simulate", tags=["simulate"])
 app.include_router(system_status.router, prefix="/system-status", tags=["system-status"])
+app.include_router(push.router, prefix="/push", tags=["push"])
 
 
 @app.get("/", tags=["meta"])

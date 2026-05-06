@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, PackagePlus, ShoppingCart, TrendingUp, LogOut, Activity,
   BarChart2, Upload, GitCompare, User, Sun, Moon, MessageCircle, HeartPulse,
-  CreditCard, Truck, X, QrCode, FlaskConical,
+  CreditCard, Truck, X, QrCode, FlaskConical, PackageCheck,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -19,7 +19,7 @@ type NavKey =
   | 'nav_dashboard' | 'nav_predict' | 'nav_scan_qr' | 'nav_simulate'
   | 'nav_compare' | 'nav_analytics' | 'nav_inventory' | 'nav_suppliers'
   | 'nav_import' | 'nav_products' | 'nav_sales' | 'nav_chat'
-  | 'nav_pricing' | 'nav_profile'
+  | 'nav_pricing' | 'nav_profile' | 'nav_reception'
 
 const NAV_ITEMS: { to: string; key: NavKey; icon: LucideIcon }[] = [
   { to: '/dashboard',       key: 'nav_dashboard',  icon: LayoutDashboard },
@@ -30,6 +30,7 @@ const NAV_ITEMS: { to: string; key: NavKey; icon: LucideIcon }[] = [
   { to: '/analytics',       key: 'nav_analytics',  icon: BarChart2 },
   { to: '/inventory-health',key: 'nav_inventory',  icon: HeartPulse },
   { to: '/suppliers',       key: 'nav_suppliers',  icon: Truck },
+  { to: '/stock-reception', key: 'nav_reception',  icon: PackageCheck },
   { to: '/import',          key: 'nav_import',     icon: Upload },
   { to: '/create-product',  key: 'nav_products',   icon: PackagePlus },
   { to: '/add-sale',        key: 'nav_sales',      icon: ShoppingCart },

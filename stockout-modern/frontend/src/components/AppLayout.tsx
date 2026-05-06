@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
+import InstallPrompt from './InstallPrompt'
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -32,6 +33,7 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
+      <InstallPrompt />
     </div>
   )
 }

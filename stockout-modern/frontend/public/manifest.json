@@ -1,0 +1,21 @@
+{
+  "name": "Stocky — Prédiction de ruptures",
+  "short_name": "Stocky",
+  "description": "Anticipez les ruptures de stock avec l'IA. Pour les commerçants MENA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#06060c",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Dashboard", "url": "/dashboard", "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }] },
+    { "name": "Scan QR",   "url": "/scan-qr",   "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }] }
+  ]
+}

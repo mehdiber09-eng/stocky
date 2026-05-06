@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     ALERT_THRESHOLD: float = float(os.getenv("ALERT_THRESHOLD", "0.5"))
 
+    # Web Push (VAPID) — generate once with: python scripts/gen_vapid.py
+    VAPID_PUBLIC_KEY: str = os.getenv("VAPID_PUBLIC_KEY", "BF_DyNfoDtCgIWWU-6A6YgHCsFMbk6ZeOTTWL-d-QE0jGamZL_c0QN66SaHXyjCgvB_bWjYcZHf5AfBML9d5Iwk")
+    VAPID_PRIVATE_KEY: str = os.getenv("VAPID_PRIVATE_KEY", "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgL-1FtIhrMQjNfKmUUzhDsstAtKOFthbNSH98r4_siImhRANCAARfw8jX6A7QoCFllPugOmIBwrBTG5OmXjk01i_nfkBNIxmpmS_3NEDeukmh18owoLwf21o2HGR3-QHwTC_XeSMJ")
+    VAPID_MAILTO: str = os.getenv("VAPID_MAILTO", "mailto:support@stocky.app")
+
     @validator("SECRET_KEY")
     def validate_secret_key(cls, v, values):
         env = values.get("APP_ENV", os.getenv("APP_ENV", "development"))

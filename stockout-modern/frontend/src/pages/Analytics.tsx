@@ -2,14 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
 } from 'recharts'
 import {
-  TrendingUp, Download, RefreshCw, Loader2, AlertTriangle,
+  TrendingUp, TrendingDown, Download, RefreshCw, Loader2, AlertTriangle,
   CheckCircle, Info, BarChart2, ShoppingCart, Package, Activity,
-  Printer,
+  Printer, Zap, Minus,
 } from 'lucide-react'
-import { AnalyticsAPI, ExportAPI, downloadBlob } from '../api/api'
+import { AnalyticsAPI, ExportAPI, downloadBlob, SalesVelocityItem, InventoryHealthItem } from '../api/api'
 import Toast from '../components/Toast'
 import Pagination from '../components/Pagination'
 import HintTooltip from '../components/Tooltip'
@@ -48,6 +48,8 @@ export default function Analytics() {
   const [history, setHistory] = useState<any[]>([])
   const [salesByProduct, setSalesByProduct] = useState<any[]>([])
   const [byRisk, setByRisk] = useState<any>(null)
+  const [velocity, setVelocity] = useState<SalesVelocityItem[]>([])
+  const [health, setHealth] = useState<InventoryHealthItem[]>([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [exporting, setExporting] = useState<string | null>(null)
@@ -57,16 +59,20 @@ export default function Analytics() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [s, h, sp, br] = await Promise.all([
+      const [s, h, sp, br, vel, hlth] = await Promise.all([
         AnalyticsAPI.summary(),
         AnalyticsAPI.history(200),
         AnalyticsAPI.salesByProduct(),
         AnalyticsAPI.byRisk(),
+        AnalyticsAPI.salesVelocity().catch(() => ({ data: [] })),
+        AnalyticsAPI.inventoryHealth().catch(() => ({ data: [] })),
       ])
       setSummary(s.data)
       setHistory(h.data)
       setSalesByProduct(sp.data)
       setByRisk(br.data)
+      setVelocity(vel.data as SalesVelocityItem[])
+      setHealth(hlth.data as InventoryHealthItem[])
     } catch {
       setToast({ msg: t('ana_error'), type: 'error' })
     } finally {
@@ -172,6 +178,113 @@ export default function Analytics() {
                 sub={`${summary.high_risk_predictions} ${t('ana_high_risk_sub')}`} icon={TrendingUp} color="text-amber-400 bg-amber-500/10" />
               <StatCard label={t('ana_avg_prob')} value={`${(summary.avg_probability * 100).toFixed(1)}%`}
                 sub={`${summary.recent_sales_qty} ${t('ana_recent_sales_sub')}`} icon={Activity} color="text-emerald-400 bg-emerald-500/10" />
+            </div>
+          )}
+
+          {/* ── Velocity & Coverage ─────────────────────────────────────── */}
+          {(velocity.length > 0 || health.length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top movers */}
+              {velocity.length > 0 && (
+                <div className="card">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Zap size={15} className="text-amber-400" />
+                    <h2 className="font-medium text-zinc-200 text-sm">Vélocité des ventes</h2>
+                  </div>
+                  <div className="space-y-2">
+                    {[...velocity]
+                      .sort((a, b) => Math.abs(b.trend_pct) - Math.abs(a.trend_pct))
+                      .slice(0, 6)
+                      .map(v => (
+                        <div key={v.product_id} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-zinc-200 truncate">{v.product_name}</p>
+                            <p className="text-xs text-zinc-500">{v.velocity_30d.toFixed(1)} u/j · 30j</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ms-3">
+                            <span className="text-xs text-zinc-500">{v.velocity_7d.toFixed(1)} u/j</span>
+                            {v.trend === 'accelerating' && (
+                              <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                <TrendingUp size={10} /> +{Math.abs(Math.round(v.trend_pct))}%
+                              </span>
+                            )}
+                            {v.trend === 'decelerating' && (
+                              <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                                <TrendingDown size={10} /> -{Math.abs(Math.round(v.trend_pct))}%
+                              </span>
+                            )}
+                            {v.trend === 'stable' && (
+                              <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">
+                                <Minus size={10} /> stable
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Coverage distribution */}
+              {health.length > 0 && (() => {
+                const withCoverage = health.filter(h => h.days_of_coverage !== null)
+                const avgCoverage = withCoverage.length
+                  ? Math.round(withCoverage.reduce((s, h) => s + (h.days_of_coverage ?? 0), 0) / withCoverage.length)
+                  : null
+                const critical = health.filter(h => h.status === 'critical').length
+                const warning  = health.filter(h => h.status === 'warning').length
+                const ok       = health.filter(h => h.status === 'ok').length
+                const overstock= health.filter(h => h.status === 'overstock').length
+                const abcA = health.filter(h => h.abc_class === 'A')
+                return (
+                  <div className="card space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Package size={15} className="text-brand-400" />
+                      <h2 className="font-medium text-zinc-200 text-sm">Santé du stock</h2>
+                    </div>
+                    {/* Status breakdown */}
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      {[
+                        { label: 'Critique', val: critical, color: 'text-red-400', bg: 'bg-red-500/8' },
+                        { label: 'Alerte',   val: warning,  color: 'text-amber-400', bg: 'bg-amber-500/8' },
+                        { label: 'OK',       val: ok,       color: 'text-emerald-400', bg: 'bg-emerald-500/8' },
+                        { label: 'Surstock', val: overstock,color: 'text-blue-400', bg: 'bg-blue-500/8' },
+                      ].map(({ label, val, color, bg }) => (
+                        <div key={label} className={`rounded-xl p-2 ${bg}`}>
+                          <p className={`text-xl font-bold ${color}`}>{val}</p>
+                          <p className="text-[10px] text-zinc-500">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Coverage bar */}
+                    {avgCoverage !== null && (
+                      <div>
+                        <div className="flex justify-between text-xs text-zinc-500 mb-1">
+                          <span>Couverture moy.</span>
+                          <span className="font-semibold text-zinc-300">{avgCoverage} jours</span>
+                        </div>
+                        <div className="h-2 bg-white/8 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-brand-400 transition-all"
+                               style={{ width: `${Math.min(100, (avgCoverage / 90) * 100)}%` }} />
+                        </div>
+                      </div>
+                    )}
+                    {/* Classe A */}
+                    {abcA.length > 0 && (
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1.5">Produits classe A (priorité)</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {abcA.slice(0, 5).map(p => (
+                            <span key={p.product_id} className="text-[11px] px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300">
+                              {p.product_name.length > 18 ? p.product_name.slice(0, 18) + '…' : p.product_name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )}
 

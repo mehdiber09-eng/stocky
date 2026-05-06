@@ -38,3 +38,6 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 email-validator==2.1.0
 bcrypt==4.0.1
+
+# Web Push notifications
+pywebpush==2.0.0

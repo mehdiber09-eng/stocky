@@ -8,14 +8,14 @@ import {
   HybridBinarizer,
 } from '@zxing/library'
 import {
-  QrCode, Camera, CameraOff, Search, AlertTriangle, CheckCircle,
+  Camera, CameraOff, Search, AlertTriangle, CheckCircle,
   Loader2, Package, Clock, Shield, RotateCcw, Zap, Barcode,
+  Flashlight, FlashlightOff, ZoomIn, ZoomOut, FlipHorizontal2, Volume2, VolumeX,
 } from 'lucide-react'
 import API from '../api/api'
 import Toast from '../components/Toast'
 import { useLanguage } from '../context/LanguageContext'
 
-// ── Barcode formats supported ────────────────────────────────────────────────
 const FORMATS = [
   BarcodeFormat.QR_CODE,
   BarcodeFormat.EAN_13,
@@ -42,7 +42,6 @@ const FORMAT_LABEL: Record<string, string> = {
   PDF_417: 'PDF 417',
 }
 
-// ── Native BarcodeDetector (Chrome/Android) — preferred ─────────────────────
 let nativeDetector: any = null
 if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
   try {
@@ -52,7 +51,6 @@ if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
   } catch { nativeDetector = null }
 }
 
-// ── Module-level ZXing reader (fallback) ─────────────────────────────────────
 let _zxingReader: MultiFormatReader | null = null
 function getReader(): MultiFormatReader {
   if (!_zxingReader) {
@@ -65,7 +63,23 @@ function getReader(): MultiFormatReader {
   return _zxingReader
 }
 
-// ── Risk config ───────────────────────────────────────────────────────────────
+// Short beep via Web Audio API
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 1200
+    osc.type = 'sine'
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.15)
+  } catch { /* no audio context */ }
+}
+
 interface ScanResult {
   product_id: number
   product_name: string
@@ -86,7 +100,6 @@ const RISK_CONFIG = {
   CRITICAL: { color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/30',     bar: 'bg-red-400',      icon: AlertTriangle,  labelKey: 'risk_critical' as const },
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
 export default function QRScanner() {
   const { t } = useLanguage()
   const [mode, setMode] = useState<'camera' | 'text'>('camera')
@@ -100,18 +113,37 @@ export default function QRScanner() {
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null)
 
+  // Camera extras
+  const [torchOn, setTorchOn] = useState(false)
+  const [torchAvailable, setTorchAvailable] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const [zoomAvailable, setZoomAvailable] = useState(false)
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [scanHistory, setScanHistory] = useState<string[]>([])
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const rafRef = useRef<number>(0)
   const frameRef = useRef(0)
 
-  // ── Camera start/stop ────────────────────────────────────────────────────
-  const startCamera = useCallback(async () => {
+  const stopCamera = useCallback(() => {
+    setScanning(false)
+    setCameraActive(false)
+    setTorchOn(false)
+    setTorchAvailable(false)
+    setZoomAvailable(false)
+    cancelAnimationFrame(rafRef.current)
+    streamRef.current?.getTracks().forEach(tr => tr.stop())
+    streamRef.current = null
+  }, [])
+
+  const startCamera = useCallback(async (facing: 'environment' | 'user' = facingMode) => {
     setCameraError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
       })
       streamRef.current = stream
       if (videoRef.current) {
@@ -120,28 +152,50 @@ export default function QRScanner() {
         setCameraActive(true)
         setScanning(true)
         frameRef.current = 0
+
+        // Check capabilities
+        const track = stream.getVideoTracks()[0]
+        const caps = track.getCapabilities?.() as any
+        if (caps?.torch) setTorchAvailable(true)
+        if (caps?.zoom) {
+          setZoomAvailable(true)
+          setZoomLevel(1)
+        }
       }
     } catch (err: any) {
-      if (err.name === 'NotAllowedError') {
-        setCameraError(t('scan_err_denied'))
-      } else if (err.name === 'NotFoundError') {
-        setCameraError(t('scan_err_no_cam'))
-      } else {
-        setCameraError(t('scan_err_generic'))
-      }
+      if (err.name === 'NotAllowedError') setCameraError(t('scan_err_denied'))
+      else if (err.name === 'NotFoundError') setCameraError(t('scan_err_no_cam'))
+      else setCameraError(t('scan_err_generic'))
       setMode('text')
     }
+  }, [facingMode, t])
+
+  const toggleTorch = useCallback(async () => {
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (!track) return
+    try {
+      await (track as any).applyConstraints({ advanced: [{ torch: !torchOn }] })
+      setTorchOn(prev => !prev)
+    } catch { /* torch not supported on this device */ }
+  }, [torchOn])
+
+  const applyZoom = useCallback(async (zoom: number) => {
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (!track) return
+    try {
+      await (track as any).applyConstraints({ advanced: [{ zoom }] })
+      setZoomLevel(zoom)
+    } catch { /* zoom not supported */ }
   }, [])
 
-  const stopCamera = useCallback(() => {
-    setScanning(false)
-    setCameraActive(false)
-    cancelAnimationFrame(rafRef.current)
-    streamRef.current?.getTracks().forEach(t => t.stop())
-    streamRef.current = null
-  }, [])
+  const flipCamera = useCallback(async () => {
+    stopCamera()
+    const newFacing = facingMode === 'environment' ? 'user' : 'environment'
+    setFacingMode(newFacing)
+    setTimeout(() => startCamera(newFacing), 150)
+  }, [facingMode, stopCamera, startCamera])
 
-  // ── ZXing decode loop ────────────────────────────────────────────────────
+  // Decode loop
   useEffect(() => {
     if (!scanning || !cameraActive) return
     let decoding = false
@@ -153,22 +207,13 @@ export default function QRScanner() {
         rafRef.current = requestAnimationFrame(tick)
         return
       }
-
       frameRef.current++
-      if (frameRef.current % 2 !== 0) {
-        rafRef.current = requestAnimationFrame(tick)
-        return
-      }
-
-      if (decoding) {
-        rafRef.current = requestAnimationFrame(tick)
-        return
-      }
+      if (frameRef.current % 2 !== 0) { rafRef.current = requestAnimationFrame(tick); return }
+      if (decoding) { rafRef.current = requestAnimationFrame(tick); return }
 
       const vw = video.videoWidth
       const vh = video.videoHeight
 
-      // ── Native BarcodeDetector (faster, hardware-accelerated) ────────────
       if (nativeDetector) {
         decoding = true
         nativeDetector.detect(video)
@@ -186,17 +231,12 @@ export default function QRScanner() {
             }
             rafRef.current = requestAnimationFrame(tick)
           })
-          .catch(() => {
-            decoding = false
-            rafRef.current = requestAnimationFrame(tick)
-          })
+          .catch(() => { decoding = false; rafRef.current = requestAnimationFrame(tick) })
         return
       }
 
-      // ── ZXing fallback ────────────────────────────────────────────────────
       const tryRegion = (sx: number, sy: number, sw: number, sh: number) => {
-        canvas.width = sw
-        canvas.height = sh
+        canvas.width = sw; canvas.height = sh
         const ctx = canvas.getContext('2d', { willReadFrequently: true })
         if (!ctx) return null
         ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
@@ -205,17 +245,11 @@ export default function QRScanner() {
         try {
           reader.reset()
           const src = new RGBLuminanceSource(imgData.data, sw, sh)
-          const bmp = new BinaryBitmap(new HybridBinarizer(src))
-          return reader.decode(bmp)
-        } catch {
-          return null
-        }
+          return reader.decode(new BinaryBitmap(new HybridBinarizer(src)))
+        } catch { return null }
       }
 
-      let decoded = tryRegion(
-        Math.round(vw * 0.10), Math.round(vh * 0.15),
-        Math.round(vw * 0.80), Math.round(vh * 0.70),
-      )
+      let decoded = tryRegion(Math.round(vw * 0.10), Math.round(vh * 0.15), Math.round(vw * 0.80), Math.round(vh * 0.70))
       if (!decoded) decoded = tryRegion(0, 0, vw, vh)
 
       if (decoded) {
@@ -235,27 +269,25 @@ export default function QRScanner() {
     return () => cancelAnimationFrame(rafRef.current)
   }, [scanning, cameraActive, lastScanned])
 
-  // Start camera on mount when mode=camera
   useEffect(() => {
     if (mode === 'camera') startCamera()
     return () => stopCamera()
   }, [mode])
 
-  // ── API call ─────────────────────────────────────────────────────────────
   async function handleAnalyze(data: string) {
+    if (soundEnabled) playBeep()
+    if (navigator.vibrate) navigator.vibrate([50, 30, 50])
     setScanning(false)
     setLoading(true)
     setResult(null)
     try {
       const res = await API.post<ScanResult>('/scan_qr/', { qr_data: data.trim() })
       setResult(res.data)
+      setScanHistory(prev => [data, ...prev.filter(h => h !== data)].slice(0, 5))
       stopCamera()
     } catch (err: any) {
       setToast({ msg: err.response?.data?.detail || t('scan_not_found'), type: 'error' })
-      setTimeout(() => {
-        setLastScanned(null)
-        setScanning(true)
-      }, 2000)
+      setTimeout(() => { setLastScanned(null); setScanning(true) }, 2000)
     } finally {
       setLoading(false)
     }
@@ -293,7 +325,7 @@ export default function QRScanner() {
         </div>
       </div>
 
-      {/* Supported formats badge strip */}
+      {/* Supported formats */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {['QR Code', 'EAN-13', 'EAN-8', 'Code 128', 'Code 39', 'UPC', 'ITF'].map(f => (
           <span key={f} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">
@@ -303,44 +335,59 @@ export default function QRScanner() {
       </div>
 
       {/* Mode switcher */}
-      <div className="flex gap-2 p-1 rounded-xl bg-white/5 border border-white/8 w-fit">
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2 p-1 rounded-xl bg-white/5 border border-white/8 w-fit">
+          <button
+            onClick={() => { setMode('camera'); setResult(null) }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              mode === 'camera' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <Camera size={15} /> {t('scan_camera_mode')}
+          </button>
+          <button
+            onClick={() => { setMode('text'); stopCamera(); setResult(null) }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              mode === 'text' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <Search size={15} /> {t('scan_manual_mode')}
+          </button>
+        </div>
+
+        {/* Sound toggle */}
         <button
-          onClick={() => { setMode('camera'); setResult(null) }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            mode === 'camera' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300'
-          }`}
+          onClick={() => setSoundEnabled(s => !s)}
+          className="p-2 rounded-lg bg-white/5 border border-white/8 text-zinc-500 hover:text-white transition-colors"
+          title={soundEnabled ? 'Désactiver son' : 'Activer son'}
         >
-          <Camera size={15} /> {t('scan_camera_mode')}
-        </button>
-        <button
-          onClick={() => { setMode('text'); stopCamera(); setResult(null) }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            mode === 'text' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300'
-          }`}
-        >
-          <Search size={15} /> {t('scan_manual_mode')}
+          {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
         </button>
       </div>
 
       {/* Camera view */}
       {mode === 'camera' && (
-        <div className="rounded-2xl overflow-hidden border border-white/10 relative bg-black aspect-video">
-          <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
+        <div className="rounded-2xl overflow-hidden border border-white/10 relative aspect-video"
+             style={{ background: '#000' }}>
+          {/* BLACK background fix — video element has grey default in some browsers */}
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            playsInline
+            muted
+            style={{ background: '#000', display: 'block' }}
+          />
           <canvas ref={canvasRef} className="hidden" />
 
           {/* Scan overlay */}
           {cameraActive && scanning && !loading && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              {/* Outer dim */}
               <div className="absolute inset-0 bg-black/30" />
-              {/* Scan window */}
               <div className="relative z-10 w-64 h-40">
-                {/* Corner brackets */}
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-brand-400 rounded-tl-lg" />
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-brand-400 rounded-tr-lg" />
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-brand-400 rounded-bl-lg" />
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-brand-400 rounded-br-lg" />
-                {/* Scan line */}
                 <div className="absolute inset-x-2 h-0.5 bg-brand-400/80 rounded-full"
                      style={{ animation: 'scanLine 2s ease-in-out infinite', top: '50%' }} />
               </div>
@@ -353,7 +400,7 @@ export default function QRScanner() {
             </div>
           )}
 
-          {/* Loading */}
+          {/* Loading overlay */}
           {loading && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
               <div className="text-center space-y-2">
@@ -378,22 +425,63 @@ export default function QRScanner() {
             </div>
           )}
 
-          {/* Camera controls */}
+          {/* Camera controls toolbar */}
           {cameraActive && (
-            <div className="absolute top-3 right-3">
+            <div className="absolute top-3 right-3 flex flex-col gap-2">
               <button
                 onClick={stopCamera}
-                className="p-2 rounded-lg bg-black/50 text-zinc-400 hover:text-white transition-colors"
+                className="p-2 rounded-lg bg-black/60 backdrop-blur text-zinc-400 hover:text-white transition-colors"
                 title="Arrêter la caméra"
               >
                 <CameraOff size={16} />
               </button>
+              {torchAvailable && (
+                <button
+                  onClick={toggleTorch}
+                  className={`p-2 rounded-lg backdrop-blur transition-colors ${
+                    torchOn ? 'bg-amber-400/20 text-amber-300' : 'bg-black/60 text-zinc-400 hover:text-white'
+                  }`}
+                  title={torchOn ? 'Éteindre la lampe' : 'Allumer la lampe'}
+                >
+                  {torchOn ? <Flashlight size={16} /> : <FlashlightOff size={16} />}
+                </button>
+              )}
+              <button
+                onClick={flipCamera}
+                className="p-2 rounded-lg bg-black/60 backdrop-blur text-zinc-400 hover:text-white transition-colors"
+                title="Retourner la caméra"
+              >
+                <FlipHorizontal2 size={16} />
+              </button>
             </div>
           )}
+
+          {/* Zoom controls */}
+          {cameraActive && zoomAvailable && (
+            <div className="absolute bottom-3 right-3 flex flex-col gap-1">
+              <button
+                onClick={() => applyZoom(Math.min(zoomLevel + 0.5, 4))}
+                className="p-1.5 rounded-lg bg-black/60 backdrop-blur text-zinc-400 hover:text-white transition-colors"
+              >
+                <ZoomIn size={14} />
+              </button>
+              <span className="text-[10px] text-center text-zinc-500 bg-black/60 rounded px-1">
+                {zoomLevel.toFixed(1)}x
+              </span>
+              <button
+                onClick={() => applyZoom(Math.max(zoomLevel - 0.5, 1))}
+                className="p-1.5 rounded-lg bg-black/60 backdrop-blur text-zinc-400 hover:text-white transition-colors"
+              >
+                <ZoomOut size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* Start button when camera stopped */}
           {!cameraActive && !cameraError && (
             <div className="absolute inset-0 flex items-center justify-center">
               <button
-                onClick={startCamera}
+                onClick={() => startCamera()}
                 className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
                 style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}
               >
@@ -406,7 +494,7 @@ export default function QRScanner() {
 
       {/* Manual input */}
       {mode === 'text' && (
-        <div className="glass-subtle rounded-2xl p-6 border border-white/8">
+        <div className="glass-subtle rounded-2xl p-6 border border-white/8 space-y-4">
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <label className="block text-sm font-medium text-zinc-300">
               {t('scan_manual_label')}
@@ -435,13 +523,30 @@ export default function QRScanner() {
               </button>
             </div>
           </form>
+
+          {/* Quick history */}
+          {scanHistory.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] text-zinc-600 uppercase tracking-wide font-medium">Récents</p>
+              <div className="flex flex-wrap gap-1.5">
+                {scanHistory.map(h => (
+                  <button
+                    key={h}
+                    onClick={() => setManualInput(h)}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-zinc-400 hover:text-white hover:border-white/20 transition-all font-mono"
+                  >
+                    {h.length > 20 ? h.slice(0, 20) + '…' : h}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Result */}
       {result && cfg && (
         <div className={`rounded-2xl p-6 border ${cfg.border} ${cfg.bg} space-y-5`}>
-          {/* Product header */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/8 flex items-center justify-center shrink-0">
@@ -464,7 +569,6 @@ export default function QRScanner() {
             </span>
           </div>
 
-          {/* Risk bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-zinc-400">
               <span>{t('scan_risk_label')}</span>
@@ -476,7 +580,6 @@ export default function QRScanner() {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white/5 rounded-xl p-3 text-center">
               <p className="text-xl font-bold text-white">{result.current_stock}</p>
@@ -495,7 +598,6 @@ export default function QRScanner() {
             </div>
           </div>
 
-          {/* Recommendation */}
           <div className="flex items-start gap-3 bg-white/5 rounded-xl p-4">
             <Shield size={15} className={`${cfg.color} mt-0.5 shrink-0`} />
             <p className="text-sm text-zinc-300 leading-relaxed">{result.recommendation}</p>
@@ -511,8 +613,7 @@ export default function QRScanner() {
         </div>
       )}
 
-      {/* Empty state */}
-      {!result && !loading && mode === 'text' && (
+      {!result && !loading && mode === 'text' && scanHistory.length === 0 && (
         <div className="text-center py-8 text-zinc-600 text-sm">
           <Barcode size={36} className="mx-auto opacity-20 mb-3" />
           <p>{t('scan_no_code')}</p>

@@ -4,8 +4,9 @@ import {
   Package, TrendingUp, ShoppingCart, Trash2, Plus, RefreshCw, Loader2,
   Sparkles, ArrowUpRight, BarChart2, Bell, Zap, AlertTriangle, Layers,
   CheckCircle, Clock, Search, Info, Rocket, PackageCheck, Brain, QrCode,
+  TrendingDown, Minus, MessageCircle, X,
 } from 'lucide-react'
-import { ProductsAPI, Product, AnalyticsAPI, PredictAPI, BatchPredictionResult, InventoryHealthItem } from '../api/api'
+import { ProductsAPI, Product, AnalyticsAPI, PredictAPI, BatchPredictionResult, InventoryHealthItem, SalesAPI, SalesVelocityItem } from '../api/api'
 import Toast from '../components/Toast'
 import { SkeletonCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
@@ -35,14 +36,19 @@ export default function Dashboard() {
   const [healthAlerts, setHealthAlerts] = useState<InventoryHealthItem[]>([])
   const [search, setSearch] = useState('')
   const [qrProduct, setQrProduct] = useState<Product | null>(null)
+  const [velocityMap, setVelocityMap] = useState<Map<number, SalesVelocityItem>>(new Map())
+  const [quickSaleProduct, setQuickSaleProduct] = useState<Product | null>(null)
+  const [quickSaleQty, setQuickSaleQty] = useState('1')
+  const [quickSaleLoading, setQuickSaleLoading] = useState(false)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [resP, resS, resH] = await Promise.all([
+      const [resP, resS, resH, resV] = await Promise.all([
         ProductsAPI.list(),
         AnalyticsAPI.summary().catch(() => ({ data: null })),
         AnalyticsAPI.inventoryHealth().catch(() => ({ data: [] })),
+        AnalyticsAPI.salesVelocity().catch(() => ({ data: [] })),
       ])
       setProducts(resP.data)
       setSummary((resS as any).data)
@@ -50,6 +56,9 @@ export default function Dashboard() {
         i => i.status === 'critical' || i.status === 'warning'
       )
       setHealthAlerts(critical.slice(0, 4))
+      const vMap = new Map<number, SalesVelocityItem>()
+      ;(resV.data as SalesVelocityItem[]).forEach(v => vMap.set(v.product_id, v))
+      setVelocityMap(vMap)
     } catch {
       setToast({ msg: 'Erreur de chargement', type: 'error' })
     } finally {
@@ -68,6 +77,34 @@ export default function Dashboard() {
     } finally {
       setBatchLoading(false)
     }
+  }
+
+  async function handleQuickSale() {
+    if (!quickSaleProduct) return
+    const qty = parseInt(quickSaleQty)
+    if (!qty || qty < 1) return
+    setQuickSaleLoading(true)
+    try {
+      await SalesAPI.add({ product_id: quickSaleProduct.id, quantity: qty })
+      setToast({ msg: `✓ ${qty} × ${quickSaleProduct.name} enregistré`, type: 'success' })
+      setQuickSaleProduct(null)
+      setQuickSaleQty('1')
+    } catch {
+      setToast({ msg: 'Erreur lors de l\'enregistrement', type: 'error' })
+    } finally {
+      setQuickSaleLoading(false)
+    }
+  }
+
+  function sendWhatsAppReport() {
+    if (healthAlerts.length === 0) return
+    const lines = healthAlerts.map(item => {
+      const status = item.status === 'critical' ? '🔴' : '🟡'
+      const coverage = item.days_of_coverage !== null ? `${Math.round(item.days_of_coverage)}j` : 'N/A'
+      return `${status} *${item.product_name}* (${item.sku})\n   Stock: ${item.current_stock} u · Couverture: ${coverage}`
+    }).join('\n\n')
+    const msg = `🚨 *Rapport Stock Critique — Stocky*\n\n${lines}\n\n_Généré le ${new Date().toLocaleDateString('fr-DZ')}_`
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -307,9 +344,19 @@ export default function Dashboard() {
               <AlertTriangle size={15} className="text-amber-400" />
               <h2 className="text-sm font-semibold text-amber-300">{t('dash_alerts')}</h2>
             </div>
-            <Link to="/inventory-health" className="text-xs text-amber-500 hover:text-amber-400 flex items-center gap-1">
-              {t('dash_see_all')} <ArrowUpRight size={12} />
-            </Link>
+            <div className="flex items-center gap-2">
+              <Tooltip text="Envoyer tous les produits critiques sur WhatsApp" position="left">
+                <button
+                  onClick={sendWhatsAppReport}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                >
+                  <MessageCircle size={12} /> WhatsApp
+                </button>
+              </Tooltip>
+              <Link to="/inventory-health" className="text-xs text-amber-500 hover:text-amber-400 flex items-center gap-1">
+                {t('dash_see_all')} <ArrowUpRight size={12} />
+              </Link>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {healthAlerts.map(item => (
@@ -467,9 +514,31 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((p) => (
+                {filteredProducts.map((p) => {
+                  const vel = velocityMap.get(p.id)
+                  const trend = vel?.trend
+                  return (
                   <tr key={p.id} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
-                    <td className="px-6 py-4 font-medium text-zinc-100">{p.name}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-zinc-100">{p.name}</span>
+                        {trend === 'accelerating' && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                            <TrendingUp size={9} /> +{vel ? Math.abs(Math.round(vel.trend_pct)) : ''}%
+                          </span>
+                        )}
+                        {trend === 'decelerating' && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full">
+                            <TrendingDown size={9} /> -{vel ? Math.abs(Math.round(vel.trend_pct)) : ''}%
+                          </span>
+                        )}
+                        {trend === 'stable' && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-zinc-500 bg-white/5 px-1.5 py-0.5 rounded-full">
+                            <Minus size={9} /> stable
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 hidden sm:table-cell">
                       <code className="text-xs bg-white/5 border border-white/8 px-2 py-0.5 rounded font-mono text-zinc-400">{p.sku}</code>
                     </td>
@@ -477,6 +546,14 @@ export default function Dashboard() {
                     <td className="px-6 py-4 text-zinc-400 hidden md:table-cell">{p.safety_stock}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Tooltip text="Enregistrer une vente rapidement" position="left">
+                          <button
+                            onClick={() => { setQuickSaleProduct(p); setQuickSaleQty('1') }}
+                            className="p-2 rounded-lg text-zinc-500 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all duration-150"
+                          >
+                            <ShoppingCart size={14} />
+                          </button>
+                        </Tooltip>
                         <Tooltip text="Générer le QR code de ce produit" position="left">
                           <button
                             onClick={() => setQrProduct(p)}
@@ -497,12 +574,66 @@ export default function Dashboard() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Quick Sale Modal */}
+      {quickSaleProduct && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setQuickSaleProduct(null)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-sm rounded-2xl border border-white/10 p-6 space-y-4"
+            style={{ background: 'rgba(15,15,25,0.97)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium">Vente rapide</p>
+                <p className="font-semibold text-white mt-0.5 truncate">{quickSaleProduct.name}</p>
+              </div>
+              <button onClick={() => setQuickSaleProduct(null)} className="p-1.5 rounded-lg text-zinc-500 hover:text-white transition-colors">
+                <X size={15} />
+              </button>
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400 mb-1.5 block">Quantité vendue</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setQuickSaleQty(q => String(Math.max(1, parseInt(q || '1') - 1)))}
+                  className="w-10 h-10 rounded-xl border border-white/10 text-zinc-300 hover:border-white/25 transition-colors text-lg font-bold flex items-center justify-center"
+                >−</button>
+                <input
+                  type="number"
+                  min="1"
+                  value={quickSaleQty}
+                  onChange={e => setQuickSaleQty(e.target.value)}
+                  className="flex-1 text-center py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-lg font-bold focus:outline-none focus:border-brand-500/60 transition-all"
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && handleQuickSale()}
+                />
+                <button
+                  onClick={() => setQuickSaleQty(q => String(parseInt(q || '0') + 1))}
+                  className="w-10 h-10 rounded-xl border border-white/10 text-zinc-300 hover:border-white/25 transition-colors text-lg font-bold flex items-center justify-center"
+                >+</button>
+              </div>
+            </div>
+            <button
+              onClick={handleQuickSale}
+              disabled={quickSaleLoading || !quickSaleQty || parseInt(quickSaleQty) < 1}
+              className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-40 hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}
+            >
+              {quickSaleLoading ? <Loader2 size={15} className="animate-spin" /> : <ShoppingCart size={15} />}
+              {quickSaleLoading ? 'Enregistrement...' : `Valider ${quickSaleQty} vente${parseInt(quickSaleQty) > 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         open={deleteTarget !== null}
