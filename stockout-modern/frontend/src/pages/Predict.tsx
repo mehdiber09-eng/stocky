@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, TrendingUp, Loader2, AlertTriangle, CheckCircle, Info, Calendar } from 'lucide-react'
+import { ArrowLeft, TrendingUp, Loader2, AlertTriangle, CheckCircle, Info, Calendar, MessageCircle, ShoppingCart } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   Tooltip, CartesianGrid, ReferenceLine, ReferenceArea,
@@ -9,6 +9,7 @@ import { ProductsAPI, PredictAPI, Product, PredictionResult } from '../api/api'
 import Toast from '../components/Toast'
 import HintTooltip from '../components/Tooltip'
 import { useLanguage } from '../context/LanguageContext'
+import { useCurrency } from '../context/CurrencyContext'
 
 function getRiskLevel(prob: number, t: (k: string) => string) {
   if (prob >= 0.7) return { label: t('pred_result_high'), color: 'text-red-400', badge: 'badge-risk-high', icon: <AlertTriangle size={16} /> }
@@ -88,6 +89,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function Predict() {
   const { t } = useLanguage()
+  const { formatPrice, convertToDZD } = useCurrency()
   const [products, setProducts] = useState<Product[]>([])
   const [productId, setProductId] = useState<number | ''>('')
   const [horizon, setHorizon] = useState(30)
@@ -128,6 +130,34 @@ export default function Predict() {
     ? new Date(Date.now() + daysToRupture * 86400000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
   const criticalDay = chartData.find(d => d.probability >= 0.5)?.day
+
+  const selectedProduct = products.find(p => p.id === Number(productId)) ?? null
+  const reorderQty = selectedProduct ? Math.max(selectedProduct.safety_stock * 3, 10) : 0
+  const unitCostDZD = selectedProduct?.cost_price
+    ? convertToDZD(selectedProduct.cost_price, (selectedProduct.price_currency as any) || 'DZD')
+    : null
+  const totalCostDisplay = unitCostDZD ? formatPrice(unitCostDZD * reorderQty) : null
+
+  function sendWhatsAppPrediction() {
+    if (!selectedProduct || !result) return
+    const riskLabel = result.probability >= 0.7 ? '🔴 CRITIQUE' : result.probability >= 0.4 ? '🟡 MOYEN' : '🟢 FAIBLE'
+    const msg = [
+      `Bonjour,`,
+      ``,
+      `Alerte stock IA — *${selectedProduct.name}*`,
+      ``,
+      `📊 Risque de rupture : ${riskLabel} (${(result.probability * 100).toFixed(0)}%)`,
+      daysToRupture ? `⏱ Rupture estimée dans : ~${daysToRupture} jours` : '',
+      ``,
+      `📦 Commande recommandée : *${reorderQty} unités*`,
+      `   • SKU : ${selectedProduct.sku}`,
+      `   • Délai attendu : ${selectedProduct.lead_time_days} jours`,
+      totalCostDisplay ? `   • Budget estimé : ${totalCostDisplay}` : '',
+      ``,
+      `_Généré par Stocky IA_`,
+    ].filter(Boolean).join('\n')
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+  }
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -233,6 +263,46 @@ export default function Predict() {
                   )}
                 </div>
               </div>
+
+              {/* Plan d'action */}
+              {result.probability >= 0.4 && selectedProduct && (
+                <div className="card border border-amber-500/20 bg-amber-500/5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ShoppingCart size={15} className="text-amber-400" />
+                    <h3 className="font-semibold text-amber-300 text-sm">Plan d'action recommandé</h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-white">{reorderQty}</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">Unités à commander</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <p className="text-lg font-bold text-white">{selectedProduct.lead_time_days}j</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">Délai fournisseur</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      {totalCostDisplay ? (
+                        <>
+                          <p className="text-lg font-bold text-emerald-400">{totalCostDisplay}</p>
+                          <p className="text-xs text-zinc-400 mt-0.5">Budget estimé</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-lg font-bold text-zinc-500">—</p>
+                          <p className="text-xs text-zinc-600 mt-0.5">Prix non défini</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={sendWhatsAppPrediction}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+                    style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)', boxShadow: '0 4px 16px rgba(37,211,102,0.25)' }}
+                  >
+                    <MessageCircle size={15} /> Envoyer la commande sur WhatsApp
+                  </button>
+                </div>
+              )}
 
               <div className="card">
                 <h3 className="font-medium text-zinc-300 mb-1 text-sm">{t('pred_evolution')} {horizon} {t('pred_days')}</h3>

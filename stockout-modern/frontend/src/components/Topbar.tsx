@@ -4,6 +4,10 @@ import NotificationsBell from './NotificationsBell'
 import SystemStatusBadge from './SystemStatusBadge'
 import { useLanguage } from '../context/LanguageContext'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import { useCurrency, Currency } from '../context/CurrencyContext'
+
+const CURRENCY_CYCLE: Currency[] = ['DZD', 'EUR', 'USD', 'SAR', 'AED']
+const CURRENCY_FLAG: Record<Currency, string> = { DZD: '🇩🇿', EUR: '🇪🇺', USD: '🇺🇸', SAR: '🇸🇦', AED: '🇦🇪' }
 
 interface TopbarProps {
   onMenuOpen?: () => void
@@ -12,6 +16,12 @@ interface TopbarProps {
 export default function Topbar({ onMenuOpen }: TopbarProps) {
   const { lang, setLang, isRTL } = useLanguage()
   const { state: pushState, subscribe, unsubscribe } = usePushNotifications()
+  const { currency, setCurrency } = useCurrency()
+
+  function cycleCurrency() {
+    const idx = CURRENCY_CYCLE.indexOf(currency)
+    setCurrency(CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length])
+  }
 
   return (
     <div className="sticky top-0 z-30 px-4 sm:px-8 py-4">
@@ -61,6 +71,15 @@ export default function Topbar({ onMenuOpen }: TopbarProps) {
               )}
             </button>
           )}
+
+          {/* Currency cycle */}
+          <button
+            onClick={cycleCurrency}
+            title="Changer la devise"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-zinc-100 hover:bg-white/8 border border-transparent hover:border-white/10 transition-all"
+          >
+            {CURRENCY_FLAG[currency]} {currency}
+          </button>
 
           <button
             onClick={() => setLang(lang === 'fr' ? 'ar' : 'fr')}

@@ -20,6 +20,7 @@ const translations = {
     nav_scan_qr: 'Scan QR',
     nav_simulate: 'Simulation',
     nav_reception: 'Réception stock',
+    nav_qr_print: 'QR en lot',
 
     // Actions communes
     btn_save: 'Sauvegarder',
@@ -521,6 +522,7 @@ const translations = {
     nav_scan_qr: 'مسح QR',
     nav_simulate: 'محاكاة السيناريوهات',
     nav_reception: 'استقبال المخزون',
+    nav_qr_print: 'طباعة QR جماعية',
 
     // Actions communes
     btn_save: 'حفظ',

@@ -26,6 +26,7 @@ import Suppliers from './pages/Suppliers'
 import QRScanner from './pages/QRScanner'
 import Simulate from './pages/Simulate'
 import StockReception from './pages/StockReception'
+import QRBatchPrint from './pages/QRBatchPrint'
 import CookieBanner from './components/CookieBanner'
 
 export default function App() {
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/scan-qr" element={<QRScanner />} />
             <Route path="/simulate" element={<Simulate />} />
             <Route path="/stock-reception" element={<StockReception />} />
+            <Route path="/qr-print" element={<QRBatchPrint />} />
           </Route>
           <Route path="/pricing" element={<Pricing />} />
           <Route path="*" element={<NotFound />} />
