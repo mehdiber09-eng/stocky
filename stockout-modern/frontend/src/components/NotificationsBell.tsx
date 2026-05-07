@@ -19,9 +19,9 @@ function severityIcon(severity: string) {
 }
 
 function severityRing(severity: string) {
-  if (severity === 'critical') return 'ring-red-500/30 bg-red-500/5'
-  if (severity === 'warning') return 'ring-amber-500/30 bg-amber-500/5'
-  return 'ring-brand-500/30 bg-brand-500/5'
+  if (severity === 'critical') return 'ring-red-500/40 bg-red-500/15'
+  if (severity === 'warning') return 'ring-amber-500/40 bg-amber-500/15'
+  return 'ring-brand-500/40 bg-brand-500/15'
 }
 
 export default function NotificationsBell() {
@@ -97,8 +97,14 @@ export default function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 max-h-[480px] flex flex-col glass-strong rounded-2xl shadow-2xl overflow-hidden animate-scale-in z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
+        <div
+          className="absolute right-0 mt-2 w-96 max-h-[480px] flex flex-col rounded-2xl overflow-hidden animate-scale-in z-50 border border-white/12"
+          style={{
+            background: 'rgb(20, 20, 26)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), 0 0 60px -20px rgba(99,102,241,0.35)',
+          }}
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/8" style={{ background: 'rgba(99,102,241,0.06)' }}>
             <div>
               <h3 className="font-semibold text-white text-sm">Notifications</h3>
               <p className="text-xs text-zinc-500">
@@ -130,7 +136,7 @@ export default function NotificationsBell() {
                 {items.map(n => (
                   <li
                     key={n.id}
-                    className={`group relative px-4 py-3 hover:bg-white/3 transition-all ${!n.is_read ? 'bg-brand-500/5' : ''}`}
+                    className={`group relative px-4 py-3 hover:bg-white/[0.04] transition-all ${!n.is_read ? 'bg-brand-500/[0.08]' : ''}`}
                   >
                     <div className="flex gap-3">
                       <div className={`shrink-0 w-9 h-9 rounded-xl ring-1 ${severityRing(n.severity)} flex items-center justify-center`}>

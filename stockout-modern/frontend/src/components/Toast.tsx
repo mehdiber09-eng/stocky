@@ -16,36 +16,46 @@ export default function Toast({ message, type = 'success', onClose, duration = 3
 
   const styles = {
     success: {
-      ring: 'ring-emerald-500/30',
-      bg: 'bg-emerald-500/10',
-      text: 'text-emerald-200',
-      glow: 'shadow-glow-emerald',
-      icon: <CheckCircle size={16} className="text-emerald-300" />,
+      accent: '#10b981',
+      iconBg: 'bg-emerald-500',
+      icon: <CheckCircle size={16} className="text-white" />,
+      border: 'border-emerald-500/40',
+      glow: '0 0 32px -4px rgba(16,185,129,0.45), 0 8px 28px rgba(0,0,0,0.5)',
     },
     error: {
-      ring: 'ring-red-500/30',
-      bg: 'bg-red-500/10',
-      text: 'text-red-200',
-      glow: 'shadow-glow-red',
-      icon: <AlertCircle size={16} className="text-red-300" />,
+      accent: '#ef4444',
+      iconBg: 'bg-red-500',
+      icon: <AlertCircle size={16} className="text-white" />,
+      border: 'border-red-500/40',
+      glow: '0 0 32px -4px rgba(239,68,68,0.45), 0 8px 28px rgba(0,0,0,0.5)',
     },
     info: {
-      ring: 'ring-brand-500/30',
-      bg: 'bg-brand-500/10',
-      text: 'text-brand-200',
-      glow: 'shadow-glow',
-      icon: <Info size={16} className="text-brand-300" />,
+      accent: '#6366f1',
+      iconBg: 'bg-brand-500',
+      icon: <Info size={16} className="text-white" />,
+      border: 'border-brand-500/40',
+      glow: '0 0 32px -4px rgba(99,102,241,0.45), 0 8px 28px rgba(0,0,0,0.5)',
     },
   }[type]
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
-      <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl glass-strong ring-1 ${styles.ring} ${styles.bg} ${styles.glow} ${styles.text}`}>
-        {styles.icon}
-        <span className="text-sm font-medium">{message}</span>
+    <div className="fixed bottom-6 right-6 z-[100] animate-slide-up">
+      <div
+        className={`flex items-center gap-3 pl-1.5 pr-3 py-1.5 rounded-2xl border ${styles.border} text-zinc-100`}
+        style={{
+          background: 'rgb(20, 20, 26)',
+          boxShadow: styles.glow,
+          minWidth: '280px',
+        }}
+      >
+        <div className={`shrink-0 w-9 h-9 rounded-xl ${styles.iconBg} flex items-center justify-center`}
+             style={{ boxShadow: `0 4px 12px -2px ${styles.accent}99` }}>
+          {styles.icon}
+        </div>
+        <span className="text-sm font-medium flex-1">{message}</span>
         <button
           onClick={onClose}
-          className="ml-2 opacity-60 hover:opacity-100 transition-opacity p-0.5 rounded-md hover:bg-white/10"
+          className="shrink-0 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
           aria-label="Fermer"
         >
           <X size={14} />
