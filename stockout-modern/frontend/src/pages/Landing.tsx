@@ -112,7 +112,7 @@ export default function Landing() {
   ]
 
   return (
-    <div className="min-h-screen text-zinc-100 overflow-x-hidden" style={{ background: '#06060c' }}>
+    <div className="min-h-screen text-zinc-100 overflow-x-hidden" style={{ background: '#06060c', backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.03\'/%3E%3C/svg%3E")' }}>
 
       {/* ── NAV ── */}
       <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/6' : ''}`}>
@@ -175,8 +175,9 @@ export default function Landing() {
                style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs text-zinc-400 mb-8 font-medium"
-             style={{ animation: 'fadeSlideUp 0.5s ease 0.1s both' }}>
+        <div className="inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-xs text-zinc-300 mb-8 font-semibold"
+             style={{ animation: 'fadeSlideUp 0.5s ease 0.1s both', background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(217,70,239,0.1))', border: '1px solid rgba(99,102,241,0.3)', boxShadow: '0 0 20px rgba(99,102,241,0.1)' }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <Sparkles size={11} className="text-brand-400" />
           {t('land_badge')}
         </div>
@@ -221,10 +222,22 @@ export default function Landing() {
           {t('land_free_note')}
         </p>
 
+        {/* Trust bar */}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs text-zinc-600"
+             style={{ animation: 'fadeSlideUp 0.5s ease 0.6s both' }}>
+          <span className="flex items-center gap-1.5"><Lock size={10} className="text-zinc-600" /> SSL sécurisé</span>
+          <span className="w-px h-3 bg-white/8 hidden sm:block" />
+          <span className="flex items-center gap-1.5">💳 Dahabia · CIB · PayPal · Visa</span>
+          <span className="w-px h-3 bg-white/8 hidden sm:block" />
+          <span className="flex items-center gap-1.5">🇩🇿 <span>Algérie</span> · 🇫🇷 <span>France</span></span>
+          <span className="w-px h-3 bg-white/8 hidden sm:block" />
+          <span className="flex items-center gap-1.5"><Zap size={10} className="text-zinc-600" /> Annulation libre</span>
+        </div>
+
         {/* Hero mockup */}
         <div className="mt-16 w-full max-w-2xl mx-auto" style={{ animation: 'fadeSlideUp 0.8s ease 0.5s both' }}>
-          <div className="rounded-3xl border border-white/8 p-1"
-               style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', boxShadow: '0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)' }}>
+          <div className="rounded-3xl border border-white/8 p-1 relative"
+               style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', boxShadow: '0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05), 0 0 60px rgba(99,102,241,0.08)' }}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/6">
               <div className="flex gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-500/70" />
@@ -264,8 +277,45 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── MARQUEE FEATURES ── */}
+      <div className="border-y border-white/6 py-3 overflow-hidden" style={{ background: 'rgba(99,102,241,0.04)' }}>
+        <div className="flex items-center gap-0" style={{ animation: 'marquee 28s linear infinite', width: 'max-content' }}>
+          {[
+            '⚡ Prédictions IA temps réel',
+            '📦 Gestion stock avancée',
+            '🔔 Alertes rupture automatiques',
+            '📊 Analytics & tendances',
+            '🤖 Conseiller IA Groq',
+            '📲 Scanner QR code',
+            '🇩🇿 Mode Ramadan',
+            '💳 Dahabia · CIB · PayPal',
+            '📈 ABC Analysis',
+            '🌙 Golfe · SAR · AED · QAR',
+            '🛒 Mode Caisse QR',
+            '🧪 Simulation stock',
+            '⚡ Prédictions IA temps réel',
+            '📦 Gestion stock avancée',
+            '🔔 Alertes rupture automatiques',
+            '📊 Analytics & tendances',
+            '🤖 Conseiller IA Groq',
+            '📲 Scanner QR code',
+            '🇩🇿 Mode Ramadan',
+            '💳 Dahabia · CIB · PayPal',
+            '📈 ABC Analysis',
+            '🌙 Golfe · SAR · AED · QAR',
+            '🛒 Mode Caisse QR',
+            '🧪 Simulation stock',
+          ].map((item, i) => (
+            <span key={i} className="inline-flex items-center gap-2 px-6 text-xs text-zinc-500 font-medium shrink-0">
+              {item}
+              <span className="w-1 h-1 rounded-full bg-zinc-700 shrink-0" />
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* ── STATS BAR ── */}
-      <section className="border-y border-white/6 py-10" style={{ background: 'rgba(255,255,255,0.015)' }}>
+      <section className="border-b border-white/6 py-10" style={{ background: 'rgba(255,255,255,0.015)' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {[
@@ -382,7 +432,7 @@ export default function Landing() {
             <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">{t('land_market_label')}</p>
             <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">{t('land_market_h2')}</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {/* Algeria */}
             <div className="rounded-2xl border border-emerald-500/20 p-7" style={{ background: 'rgba(16,185,129,0.04)' }}>
               <div className="text-3xl mb-4">🇩🇿</div>
@@ -403,6 +453,35 @@ export default function Landing() {
                 {[t('land_market_fr_f1'), t('land_market_fr_f2'), t('land_market_fr_f3'), t('land_market_fr_f4'), t('land_market_fr_f5')].map(f => (
                   <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-300">
                     <CheckCircle size={14} className="text-blue-400 shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {/* Gulf */}
+            <div className="rounded-2xl border p-7 relative overflow-hidden"
+                 style={{ background: 'rgba(251,191,36,0.04)', borderColor: 'rgba(251,191,36,0.25)' }}>
+              <div className="absolute top-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full"
+                   style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff' }}>
+                NOUVEAU
+              </div>
+              <div className="text-3xl mb-4">🌙 خليج</div>
+              <h3 className="font-bold text-white text-lg mb-4">{isRTL ? 'الخليج العربي' : 'Golfe Arabique'}</h3>
+              <ul className="space-y-3">
+                {(isRTL ? [
+                  'دعم SAR · AED · QAR',
+                  'واجهة عربية كاملة RTL',
+                  'وضع رمضان + موسم الحج',
+                  'تنبيهات واتساب للمورد',
+                  'دفع دولي PayPal / Visa',
+                ] : [
+                  'Devises SAR · AED · QAR',
+                  'Interface arabe RTL native',
+                  'Mode Ramadan + Hajj',
+                  'Alertes WhatsApp fournisseur',
+                  'Paiement PayPal / Visa',
+                ]).map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                    <CheckCircle size={14} className="shrink-0" style={{ color: '#f59e0b' }} /> {f}
                   </li>
                 ))}
               </ul>
@@ -450,7 +529,7 @@ export default function Landing() {
             <div className="rounded-2xl border border-white/8 p-7" style={{ background: 'rgba(255,255,255,0.02)' }}>
               <p className="font-bold text-white text-lg mb-1">{isRTL ? 'مجاني' : 'Gratuit'}</p>
               <p className="text-4xl font-black text-white mb-1">0 <span className="text-lg text-zinc-500 font-normal">DA</span></p>
-              <p className="text-zinc-600 text-xs mb-6">{isRTL ? 'لاكتشاف بلا مخاطرة' : 'Pour découvrir sans risque'}</p>
+              <p className="text-zinc-600 text-xs mb-6">{isRTL ? 'لاكتشاف بلا مخاطرة' : 'Pour découvrir sans risque · 0 € · 0 $'}</p>
               {(isRTL
                 ? ['5 تنبؤات ذكاء اصطناعي', 'جميع منتجاتك', 'تصدير CSV', 'مستشار ذكي']
                 : ['5 prédictions IA', 'Tous vos produits', 'Export CSV', 'Conseiller IA']
@@ -471,8 +550,12 @@ export default function Landing() {
                 {isRTL ? 'موصى به' : 'Recommandé'}
               </div>
               <p className="font-bold text-white text-lg mb-1">Pro</p>
-              <p className="text-4xl font-black text-white mb-1">900 <span className="text-lg text-zinc-400 font-normal">DA</span></p>
-              <p className="text-zinc-500 text-xs mb-6">{isRTL ? 'أو 9 € / شهر · إلغاء حر' : 'ou 9 € / mois · Annulation libre'}</p>
+              <p className="text-4xl font-black text-white mb-1">1 500 <span className="text-lg text-zinc-400 font-normal">DA</span></p>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">≈ 14 €</span>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">≈ 15 $</span>
+              </div>
+              <p className="text-zinc-500 text-xs mb-6">{isRTL ? 'شهرياً · إلغاء حر' : 'par mois · Annulation libre'}</p>
               {(isRTL
                 ? ['تنبؤات غير محدودة', 'تنبيهات بريد تلقائية', 'تحليلات متقدمة', 'دعم أولوي 7 أيام/7']
                 : ['Prédictions illimitées', 'Alertes email auto', 'Analytics avancés', 'Support prioritaire 7j/7']
@@ -506,10 +589,12 @@ export default function Landing() {
       <section className="py-32 px-5 sm:px-8 border-t border-white/6 text-center relative overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full blur-[100px]"
-               style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)' }} />
+               style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.25) 0%, rgba(217,70,239,0.1) 50%, transparent 70%)' }} />
         </div>
         <div className="relative max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs text-zinc-400 mb-8">
+          <div className="inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-xs text-zinc-300 mb-8 font-semibold"
+               style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(217,70,239,0.1))', border: '1px solid rgba(99,102,241,0.3)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <Sparkles size={11} className="text-brand-400" />
             {t('land_cta_sub')}
           </div>
@@ -556,6 +641,15 @@ export default function Landing() {
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes aurora {
+          0%, 100% { transform: translate(0,0) scale(1); }
+          33% { transform: translate(30px,-20px) scale(1.05); }
+          66% { transform: translate(-20px,30px) scale(0.95); }
+        }
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
         }
       `}</style>
     </div>

@@ -11,8 +11,10 @@ import {
   Camera, CameraOff, Search, AlertTriangle, CheckCircle,
   Loader2, Package, Clock, Shield, RotateCcw, Zap, Barcode,
   Flashlight, FlashlightOff, ZoomIn, ZoomOut, FlipHorizontal2, Volume2, VolumeX,
+  PackagePlus, ShoppingCart, Plus, Minus,
 } from 'lucide-react'
-import API from '../api/api'
+import { useNavigate } from 'react-router-dom'
+import API, { SalesAPI } from '../api/api'
 import Toast from '../components/Toast'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -102,6 +104,7 @@ const RISK_CONFIG = {
 
 export default function QRScanner() {
   const { t } = useLanguage()
+  const navigate = useNavigate()
   const [mode, setMode] = useState<'camera' | 'text'>('camera')
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -121,6 +124,10 @@ export default function QRScanner() {
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [scanHistory, setScanHistory] = useState<string[]>([])
+  const [notFoundCode, setNotFoundCode] = useState<string | null>(null)
+  const [saleQty, setSaleQty] = useState(1)
+  const [saleLoading, setSaleLoading] = useState(false)
+  const [saleSuccess, setSaleSuccess] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -301,8 +308,13 @@ export default function QRScanner() {
       setScanHistory(prev => [data, ...prev.filter(h => h !== data)].slice(0, 5))
       stopCamera()
     } catch (err: any) {
-      setToast({ msg: err.response?.data?.detail || t('scan_not_found'), type: 'error' })
-      setTimeout(() => { setLastScanned(null); setScanning(true) }, 2000)
+      if (err.response?.status === 404) {
+        setNotFoundCode(data.trim())
+        stopCamera()
+      } else {
+        setToast({ msg: err.response?.data?.detail || t('scan_not_found'), type: 'error' })
+        setTimeout(() => { setLastScanned(null); setScanning(true) }, 2000)
+      }
     } finally {
       setLoading(false)
     }
@@ -319,7 +331,30 @@ export default function QRScanner() {
     setLastScanned(null)
     setDetectedFormat(null)
     setManualInput('')
+    setNotFoundCode(null)
+    setSaleQty(1)
+    setSaleSuccess(false)
     if (mode === 'camera') startCamera()
+  }
+
+  async function handleQuickSale() {
+    if (!result || saleQty < 1) return
+    setSaleLoading(true)
+    try {
+      await SalesAPI.add({ product_id: result.product_id, quantity: saleQty })
+      setSaleSuccess(true)
+      if (soundEnabled) playBeep()
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80])
+      setResult(prev => prev ? { ...prev, current_stock: Math.max(0, prev.current_stock - saleQty) } : prev)
+      setTimeout(() => {
+        setSaleSuccess(false)
+        setSaleQty(1)
+      }, 2500)
+    } catch (err: any) {
+      setToast({ msg: err.response?.data?.detail || 'Erreur lors de l\'enregistrement', type: 'error' })
+    } finally {
+      setSaleLoading(false)
+    }
   }
 
   const cfg = result ? RISK_CONFIG[result.risk_level] : null
@@ -618,6 +653,61 @@ export default function QRScanner() {
             <p className="text-sm text-zinc-300 leading-relaxed">{result.recommendation}</p>
           </div>
 
+          {/* ── Vente Rapide (Mode Caisse) ── */}
+          <div className={`rounded-xl border p-4 transition-all duration-300 ${saleSuccess ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-white/10 bg-white/3'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <ShoppingCart size={14} className={saleSuccess ? 'text-emerald-400' : 'text-zinc-400'} />
+              <p className="text-sm font-semibold text-zinc-200">
+                {saleSuccess ? '✓ Vente enregistrée !' : 'Vente Rapide'}
+              </p>
+              {saleSuccess && (
+                <span className="text-xs text-emerald-400 ml-auto">Stock: {result.current_stock}</span>
+              )}
+            </div>
+
+            {!saleSuccess && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <button
+                    onClick={() => setSaleQty(q => Math.max(1, q - 1))}
+                    className="w-9 h-9 rounded-lg bg-white/8 border border-white/10 text-zinc-300 hover:bg-white/15 flex items-center justify-center transition-all active:scale-95"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={result.current_stock || 999}
+                    value={saleQty}
+                    onChange={e => setSaleQty(Math.max(1, Number(e.target.value)))}
+                    className="w-16 text-center bg-white/5 border border-white/10 rounded-lg py-2 text-white font-bold text-lg focus:outline-none focus:border-brand-500/60"
+                  />
+                  <button
+                    onClick={() => setSaleQty(q => q + 1)}
+                    className="w-9 h-9 rounded-lg bg-white/8 border border-white/10 text-zinc-300 hover:bg-white/15 flex items-center justify-center transition-all active:scale-95"
+                  >
+                    <Plus size={14} />
+                  </button>
+                  <span className="text-xs text-zinc-500 ml-1">unité{saleQty > 1 ? 's' : ''}</span>
+                </div>
+                <button
+                  onClick={handleQuickSale}
+                  disabled={saleLoading || result.current_stock === 0}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}
+                >
+                  {saleLoading ? <Loader2 size={14} className="animate-spin" /> : <ShoppingCart size={14} />}
+                  Vendre
+                </button>
+              </div>
+            )}
+            {result.current_stock === 0 && !saleSuccess && (
+              <p className="text-xs text-red-400 mt-2 flex items-center gap-1">
+                <AlertTriangle size={11} /> Stock épuisé — impossible de vendre
+              </p>
+            )}
+          </div>
+
           <button
             onClick={reset}
             className="w-full py-2.5 rounded-xl text-sm text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2"
@@ -625,6 +715,39 @@ export default function QRScanner() {
             <RotateCcw size={14} />
             {mode === 'camera' ? t('scan_new_scan') : t('scan_new_search')}
           </button>
+        </div>
+      )}
+
+      {/* Not found → propose to create */}
+      {notFoundCode && !result && (
+        <div className="rounded-2xl p-6 border border-amber-500/30 bg-amber-500/10 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/8 flex items-center justify-center shrink-0">
+              <Package size={18} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-white">Produit non enregistré</p>
+              <p className="text-xs text-zinc-400 font-mono mt-0.5">{notFoundCode}</p>
+            </div>
+          </div>
+          <p className="text-sm text-zinc-300">
+            Ce code n'est lié à aucun produit. Voulez-vous l'ajouter à votre catalogue ?
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate(`/create-product?sku=${encodeURIComponent(notFoundCode)}`)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}
+            >
+              <PackagePlus size={15} /> Créer ce produit
+            </button>
+            <button
+              onClick={reset}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 transition-all"
+            >
+              <RotateCcw size={14} /> Scanner à nouveau
+            </button>
+          </div>
         </div>
       )}
 

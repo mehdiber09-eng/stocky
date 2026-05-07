@@ -107,6 +107,26 @@ export default function Dashboard() {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
+  function sendWhatsAppReorder(item: InventoryHealthItem) {
+    const reorderQty = Math.max(item.reorder_point * 2, item.safety_stock * 3, 10)
+    const msg = [
+      `Bonjour,`,
+      ``,
+      `Je souhaite passer une commande urgente :`,
+      ``,
+      `📦 *${item.product_name}*`,
+      `   • SKU : ${item.sku}`,
+      `   • Stock actuel : ${item.current_stock} unité${item.current_stock > 1 ? 's' : ''}`,
+      `   • Quantité souhaitée : *${reorderQty} unités*`,
+      `   • Délai souhaité : ${item.lead_time_days} jours`,
+      ``,
+      `Merci de confirmer la disponibilité et le prix.`,
+      ``,
+      `_Via Stocky — Gestion de stock intelligente_`,
+    ].join('\n')
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+  }
+
   useEffect(() => { fetchAll() }, [fetchAll])
 
   async function handleDelete(id: number) {
@@ -363,7 +383,7 @@ export default function Dashboard() {
               <div key={item.product_id} className={`flex items-center justify-between px-3 py-2 rounded-lg ${
                 item.status === 'critical' ? 'bg-red-500/10 border border-red-500/20' : 'bg-amber-500/8 border border-amber-500/15'
               }`}>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-zinc-200 truncate">{item.product_name}</p>
                   <p className="text-xs text-zinc-500">
                     {t('dash_alert_stock')} <span className={item.current_stock === 0 ? 'text-red-400 font-semibold' : 'text-amber-400'}>{item.current_stock}</span>
@@ -371,11 +391,21 @@ export default function Dashboard() {
                     {t('dash_alert_reorder')} {item.reorder_point}
                   </p>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ml-2 ${
-                  item.status === 'critical' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
-                }`}>
-                  {item.status === 'critical' ? t('dash_alert_critical') : t('dash_alert_warning')}
-                </span>
+                <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    item.status === 'critical' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
+                  }`}>
+                    {item.status === 'critical' ? t('dash_alert_critical') : t('dash_alert_warning')}
+                  </span>
+                  <Tooltip text="Commander sur WhatsApp" position="left">
+                    <button
+                      onClick={() => sendWhatsAppReorder(item)}
+                      className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                    >
+                      <MessageCircle size={12} />
+                    </button>
+                  </Tooltip>
+                </div>
               </div>
             ))}
           </div>

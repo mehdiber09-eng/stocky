@@ -37,8 +37,9 @@ class Settings(BaseSettings):
     API_BASE_URL: str = os.getenv("API_BASE_URL", "http://localhost:8000")
 
     # Subscription price
-    PRICE_DZD: int = int(os.getenv("PRICE_DZD", "900"))
-    PRICE_USD: float = float(os.getenv("PRICE_USD", "9.0"))
+    PRICE_DZD: int = int(os.getenv("PRICE_DZD", "1500"))
+    PRICE_USD: float = float(os.getenv("PRICE_USD", "15.0"))
+    PRICE_EUR: float = float(os.getenv("PRICE_EUR", "14.0"))
 
     @property
     def superuser_emails_set(self) -> set:

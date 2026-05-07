@@ -60,6 +60,9 @@ export interface Product {
   lead_time_days: number
   safety_stock: number
   supplier_id: number | null
+  unit_price: number | null
+  cost_price: number | null
+  price_currency: string
   created_at: string
 }
 
@@ -70,6 +73,34 @@ export interface Supplier {
   phone: string | null
   lead_time_days: number
   created_at: string
+  reliability_score?: number
+  product_count?: number
+}
+
+export interface StockRotationItem {
+  product_id: number
+  product_name: string
+  sku: string
+  current_stock: number
+  dsi: number | null
+  rotation_rate: number | null
+  is_dormant: boolean
+  last_sale_date: string | null
+  days_since_last_sale: number | null
+  sales_365d: number
+}
+
+export interface MarginItem {
+  product_id: number
+  product_name: string
+  sku: string
+  unit_price_dzd: number
+  cost_price_dzd: number | null
+  margin_absolute: number | null
+  margin_pct: number | null
+  current_stock: number
+  stock_value_dzd: number
+  price_currency: string
 }
 
 export interface StockMovement {
@@ -181,10 +212,15 @@ export const AuthAPI = {
 export const ProductsAPI = {
   list: () => API.get<Product[]>('/products/'),
   get: (id: number) => API.get<Product>(`/products/${id}`),
-  create: (data: { name: string; sku: string; lead_time_days: number; safety_stock: number; initial_stock?: number; supplier_id?: number | null }) =>
-    API.post<Product>('/products/', data),
-  update: (id: number, data: { name?: string; lead_time_days?: number; safety_stock?: number; supplier_id?: number | null }) =>
-    API.put<Product>(`/products/${id}`, data),
+  create: (data: {
+    name: string; sku: string; lead_time_days: number; safety_stock: number;
+    initial_stock?: number; supplier_id?: number | null;
+    unit_price?: number | null; cost_price?: number | null; price_currency?: string;
+  }) => API.post<Product>('/products/', data),
+  update: (id: number, data: {
+    name?: string; lead_time_days?: number; safety_stock?: number; supplier_id?: number | null;
+    unit_price?: number | null; cost_price?: number | null; price_currency?: string;
+  }) => API.put<Product>(`/products/${id}`, data),
   delete: (id: number) => API.delete(`/products/${id}`),
 }
 
@@ -255,6 +291,7 @@ export interface PaymentStatus {
   is_subscribed: boolean
   price_dzd: number
   price_usd: number
+  price_eur: number
   chargily_enabled: boolean
   paypal_enabled: boolean
 }

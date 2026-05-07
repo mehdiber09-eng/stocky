@@ -36,8 +36,9 @@ export default function Pricing() {
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [chargilyEnabled, setChargilyEnabled] = useState(false)
   const [paypalEnabled, setPaypalEnabled] = useState(false)
-  const [priceDzd, setPriceDzd] = useState(900)
-  const [priceUsd, setPriceUsd] = useState(9)
+  const [priceDzd, setPriceDzd] = useState(1500)
+  const [priceUsd, setPriceUsd] = useState(15)
+  const [priceEur, setPriceEur] = useState(14)
   const [loading, setLoading] = useState<PayMethod>(null)
   const [statusLoading, setStatusLoading] = useState(true)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
@@ -51,6 +52,7 @@ export default function Pricing() {
         setPaypalEnabled(r.data.paypal_enabled)
         setPriceDzd(r.data.price_dzd)
         setPriceUsd(r.data.price_usd)
+        if (r.data.price_eur) setPriceEur(r.data.price_eur)
       })
       .catch(() => {})
       .finally(() => setStatusLoading(false))
@@ -149,7 +151,11 @@ export default function Pricing() {
               <span className="text-4xl font-bold text-white">{priceDzd.toLocaleString()}</span>
               <span className="text-zinc-400 mb-1.5">DZD/mois</span>
             </div>
-            <p className="text-zinc-500 text-sm mt-1">≈ {priceUsd}€ · Prédictions illimitées</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">≈ {priceEur} €</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">≈ {priceUsd} $</span>
+            </div>
+            <p className="text-zinc-500 text-sm mt-2">Prédictions illimitées · Sans engagement</p>
           </div>
 
           {/* Feature list */}
@@ -254,7 +260,7 @@ export default function Pricing() {
                     style={{ background: 'linear-gradient(135deg,#0070ba,#003087)', color: '#fff', boxShadow: '0 4px 16px rgba(0,112,186,0.3)' }}
                   >
                     {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
-                    PayPal — {priceUsd}€
+                    PayPal — {priceEur}€ / {priceUsd}$
                   </button>
                 </Tooltip>
 
@@ -287,7 +293,7 @@ export default function Pricing() {
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-600/60 text-zinc-300 hover:bg-zinc-700/40"
                   >
                     {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                    Payer par carte — {priceUsd}€
+                    Payer par carte — {priceEur}€ / {priceUsd}$
                   </button>
                 </Tooltip>
               </div>

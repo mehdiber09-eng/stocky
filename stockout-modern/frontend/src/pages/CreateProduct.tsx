@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Package, Loader2, Truck, Barcode } from 'lucide-react'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { ArrowLeft, Package, Loader2, Truck, Barcode, QrCode } from 'lucide-react'
 import { ProductsAPI, SuppliersAPI, Supplier } from '../api/api'
 import Toast from '../components/Toast'
 import BarcodeScanModal from '../components/BarcodeScanModal'
+import QRProductModal from '../components/QRProductModal'
 import { useLanguage } from '../context/LanguageContext'
 
 export default function CreateProduct() {
   const { t } = useLanguage()
+  const [searchParams] = useSearchParams()
   const [name, setName] = useState('')
-  const [sku, setSku] = useState('')
+  const [sku, setSku] = useState(() => (searchParams.get('sku') ?? '').toUpperCase())
   const [leadTime, setLeadTime] = useState(7)
   const [safetyStock, setSafetyStock] = useState(0)
   const [initialStock, setInitialStock] = useState(0)
@@ -19,6 +21,7 @@ export default function CreateProduct() {
   const [loading, setLoading] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [qrProduct, setQrProduct] = useState<{ id: number; name: string; sku: string } | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -33,7 +36,7 @@ export default function CreateProduct() {
     e.preventDefault()
     setLoading(true)
     try {
-      await ProductsAPI.create({
+      const res = await ProductsAPI.create({
         name, sku,
         lead_time_days: leadTime,
         safety_stock: safetyStock,
@@ -41,7 +44,7 @@ export default function CreateProduct() {
         supplier_id: supplierId,
       })
       setToast({ msg: t('cp_success'), type: 'success' })
-      setTimeout(() => navigate('/dashboard'), 800)
+      setQrProduct({ id: res.data.id, name: res.data.name, sku: res.data.sku })
     } catch (err: any) {
       setToast({ msg: err.response?.data?.detail || t('cp_error'), type: 'error' })
     } finally {
@@ -172,6 +175,9 @@ export default function CreateProduct() {
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
               {t('cp_submit')}
             </button>
+            <span className="flex items-center gap-1 text-xs text-zinc-600">
+              <QrCode size={11} /> QR auto-généré
+            </span>
             <Link to="/">
               <button type="button" className="btn-ghost text-sm">{t('btn_cancel')}</button>
             </Link>
@@ -183,6 +189,16 @@ export default function CreateProduct() {
         <BarcodeScanModal
           onDetected={code => setSku(code.toUpperCase())}
           onClose={() => setScanOpen(false)}
+        />
+      )}
+
+      {qrProduct && (
+        <QRProductModal
+          product={qrProduct}
+          onClose={() => {
+            setQrProduct(null)
+            navigate('/dashboard')
+          }}
         />
       )}
 

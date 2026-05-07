@@ -40,6 +40,7 @@ async def payment_status(user=Depends(get_current_user)):
         "is_subscribed": user.is_subscribed,
         "price_dzd": settings.PRICE_DZD,
         "price_usd": settings.PRICE_USD,
+        "price_eur": settings.PRICE_EUR,
         "chargily_enabled": bool(settings.CHARGILY_API_KEY),
         "paypal_enabled": bool(settings.PAYPAL_CLIENT_ID and settings.PAYPAL_SECRET),
     }
