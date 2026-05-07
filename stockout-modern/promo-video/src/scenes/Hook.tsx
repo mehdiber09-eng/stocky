@@ -3,6 +3,7 @@ import { AbsoluteFill, useCurrentFrame, spring, interpolate, useVideoConfig } fr
 import { theme, isRTL, type Lang } from '../theme'
 import { translations } from '../translations'
 import { Logo } from '../components/Logo'
+import { shake } from '../components/effects'
 
 interface Props {
   lang: Lang
@@ -27,6 +28,11 @@ export const Hook: React.FC<Props> = ({ lang, format }) => {
 
   const fadeOut = interpolate(frame, [75, 90], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
 
+  // Flash d'intro blanc qui s'efface
+  const introFlash = interpolate(frame, [0, 6], [0.6, 0], { extrapolateRight: 'clamp' })
+  // Léger shake permanent
+  const sh = shake(frame, 1.2, fps)
+
   const isVertical = format === 'vertical'
   const titleSize = isVertical ? 130 : 140
   const subSize = isVertical ? 28 : 32
@@ -40,8 +46,12 @@ export const Hook: React.FC<Props> = ({ lang, format }) => {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 80,
+        transform: `translate(${sh.x}px, ${sh.y}px)`,
       }}
     >
+      {/* Flash blanc d'intro */}
+      <AbsoluteFill style={{ background: 'white', opacity: introFlash }} />
+
       <div
         style={{
           opacity: logoOpacity,

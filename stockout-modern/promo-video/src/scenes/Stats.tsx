@@ -2,10 +2,11 @@ import React from 'react'
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion'
 import { theme, isRTL, type Lang } from '../theme'
 import { translations } from '../translations'
+import { countUp } from '../components/effects'
 
 interface Props { lang: Lang; format: 'vertical' | 'horizontal' }
 
-/** Scène 19-25s (180 frames) : 3 chiffres animés */
+/** Scène 19-25s — 3 chiffres clés en ticker count-up. */
 export const Stats: React.FC<Props> = ({ lang, format }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
@@ -22,10 +23,18 @@ export const Stats: React.FC<Props> = ({ lang, format }) => {
   const numSize = isVertical ? 180 : 220
   const labelSize = isVertical ? 28 : 32
 
+  // Localized digits for AR
+  const toArDigits = (n: string) =>
+    n.replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)])
+  const fmt = (n: number, prefix = '', suffix = '') => {
+    const base = `${prefix}${n}${suffix}`
+    return rtl ? toArDigits(base) : base
+  }
+
   const items = [
-    { num: t.stats_1, label: t.stats_1_label, color: theme.colors.primary,    delay: 25  },
-    { num: t.stats_2, label: t.stats_2_label, color: theme.colors.success,    delay: 50  },
-    { num: t.stats_3, label: t.stats_3_label, color: theme.colors.secondary,  delay: 75  },
+    { value: 91, prefix: '',   suffix: '%', label: t.stats_1_label, color: theme.colors.primary,   delay: 25, dur: 30 },
+    { value: 22, prefix: '+',  suffix: '%', label: t.stats_2_label, color: theme.colors.success,   delay: 55, dur: 30 },
+    { value: 87, prefix: '−',  suffix: '%', label: t.stats_3_label, color: theme.colors.secondary, delay: 85, dur: 30 },
   ]
 
   return (
@@ -63,12 +72,14 @@ export const Stats: React.FC<Props> = ({ lang, format }) => {
         }}
       >
         {items.map((it) => {
-          const opacity = interpolate(frame, [it.delay, it.delay + 20], [0, 1], { extrapolateRight: 'clamp' })
+          const opacity = interpolate(frame, [it.delay, it.delay + 12], [0, 1], { extrapolateRight: 'clamp' })
           const scale = spring({ frame: frame - it.delay, fps, config: { damping: 11, stiffness: 90 } })
-          const glow = (Math.sin((frame - it.delay) * 0.1) + 1) / 2
+          const glow = (Math.sin((frame - it.delay) * 0.12) + 1) / 2
+          const current = countUp(frame, it.delay + 5, it.dur, it.value)
+
           return (
             <div
-              key={it.num}
+              key={it.label}
               style={{
                 opacity,
                 transform: `scale(${scale})`,
@@ -82,17 +93,20 @@ export const Stats: React.FC<Props> = ({ lang, format }) => {
                   lineHeight: 1,
                   color: it.color,
                   letterSpacing: -numSize * 0.03,
-                  filter: `drop-shadow(0 0 ${30 + glow * 25}px ${it.color}aa)`,
+                  filter: `drop-shadow(0 0 ${30 + glow * 30}px ${it.color}aa)`,
                   marginBottom: 14,
+                  fontFamily: theme.font.sans,
+                  fontVariantNumeric: 'tabular-nums',
                 }}
               >
-                {it.num}
+                {fmt(current, it.prefix, it.suffix)}
               </div>
               <div
                 style={{
                   fontSize: labelSize,
                   color: theme.colors.text,
                   fontWeight: 500,
+                  maxWidth: isVertical ? 600 : 360,
                 }}
               >
                 {it.label}

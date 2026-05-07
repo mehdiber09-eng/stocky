@@ -1,7 +1,8 @@
 import React from 'react'
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate, Sequence } from 'remotion'
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion'
 import { theme, isRTL, type Lang } from '../theme'
 import { translations } from '../translations'
+import { shake } from '../components/effects'
 
 interface Props { lang: Lang; format: 'vertical' | 'horizontal' }
 
@@ -25,6 +26,11 @@ export const Solution: React.FC<Props> = ({ lang, format }) => {
   const alertY = interpolate(frame, [110, 135], [20, 0], { extrapolateRight: 'clamp' })
   const alertPulse = (Math.sin(frame * 0.25) + 1) / 2
 
+  // Camera shake léger (sauf pendant le scroll initial)
+  const sh = shake(frame, 1.0, fps)
+  // Flash d'entrée
+  const enterFlash = interpolate(frame, [0, 4, 10], [0, 0.3, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+
   const fadeOut = interpolate(frame, [285, 300], [1, 0], { extrapolateRight: 'clamp' })
 
   const isVertical = format === 'vertical'
@@ -46,8 +52,12 @@ export const Solution: React.FC<Props> = ({ lang, format }) => {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 60,
+        transform: `translate(${sh.x}px, ${sh.y}px)`,
       }}
     >
+      {/* Flash entrée */}
+      <AbsoluteFill style={{ background: 'white', opacity: enterFlash }} />
+
       <div
         style={{
           opacity: titleOpacity,

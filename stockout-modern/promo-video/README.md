@@ -69,25 +69,20 @@ npm run render:all
   Stocky avec `<Img src={staticFile('dashboard.png')} />` (place l'image
   dans `public/`).
 
+## Ajouter le son (musique + SFX)
+
+Voir **[AUDIO.md](AUDIO.md)** — guide pas-à-pas avec liens directs Pixabay
+gratuits pour télécharger les 4 fichiers audio nécessaires (musique de fond,
+whoosh × 3, impact bass, sparkle final), tous synchronisés aux moments forts
+de la vidéo.
+
+Une fois les fichiers en place dans `public/`, passe `ENABLE_AUDIO = true`
+dans `src/PromoVideo.tsx`.
+
 ## Ajouter une voix off
 
-1. Génère ton audio en MP3 (ElevenLabs, ChatGPT TTS, etc.)
-2. Pose-le dans `public/voiceover-fr.mp3`
-3. Dans `PromoVideo.tsx` :
-
-```tsx
-import { Audio, staticFile } from 'remotion'
-// ...
-<Audio src={staticFile('voiceover-fr.mp3')} />
-```
-
-Pour synchroniser, ajuste les timings frame des scènes pour matcher la
-voix. Remotion Studio te montre la waveform.
-
-## Ajouter une musique de fond
-
-Pareil mais avec `<Audio src={staticFile('bgm.mp3')} volume={0.2} />`
-(volume 0–1, garde bas pour ne pas couvrir la voix off).
+Voir AUDIO.md section 6 — instructions complètes avec script optimisé prêt
+à dicter sur ElevenLabs ou à enregistrer toi-même.
 
 ## Tips
 

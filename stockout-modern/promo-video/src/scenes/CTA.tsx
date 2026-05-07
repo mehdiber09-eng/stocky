@@ -3,10 +3,11 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate } fr
 import { theme, isRTL, type Lang } from '../theme'
 import { translations } from '../translations'
 import { Logo } from '../components/Logo'
+import { particles } from '../components/effects'
 
 interface Props { lang: Lang; format: 'vertical' | 'horizontal' }
 
-/** Scène 25-30s (150 frames) : Logo + URL + CTA + prix */
+/** Scène 25-30s — CTA avec particles qui rayonnent du logo. */
 export const CTA: React.FC<Props> = ({ lang, format }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
@@ -25,8 +26,13 @@ export const CTA: React.FC<Props> = ({ lang, format }) => {
   const flagsOpacity = interpolate(frame, [60, 80], [0, 1], { extrapolateRight: 'clamp' })
   const noteOpacity = interpolate(frame, [80, 100], [0, 1], { extrapolateRight: 'clamp' })
 
-  // Pulsing glow on button
   const glowPulse = (Math.sin(frame * 0.18) + 1) / 2
+
+  // Particles qui rayonnent du logo au moment où il apparaît
+  const sparkles = particles(28, frame, 4, 70)
+
+  // Pulse du fond glow qui suit le rythme
+  const bgPulse = (Math.sin(frame * 0.1) + 1) / 2
 
   const isVertical = format === 'vertical'
   const titleSizeA = isVertical ? 90 : 110
@@ -47,21 +53,44 @@ export const CTA: React.FC<Props> = ({ lang, format }) => {
         textAlign: 'center',
       }}
     >
-      {/* Background glow */}
+      {/* Background glow pulsant */}
       <div
         style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(-50%, -50%) scale(${1 + bgPulse * 0.08})`,
           width: '90%',
-          height: '50%',
+          height: '60%',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(99,102,241,0.30), rgba(217,70,239,0.12) 50%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.32), rgba(217,70,239,0.14) 50%, transparent 70%)',
           filter: 'blur(80px)',
-          opacity: 0.8,
+          opacity: 0.7 + bgPulse * 0.3,
         }}
       />
+
+      {/* Particles qui rayonnent du centre */}
+      {sparkles.map(p => (
+        <div
+          key={p.key}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: 16,
+            height: 16,
+            marginLeft: -8,
+            marginTop: -8,
+            borderRadius: '50%',
+            background: p.key % 3 === 0 ? theme.colors.accent : p.key % 3 === 1 ? theme.colors.primary : theme.colors.secondary,
+            transform: `translate(${p.x}px, ${p.y}px) scale(${p.scale})`,
+            opacity: p.opacity,
+            filter: 'blur(2px)',
+            boxShadow: '0 0 12px currentColor',
+            zIndex: 1,
+          }}
+        />
+      ))}
 
       <div
         style={{
@@ -121,7 +150,7 @@ export const CTA: React.FC<Props> = ({ lang, format }) => {
         {t.cta_pricing}
       </div>
 
-      {/* CTA button */}
+      {/* CTA button avec glow pulsant */}
       <div
         style={{
           opacity: buttonOpacity,
@@ -132,7 +161,7 @@ export const CTA: React.FC<Props> = ({ lang, format }) => {
           color: theme.colors.white,
           fontWeight: 800,
           fontSize: buttonSize,
-          boxShadow: `0 0 ${50 + glowPulse * 40}px rgba(99,102,241,${0.5 + glowPulse * 0.3}), inset 0 1px 0 rgba(255,255,255,0.25)`,
+          boxShadow: `0 0 ${50 + glowPulse * 50}px rgba(99,102,241,${0.5 + glowPulse * 0.4}), inset 0 1px 0 rgba(255,255,255,0.25)`,
           marginBottom: 30,
           zIndex: 2,
         }}

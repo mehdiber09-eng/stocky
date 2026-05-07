@@ -8,9 +8,9 @@ const DURATION = 900 // 30s @ 30fps
 
 const LANGS: Lang[] = ['fr', 'ar', 'en']
 const FORMATS = [
-  { name: 'vertical',   width: 1080, height: 1920 },
-  { name: 'horizontal', width: 1920, height: 1080 },
-] as const
+  { name: 'vertical' as const,   width: 1080, height: 1920 },
+  { name: 'horizontal' as const, width: 1920, height: 1080 },
+]
 
 export const Root: React.FC = () => {
   return (
@@ -22,7 +22,8 @@ export const Root: React.FC = () => {
             <Composition
               key={id}
               id={id}
-              component={PromoVideo}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              component={PromoVideo as any}
               durationInFrames={DURATION}
               fps={FPS}
               width={fmt.width}
