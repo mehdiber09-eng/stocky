@@ -51,6 +51,9 @@ class Product(Base):
     lead_time_days = Column(Integer, default=7, nullable=False)
     safety_stock = Column(Integer, default=0, nullable=False)
     supplier_id = Column(Integer, ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
+    unit_price = Column(Float, nullable=True)
+    cost_price = Column(Float, nullable=True)
+    price_currency = Column(String(10), nullable=False, default="DZD", server_default="DZD")
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     owner = relationship("User")

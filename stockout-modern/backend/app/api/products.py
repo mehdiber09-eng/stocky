@@ -22,6 +22,10 @@ async def create_product(
         sku=payload.sku,
         lead_time_days=payload.lead_time_days,
         safety_stock=payload.safety_stock,
+        supplier_id=payload.supplier_id,
+        unit_price=payload.unit_price,
+        cost_price=payload.cost_price,
+        price_currency=payload.price_currency,
     )
     db.add(product)
     try:

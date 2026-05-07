@@ -26,14 +26,27 @@ class Token(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    sku: str = Field(..., min_length=1, max_length=100, regex=r"^[A-Z0-9\-_]+$")
+    sku: str = Field(..., min_length=1, max_length=100)
     lead_time_days: int = Field(default=7, ge=0, le=365)
     safety_stock: int = Field(default=0, ge=0)
     initial_stock: int = Field(default=0, ge=0, description="Quantité initiale en stock")
+    unit_price: Optional[float] = Field(None, ge=0)
+    cost_price: Optional[float] = Field(None, ge=0)
+    price_currency: str = Field(default="DZD", max_length=10)
+    supplier_id: Optional[int] = None
 
-    @validator("sku")
-    def sku_uppercase(cls, v):
-        return v.upper()
+    @validator("sku", pre=True)
+    def sku_normalize(cls, v):
+        if not isinstance(v, str):
+            raise ValueError("sku doit être une chaîne")
+        v = v.strip().upper()
+        if not v:
+            raise ValueError("sku ne peut pas être vide")
+        # Accepte alphanumérique + séparateurs courants des codes-barres (EAN, QR, Code 128, URL)
+        import re
+        if not re.match(r"^[A-Z0-9\-_.:/ ]+$", v):
+            raise ValueError("sku ne peut contenir que lettres, chiffres, et - _ . : / espace")
+        return v
 
 
 class ProductOut(BaseModel):
@@ -43,6 +56,9 @@ class ProductOut(BaseModel):
     lead_time_days: int
     safety_stock: int
     supplier_id: Optional[int] = None
+    unit_price: Optional[float] = None
+    cost_price: Optional[float] = None
+    price_currency: str = "DZD"
     created_at: datetime
 
     class Config:
@@ -54,6 +70,9 @@ class ProductUpdate(BaseModel):
     lead_time_days: Optional[int] = Field(None, ge=0, le=365)
     safety_stock: Optional[int] = Field(None, ge=0)
     supplier_id: Optional[int] = None
+    unit_price: Optional[float] = Field(None, ge=0)
+    cost_price: Optional[float] = Field(None, ge=0)
+    price_currency: Optional[str] = Field(None, max_length=10)
 
 
 class SaleCreate(BaseModel):

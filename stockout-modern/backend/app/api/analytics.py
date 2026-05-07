@@ -49,6 +49,23 @@ async def get_summary(db: AsyncSession = Depends(get_db), user=Depends(get_curre
         )
     )).scalar()
 
+    # Valeur du stock (unit_price × quantité) en devise de saisie
+    inv_value_q = await db.execute(
+        select(models.Inventory.quantity, models.Product.unit_price, models.Product.price_currency)
+        .join(models.Product, models.Product.id == models.Inventory.product_id)
+        .where(models.Product.owner_id == user.id, models.Product.unit_price.isnot(None))
+    )
+    inv_rows = inv_value_q.all()
+    total_inventory_value_dzd = sum(
+        (qty or 0) * (price or 0) * (
+            1 if cur == "DZD" else
+            149.25 if cur == "EUR" else
+            135.14 if cur == "USD" else
+            36.79 if cur == "AED" else 1
+        )
+        for qty, price, cur in inv_rows
+    )
+
     return {
         "total_products": total_products or 0,
         "total_predictions": total_preds or 0,
@@ -56,6 +73,7 @@ async def get_summary(db: AsyncSession = Depends(get_db), user=Depends(get_curre
         "avg_probability": round(float(avg_prob or 0), 3),
         "total_sales_qty": int(total_sales_qty or 0),
         "recent_sales_qty": int(recent_sales or 0),
+        "total_inventory_value_dzd": round(total_inventory_value_dzd, 2),
     }
 
 
@@ -263,3 +281,101 @@ async def sales_velocity(db: AsyncSession = Depends(get_db), user=Depends(get_cu
         })
 
     return sorted(result, key=lambda x: x["velocity_30d"], reverse=True)
+
+
+@router.get("/stock-rotation")
+async def stock_rotation(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """DSI, taux de rotation annuel et produits dormants."""
+    now = datetime.now(timezone.utc)
+    one_year_ago = now - timedelta(days=365)
+    thirty_days_ago = now - timedelta(days=30)
+
+    products_q = await db.execute(
+        select(models.Product, models.Inventory.quantity.label("stock"))
+        .outerjoin(models.Inventory, models.Inventory.product_id == models.Product.id)
+        .where(models.Product.owner_id == user.id)
+    )
+    products = products_q.all()
+    if not products:
+        return []
+
+    sales_q = await db.execute(
+        select(models.Sale.product_id, models.Sale.quantity, models.Sale.sold_at)
+        .where(and_(models.Sale.owner_id == user.id, models.Sale.sold_at >= one_year_ago))
+    )
+    sales_raw = sales_q.all()
+
+    sales_by_pid: dict = defaultdict(list)
+    last_sale_by_pid: dict = {}
+    for pid, qty, sold_at in sales_raw:
+        sales_by_pid[pid].append(qty)
+        if pid not in last_sale_by_pid or sold_at > last_sale_by_pid[pid]:
+            last_sale_by_pid[pid] = sold_at
+
+    result = []
+    for product, stock in products:
+        stock = stock or 0
+        sales_365 = sum(sales_by_pid.get(product.id, []))
+        last_sale = last_sale_by_pid.get(product.id)
+        days_since = (now - last_sale).days if last_sale else None
+        is_dormant = (days_since is None or days_since > 30) and stock > 0
+
+        daily_avg = sales_365 / 365.0
+        dsi = round(stock / daily_avg, 1) if daily_avg > 0 else None
+        rotation_rate = round(365.0 / dsi, 2) if dsi and dsi > 0 else None
+
+        result.append({
+            "product_id": product.id,
+            "product_name": product.name,
+            "sku": product.sku,
+            "current_stock": stock,
+            "dsi": dsi,
+            "rotation_rate": rotation_rate,
+            "is_dormant": is_dormant,
+            "last_sale_date": last_sale.isoformat() if last_sale else None,
+            "days_since_last_sale": days_since,
+            "sales_365d": sales_365,
+        })
+
+    return sorted(result, key=lambda x: (not x["is_dormant"], x["dsi"] or 9999))
+
+
+@router.get("/margins")
+async def margins(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Marge brute et valorisation du stock par produit."""
+    TO_DZD = {"DZD": 1.0, "EUR": 149.25, "USD": 135.14, "AED": 36.79}
+
+    products_q = await db.execute(
+        select(models.Product, models.Inventory.quantity.label("stock"))
+        .outerjoin(models.Inventory, models.Inventory.product_id == models.Product.id)
+        .where(
+            models.Product.owner_id == user.id,
+            models.Product.unit_price.isnot(None),
+        )
+    )
+    rows = products_q.all()
+
+    result = []
+    for product, stock in rows:
+        stock = stock or 0
+        rate = TO_DZD.get(product.price_currency, 1.0)
+        unit_dzd = (product.unit_price or 0) * rate
+        cost_dzd = (product.cost_price or 0) * rate if product.cost_price else None
+        margin_abs = round(unit_dzd - cost_dzd, 2) if cost_dzd is not None else None
+        margin_pct = round(margin_abs / unit_dzd * 100, 1) if (cost_dzd is not None and unit_dzd > 0) else None
+        stock_value = round(stock * unit_dzd, 2)
+
+        result.append({
+            "product_id": product.id,
+            "product_name": product.name,
+            "sku": product.sku,
+            "unit_price_dzd": round(unit_dzd, 2),
+            "cost_price_dzd": round(cost_dzd, 2) if cost_dzd is not None else None,
+            "margin_absolute": margin_abs,
+            "margin_pct": margin_pct,
+            "current_stock": stock,
+            "stock_value_dzd": stock_value,
+            "price_currency": product.price_currency,
+        })
+
+    return sorted(result, key=lambda x: (x["margin_pct"] or -999), reverse=True)

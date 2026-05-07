@@ -3,7 +3,7 @@ import {
   MultiFormatReader, BarcodeFormat, DecodeHintType,
   RGBLuminanceSource, BinaryBitmap, HybridBinarizer,
 } from '@zxing/library'
-import { Camera, CameraOff, X, Barcode, Loader2, Flashlight, FlashlightOff, FlipHorizontal2 } from 'lucide-react'
+import { Camera, CameraOff, X, Barcode, Loader2, Flashlight, FlashlightOff, FlipHorizontal2, Keyboard, Check } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 
 const FORMATS = [
@@ -103,6 +103,8 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
   const [torchOn, setTorchOn] = useState(false)
   const [torchAvailable, setTorchAvailable] = useState(false)
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
+  const [manualMode, setManualMode] = useState(false)
+  const [manualValue, setManualValue] = useState('')
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -140,9 +142,10 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
   }, [t])
 
   useEffect(() => {
+    if (manualMode) { stopStream(); return }
     startStream(facingMode)
     return () => stopStream()
-  }, [facingMode])
+  }, [facingMode, manualMode])
 
   const toggleTorch = useCallback(async () => {
     const track = streamRef.current?.getVideoTracks()[0]
@@ -161,6 +164,7 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
 
   // Decode loop
   useEffect(() => {
+    if (manualMode) return
     let decoding = false
 
     function tick() {
@@ -184,10 +188,15 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
           if (!ctx) return null
           ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
           const img = ctx.getImageData(0, 0, sw, sh)
+          const rgba = img.data
+          const lum = new Uint8ClampedArray(sw * sh)
+          for (let i = 0, j = 0; i < lum.length; i++, j += 4) {
+            lum[i] = (rgba[j] * 77 + rgba[j + 1] * 151 + rgba[j + 2] * 28) >> 8
+          }
           const reader = getReader()
           try {
             reader.reset()
-            const src = new RGBLuminanceSource(img.data, sw, sh)
+            const src = new RGBLuminanceSource(lum, sw, sh)
             return reader.decode(new BinaryBitmap(new HybridBinarizer(src)))
           } catch { return null }
         }
@@ -232,7 +241,17 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
 
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [facingMode])
+  }, [facingMode, manualMode])
+
+  function submitManual() {
+    const code = manualValue.trim()
+    if (!code) return
+    doneRef.current = true
+    playBeep()
+    if (navigator.vibrate) navigator.vibrate(50)
+    onDetected(code)
+    onClose()
+  }
 
   const country = detected ? getEANCountry(detected) : null
 
@@ -247,11 +266,13 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <Barcode size={16} className="text-brand-400" />
-            <span className="text-sm font-semibold text-white">{t('cp_scan_sku')}</span>
+            {manualMode ? <Keyboard size={16} className="text-brand-400" /> : <Barcode size={16} className="text-brand-400" />}
+            <span className="text-sm font-semibold text-white">
+              {manualMode ? 'Saisie manuelle' : t('cp_scan_sku')}
+            </span>
           </div>
           <div className="flex items-center gap-1">
-            {torchAvailable && (
+            {!manualMode && torchAvailable && (
               <button
                 onClick={toggleTorch}
                 className={`p-1.5 rounded-lg transition-colors ${
@@ -262,12 +283,23 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
                 {torchOn ? <Flashlight size={15} /> : <FlashlightOff size={15} />}
               </button>
             )}
+            {!manualMode && (
+              <button
+                onClick={flipCamera}
+                className="p-1.5 rounded-lg text-zinc-500 hover:text-white transition-colors"
+                title="Retourner caméra"
+              >
+                <FlipHorizontal2 size={15} />
+              </button>
+            )}
             <button
-              onClick={flipCamera}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-white transition-colors"
-              title="Retourner caméra"
+              onClick={() => { setManualMode(m => !m); setManualValue('') }}
+              className={`p-1.5 rounded-lg transition-colors ${
+                manualMode ? 'text-brand-300 bg-brand-500/10' : 'text-zinc-500 hover:text-white'
+              }`}
+              title={manualMode ? 'Revenir au scanner' : 'Saisir manuellement'}
             >
-              <FlipHorizontal2 size={15} />
+              {manualMode ? <Camera size={15} /> : <Keyboard size={15} />}
             </button>
             <button
               onClick={onClose}
@@ -278,8 +310,35 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
           </div>
         </div>
 
+        {/* Manual entry panel */}
+        {manualMode && (
+          <div className="p-5 space-y-3">
+            <p className="text-xs text-zinc-400">
+              Tape le code-barres ou le SKU à la main si le scan ne fonctionne pas.
+            </p>
+            <input
+              type="text"
+              autoFocus
+              inputMode="text"
+              value={manualValue}
+              onChange={e => setManualValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitManual() } }}
+              placeholder="Ex: 3760168930191 ou SCRN-27-4K"
+              className="w-full px-4 py-3 bg-white/5 border border-white/12 rounded-xl text-white text-base font-mono placeholder-zinc-600 focus:outline-none focus:border-brand-500/60"
+            />
+            <button
+              onClick={submitManual}
+              disabled={!manualValue.trim()}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-40 hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)' }}
+            >
+              <Check size={15} /> Valider
+            </button>
+          </div>
+        )}
+
         {/* Camera — bg-black fix */}
-        <div className="relative aspect-video" style={{ background: '#000' }}>
+        {!manualMode && <div className="relative aspect-video" style={{ background: '#000' }}>
           <video
             ref={videoRef}
             className="w-full h-full object-cover"
@@ -326,13 +385,29 @@ export default function BarcodeScanModal({ onDetected, onClose }: Props) {
 
           {cameraError && (
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4">
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-3">
                 <CameraOff size={28} className="text-zinc-500 mx-auto" />
                 <p className="text-xs text-zinc-400">{cameraError}</p>
+                <button
+                  onClick={() => setManualMode(true)}
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 hover:bg-brand-500/25 transition-colors"
+                >
+                  <Keyboard size={12} /> Saisir manuellement
+                </button>
               </div>
             </div>
           )}
-        </div>
+        </div>}
+
+        {/* Footer: hint to switch to manual */}
+        {!manualMode && !detected && !cameraError && (
+          <button
+            onClick={() => setManualMode(true)}
+            className="w-full py-2.5 text-xs text-zinc-400 hover:text-brand-300 transition-colors flex items-center justify-center gap-1.5 border-t border-white/8"
+          >
+            <Keyboard size={12} /> Le scan ne marche pas ? Saisir manuellement
+          </button>
+        )}
 
         <style>{`@keyframes scanLine{0%{transform:translateY(-30px);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(30px);opacity:0}}`}</style>
       </div>

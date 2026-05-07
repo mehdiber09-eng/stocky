@@ -3,8 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stocky — Prédiction de ruptures IA</title>
-  <meta name="description" content="Anticipez les ruptures de stock avec l'IA. Pour les commerçants algériens et MENA." />
+
+  <!-- SEO -->
+  <title>Stocky — Gestion de stock IA pour commerçants DZ, MENA & EU</title>
+  <meta name="description" content="Anticipez les ruptures de stock 30 jours à l'avance grâce à l'IA. Scannez vos produits, prédisez la demande, optimisez vos commandes. 1500 DZD / 14€ / 15$ par mois." />
+  <meta name="keywords" content="gestion stock, prédiction rupture, IA, commerçant Algérie, MENA, scan code-barres, EAN-13, dashboard, prévisions ventes" />
+  <meta name="author" content="Stocky" />
+  <link rel="canonical" href="https://m-stocky.up.railway.app/" />
+
+  <!-- Open Graph (WhatsApp / Facebook / LinkedIn) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Stocky" />
+  <meta property="og:title" content="Stocky — Gestion de stock intelligente" />
+  <meta property="og:description" content="L'IA qui prédit vos ruptures 30j à l'avance. Pour commerçants DZ, MENA & EU. 1500 DZD/mois." />
+  <meta property="og:image" content="/og-cover.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Stocky — Dashboard de gestion de stock IA" />
+  <meta property="og:url" content="https://m-stocky.up.railway.app/" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:locale:alternate" content="ar_DZ" />
+  <meta property="og:locale:alternate" content="en_US" />
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Stocky — Gestion de stock IA" />
+  <meta name="twitter:description" content="L'IA qui prédit vos ruptures 30j à l'avance. 1500 DZD/mois." />
+  <meta name="twitter:image" content="/og-cover.png" />
+
+  <!-- PWA / mobile -->
   <meta name="theme-color" content="#6366f1" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -12,10 +39,29 @@
   <meta name="apple-mobile-web-app-title" content="Stocky" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icon-192.svg" />
+  <link rel="icon" href="/icon-192.svg" />
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" href="/icon-192.svg" />
+
+  <!-- Structured data (Schema.org) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Stocky",
+    "description": "Gestion de stock intelligente avec prédiction de ruptures par IA pour les commerçants DZ, MENA et EU.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web, Android, iOS",
+    "offers": [
+      { "@type": "Offer", "price": "1500", "priceCurrency": "DZD" },
+      { "@type": "Offer", "price": "14", "priceCurrency": "EUR" },
+      { "@type": "Offer", "price": "15", "priceCurrency": "USD" }
+    ]
+  }
+  </script>
 </head>
 <body>
   <div id="root"></div>
