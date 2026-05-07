@@ -22,7 +22,7 @@ export interface PromoVideoProps {
  * Active l'audio quand tu as posé les fichiers dans public/.
  * Voir AUDIO.md pour les liens de téléchargement.
  */
-const ENABLE_AUDIO = false
+const ENABLE_AUDIO = true
 
 /**
  * Vidéo 30s @ 30fps = 900 frames
@@ -103,12 +103,12 @@ export const PromoVideo: React.FC<PromoVideoProps> = ({ lang, format }) => {
       {/* Audio — activé si fichiers dans public/ */}
       {ENABLE_AUDIO && (
         <>
-          <Audio src={staticFile('music.mp3')} volume={0.18} />
-          <Sequence from={75}  durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.6} /></Sequence>
+          <Audio src={staticFile('music.mp3')} volume={0.13} />
+          <Sequence from={75}  durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
           <Sequence from={108} durationInFrames={45}><Audio src={staticFile('impact.mp3')} volume={0.85} /></Sequence>
-          <Sequence from={246} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.6} /></Sequence>
-          <Sequence from={528} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.6} /></Sequence>
-          <Sequence from={696} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.6} /></Sequence>
+          <Sequence from={246} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
+          <Sequence from={528} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
+          <Sequence from={696} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
           <Sequence from={744} durationInFrames={60}><Audio src={staticFile('sparkle.mp3')} volume={0.7} /></Sequence>
         </>
       )}
