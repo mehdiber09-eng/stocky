@@ -1,0 +1,22 @@
+{
+  "name": "stocky-promo-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vidéos promo Stocky générées avec Remotion — 2 formats × 3 langues",
+  "scripts": {
+    "start": "remotion studio",
+    "render": "remotion render",
+    "render:all": "node scripts/render-all.mjs",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.180",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.180"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "typescript": "^5.4.5"
+  }
+}
