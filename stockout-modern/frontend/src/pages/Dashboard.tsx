@@ -4,7 +4,7 @@ import {
   Package, TrendingUp, ShoppingCart, Trash2, Plus, RefreshCw, Loader2,
   Sparkles, ArrowUpRight, BarChart2, Bell, Zap, AlertTriangle, Layers,
   CheckCircle, Clock, Search, Info, Rocket, PackageCheck, Brain, QrCode,
-  TrendingDown, Minus, MessageCircle, X,
+  TrendingDown, Minus, MessageCircle, X, WifiOff,
 } from 'lucide-react'
 import { ProductsAPI, Product, AnalyticsAPI, PredictAPI, BatchPredictionResult, InventoryHealthItem, SalesAPI, SalesVelocityItem } from '../api/api'
 import Toast from '../components/Toast'
@@ -12,7 +12,11 @@ import { SkeletonCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
 import Tooltip from '../components/Tooltip'
 import QRProductModal from '../components/QRProductModal'
+import OnboardingModal from '../components/OnboardingModal'
 import { useLanguage } from '../context/LanguageContext'
+
+const PRODUCTS_CACHE_KEY = 'stocky_products_cache'
+const ONBOARDED_KEY = 'stocky_onboarded'
 
 interface Summary {
   total_products: number
@@ -40,6 +44,9 @@ export default function Dashboard() {
   const [quickSaleProduct, setQuickSaleProduct] = useState<Product | null>(null)
   const [quickSaleQty, setQuickSaleQty] = useState('1')
   const [quickSaleLoading, setQuickSaleLoading] = useState(false)
+  const [usingCache, setUsingCache] = useState(false)
+  const [cacheDate, setCacheDate] = useState<Date | null>(null)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -50,7 +57,8 @@ export default function Dashboard() {
         AnalyticsAPI.inventoryHealth().catch(() => ({ data: [] })),
         AnalyticsAPI.salesVelocity().catch(() => ({ data: [] })),
       ])
-      setProducts(resP.data)
+      const loadedProducts = resP.data
+      setProducts(loadedProducts)
       setSummary((resS as any).data)
       const critical = (resH.data as InventoryHealthItem[]).filter(
         i => i.status === 'critical' || i.status === 'warning'
@@ -59,8 +67,26 @@ export default function Dashboard() {
       const vMap = new Map<number, SalesVelocityItem>()
       ;(resV.data as SalesVelocityItem[]).forEach(v => vMap.set(v.product_id, v))
       setVelocityMap(vMap)
+      setUsingCache(false)
+      setCacheDate(null)
+      localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ products: loadedProducts, ts: Date.now() }))
+      if (loadedProducts.length === 0 && !localStorage.getItem(ONBOARDED_KEY)) {
+        setShowOnboarding(true)
+      }
     } catch {
-      setToast({ msg: 'Erreur de chargement', type: 'error' })
+      const raw = localStorage.getItem(PRODUCTS_CACHE_KEY)
+      if (raw) {
+        try {
+          const { products: cached, ts } = JSON.parse(raw)
+          setProducts(cached)
+          setUsingCache(true)
+          setCacheDate(new Date(ts))
+        } catch {
+          setToast({ msg: 'Erreur de chargement', type: 'error' })
+        }
+      } else {
+        setToast({ msg: 'Erreur de chargement', type: 'error' })
+      }
     } finally {
       setLoading(false)
     }
@@ -125,6 +151,18 @@ export default function Dashboard() {
       `_Via Stocky — Gestion de stock intelligente_`,
     ].join('\n')
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+  }
+
+  function closeOnboarding() {
+    localStorage.setItem(ONBOARDED_KEY, '1')
+    setShowOnboarding(false)
+  }
+
+  function getGreeting() {
+    const h = new Date().getHours()
+    if (h < 12) return '☀️ Bonjour'
+    if (h < 18) return '🌤 Bonne après-midi'
+    return '🌙 Bonsoir'
   }
 
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -217,6 +255,59 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Offline cache banner */}
+      {usingCache && cacheDate && (
+        <div className="flex items-center gap-2.5 text-xs text-amber-400 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-2.5">
+          <WifiOff size={13} className="shrink-0" />
+          <span>
+            Données hors-ligne · Dernière sync : <strong>{cacheDate.toLocaleDateString('fr-DZ')}</strong> à {cacheDate.toLocaleTimeString('fr-DZ', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <button
+            onClick={fetchAll}
+            className="ml-auto flex items-center gap-1 font-medium text-amber-300 hover:text-amber-200 transition-colors"
+          >
+            <RefreshCw size={11} /> Réessayer
+          </button>
+        </div>
+      )}
+
+      {/* Résumé rapide */}
+      {!loading && summary && !usingCache && (
+        <div className="card flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <p className="text-xs text-zinc-600 font-medium uppercase tracking-wider">{getGreeting()}</p>
+            <p className="text-sm text-zinc-400 mt-0.5">
+              {new Date().toLocaleDateString('fr-DZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
+          <div className="flex items-center gap-6 flex-wrap">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">{summary.recent_sales_qty}</p>
+              <p className="text-[11px] text-zinc-500">ventes / 30j</p>
+            </div>
+            <div className="w-px h-8 bg-white/8 hidden sm:block" />
+            <div className="text-center">
+              <p className={`text-2xl font-bold ${healthAlerts.length > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{healthAlerts.length}</p>
+              <p className="text-[11px] text-zinc-500">alertes actives</p>
+            </div>
+            <div className="w-px h-8 bg-white/8 hidden sm:block" />
+            <div className="text-center">
+              <p className="text-2xl font-bold text-brand-300">{products.length}</p>
+              <p className="text-[11px] text-zinc-500">produits suivis</p>
+            </div>
+          </div>
+          <Tooltip text="Envoyer un bilan des alertes sur WhatsApp" position="left">
+            <button
+              onClick={sendWhatsAppReport}
+              disabled={healthAlerts.length === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-30 transition-all"
+            >
+              <MessageCircle size={14} /> Bilan WhatsApp
+            </button>
+          </Tooltip>
+        </div>
+      )}
 
       {/* Onboarding banner — shown only when no products yet */}
       {!loading && products.length === 0 && (
@@ -679,6 +770,8 @@ export default function Dashboard() {
       <QRProductModal product={qrProduct} onClose={() => setQrProduct(null)} />
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
+      {showOnboarding && <OnboardingModal onClose={closeOnboarding} />}
     </div>
   )
 }

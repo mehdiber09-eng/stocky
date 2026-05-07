@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { User, Lock, Bell, Loader2, CheckCircle, AlertCircle, Crown, Zap, ArrowUpRight, DollarSign } from 'lucide-react'
+import { User, Lock, Bell, Loader2, CheckCircle, AlertCircle, Crown, Zap, ArrowUpRight, DollarSign, Globe } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import API, { PaymentAPI } from '../api/api'
@@ -7,9 +7,18 @@ import Toast from '../components/Toast'
 import { useLanguage } from '../context/LanguageContext'
 import { useCurrency, type Currency } from '../hooks/useCurrency'
 
+type Market = 'DZ' | 'SA' | 'AE' | 'FR'
+const MARKET_KEY = 'stocky_market'
+const MARKETS: { id: Market; flag: string; label: string; sub: string; currency: Currency; lang: 'fr' | 'ar' }[] = [
+  { id: 'DZ', flag: '🇩🇿', label: 'Algérie', sub: 'DZD · Français/عربي', currency: 'DZD', lang: 'fr' },
+  { id: 'SA', flag: '🇸🇦', label: 'Arabie Saoudite', sub: 'SAR · العربية', currency: 'SAR', lang: 'ar' },
+  { id: 'AE', flag: '🇦🇪', label: 'Émirats Arabes Unis', sub: 'AED · العربية', currency: 'AED', lang: 'ar' },
+  { id: 'FR', flag: '🇫🇷', label: 'France', sub: 'EUR · Français', currency: 'EUR', lang: 'fr' },
+]
+
 export default function Profile() {
   const { logout } = useAuth()
-  const { t } = useLanguage()
+  const { t, setLang } = useLanguage()
   const { currency, setCurrency } = useCurrency()
   const [email, setEmail] = useState('')
   const [isSubscribed, setIsSubscribed] = useState(false)
@@ -20,6 +29,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(false)
   const [loadingPwd, setLoadingPwd] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [market, setMarket] = useState<Market>(() => (localStorage.getItem(MARKET_KEY) as Market) || 'DZ')
 
   useEffect(() => {
     API.get('/auth/me').then(r => {
@@ -33,6 +43,15 @@ export default function Profile() {
       setIsSubscribed(r.data.is_subscribed)
     }).catch(() => {})
   }, [])
+
+  function selectMarket(m: Market) {
+    const def = MARKETS.find(x => x.id === m)!
+    setMarket(m)
+    localStorage.setItem(MARKET_KEY, m)
+    setCurrency(def.currency)
+    setLang(def.lang)
+    setToast({ msg: `Marché ${def.label} activé — devise ${def.currency}`, type: 'success' })
+  }
 
   async function changePassword(e: React.FormEvent) {
     e.preventDefault()
@@ -161,32 +180,62 @@ export default function Profile() {
         </form>
       </div>
 
+      {/* Market selector */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-5">
+          <Globe size={16} className="text-zinc-400" />
+          <div>
+            <h2 className="font-medium text-zinc-200">Votre marché</h2>
+            <p className="text-xs text-zinc-600">Adapte la devise, la langue et les fonctionnalités à votre zone géographique</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {MARKETS.map(m => (
+            <button
+              key={m.id}
+              onClick={() => selectMarket(m.id)}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
+                market === m.id
+                  ? 'bg-brand-500/15 border-brand-500/40 text-white'
+                  : 'bg-white/3 border-white/8 text-zinc-400 hover:text-white hover:border-white/20'
+              }`}
+            >
+              <span className="text-2xl leading-none">{m.flag}</span>
+              <p className="text-xs font-semibold text-zinc-200 leading-tight">{m.label}</p>
+              <p className="text-[10px] text-zinc-600">{m.sub}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Currency selector */}
       <div className="card">
         <div className="flex items-center gap-2 mb-5">
           <DollarSign size={16} className="text-zinc-400" />
           <h2 className="font-medium text-zinc-200">{t('curr_title')}</h2>
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {(['DZD', 'EUR', 'USD'] as Currency[]).map(c => (
-            <button
-              key={c}
-              onClick={() => { setCurrency(c); setToast({ msg: t('curr_saved'), type: 'success' }) }}
-              className={`py-3 rounded-xl border text-sm font-semibold transition-all ${
-                currency === c
-                  ? 'bg-brand-500/20 border-brand-500/50 text-white'
-                  : 'bg-white/3 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
-              }`}
-            >
-              {c === 'DZD' ? '🇩🇿 DA' : c === 'EUR' ? '🇪🇺 €' : '🇺🇸 $'}
-              <p className="text-[10px] font-normal text-zinc-500 mt-0.5">
-                {t(c === 'DZD' ? 'curr_dzd' : c === 'EUR' ? 'curr_eur' : 'curr_usd')}
-              </p>
-            </button>
-          ))}
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          {(['DZD', 'EUR', 'USD', 'SAR', 'AED'] as Currency[]).map(c => {
+            const flags: Record<string, string> = { DZD: '🇩🇿', EUR: '🇪🇺', USD: '🇺🇸', SAR: '🇸🇦', AED: '🇦🇪' }
+            const symbols: Record<string, string> = { DZD: 'DA', EUR: '€', USD: '$', SAR: 'ر.س', AED: 'د.إ' }
+            return (
+              <button
+                key={c}
+                onClick={() => { setCurrency(c); setToast({ msg: t('curr_saved'), type: 'success' }) }}
+                className={`py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                  currency === c
+                    ? 'bg-brand-500/20 border-brand-500/50 text-white'
+                    : 'bg-white/3 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
+                }`}
+              >
+                {flags[c]} {symbols[c]}
+                <p className="text-[9px] font-normal text-zinc-600 mt-0.5">{c}</p>
+              </button>
+            )
+          })}
         </div>
         <p className="text-xs text-zinc-600 mt-3">
-          Utilisé dans la page <strong className="text-zinc-400">Santé du Stock</strong> pour calculer la valeur de votre stock.
+          Utilisé dans <strong className="text-zinc-400">Santé du Stock</strong> et <strong className="text-zinc-400">Prédiction</strong> pour afficher les budgets.
         </p>
       </div>
 
