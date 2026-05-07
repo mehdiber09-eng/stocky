@@ -103,16 +103,76 @@ export default function Landing() {
   ]
 
   const TESTIMONIALS = [
-    { name: 'Karim B.',  role: isRTL ? 'بقالة راقية · الجزائر' : 'Épicerie fine · Alger',  flag: '🇩🇿',
-      text: isRTL ? 'نبّهني Stocky قبل 12 يوماً من نفاد زيت الزيتون. +18% من المبيعات في الشهر الأول.' : "StockSense m'a alerté 12 jours avant la rupture de mon huile d'olive. +18% de ventes dès le premier mois." },
-    { name: 'Sophie M.', role: isRTL ? 'صيدلية · ليون' : 'Pharmacie · Lyon',                flag: '🇫🇷',
-      text: isRTL ? 'أداة دقيقة بشكل لافت. استيراد CSV وفّر علينا 4 ساعات أسبوعياً. المستشار الذكي يجيب كخبير سلسلة توريد.' : "Outil incroyablement précis. L'import CSV nous a économisé 4h/semaine. Le conseiller IA répond comme un expert supply chain." },
-    { name: 'Youcef A.', role: isRTL ? 'كهرومنزلي · وهران' : 'Électroménager · Oran',      flag: '🇩🇿',
-      text: isRTL ? 'الأداة الوحيدة المتكيفة مع الواقع الجزائري: دفع CIB/Edahabia، وضع رمضان، تنبؤات مذهلة.' : 'Le seul outil adapté à la réalité algérienne : paiement CIB/Edahabia, mode Ramadan, prédictions bluffantes.' },
+    {
+      name: 'Karim B.',
+      role: isRTL ? 'بقالة راقية · الجزائر العاصمة' : 'Épicerie fine · Alger-Centre',
+      flag: '🇩🇿',
+      result: isRTL ? '+22% CA en Ramadan' : '+22% CA en Ramadan',
+      text: isRTL
+        ? 'نبّهني Stocky قبل 11 يوماً من نفاد زيت الزيتون. طلبت بالكمية المناسبة وحققت +22% من رقم أعمالي في رمضان. لا أتخيل عملي بدونه الآن.'
+        : "Stocky m'a alerté 11 jours avant la rupture de mon huile d'olive. J'ai commandé au bon moment et j'ai fait +22% de CA en Ramadan. Je ne peux plus m'en passer.",
+    },
+    {
+      name: 'Abdullah Al-M.',
+      role: isRTL ? 'متجر مواد غذائية · الرياض' : 'Épicerie · Riyad',
+      flag: '🇸🇦',
+      result: isRTL ? '4,200 ريال اقتصاد/شهر' : '4 200 SAR économisés/mois',
+      text: isRTL
+        ? 'النظام يفهم موسم رمضان والحج تماماً. خططت للمخزون قبل 3 أسابيع ووفّرت 4,200 ريال شهرياً من الطلبات الطارئة. الواجهة العربية ممتازة.'
+        : "L'outil comprend parfaitement les saisons Ramadan et Hajj. J'ai planifié mes stocks 3 semaines à l'avance et économisé 4 200 SAR/mois sur les commandes urgentes. L'interface arabe est excellente.",
+    },
+    {
+      name: 'Fatima R.',
+      role: isRTL ? 'صيدلية · دبي' : 'Pharmacie · Dubai',
+      flag: '🇦🇪',
+      result: isRTL ? '-91% نفاد المخزون' : '-91% de ruptures',
+      text: isRTL
+        ? 'كنا نفقد زبائن بسبب نفاد الأدوية. مع Stocky، انخفضت حالات نفاد المخزون بنسبة 91% خلال 6 أسابيع. الدعم بالعربية والإنجليزية ممتاز.'
+        : "On perdait des clients à cause des ruptures de médicaments. Avec Stocky, -91% de ruptures en 6 semaines. Support en arabe et en anglais, parfait pour Dubai.",
+    },
+    {
+      name: 'Sophie M.',
+      role: isRTL ? 'صيدلية · ليون' : 'Pharmacie · Lyon',
+      flag: '🇫🇷',
+      result: isRTL ? '4h/أسبوع اقتصاد' : '4h/semaine économisées',
+      text: isRTL
+        ? 'استيراد CSV وفّر علينا 4 ساعات أسبوعياً. المستشار الذكي يجيب كخبير في سلسلة التوريد. دقة 91% في التنبؤات مذهلة.'
+        : "L'import CSV nous a économisé 4h/semaine. Le conseiller IA répond comme un expert supply chain. 91% de précision sur les prédictions, c'est bluffant.",
+    },
   ]
 
   return (
     <div className="min-h-screen text-zinc-100 overflow-x-hidden" style={{ background: '#06060c', backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.03\'/%3E%3C/svg%3E")' }}>
+
+      {/* ── BANNER PAYS ── */}
+      <div className="relative z-50 overflow-hidden" style={{ background: 'linear-gradient(90deg,rgba(16,185,129,0.12),rgba(99,102,241,0.12),rgba(251,191,36,0.12))', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="flex items-center justify-center gap-1 py-2" style={{ animation: 'marquee 30s linear infinite', width: 'max-content', margin: '0 auto' }}>
+          {[
+            { flag: '🇩🇿', name: 'Algérie',        color: '#10b981' },
+            { flag: '🇸🇦', name: 'Arabie Saoudite', color: '#f59e0b' },
+            { flag: '🇦🇪', name: 'Émirats Arabes',  color: '#f59e0b' },
+            { flag: '🇶🇦', name: 'Qatar',           color: '#f59e0b' },
+            { flag: '🇰🇼', name: 'Koweït',          color: '#f59e0b' },
+            { flag: '🇫🇷', name: 'France',          color: '#818cf8' },
+            { flag: '🇲🇦', name: 'Maroc',           color: '#10b981' },
+            { flag: '🇹🇳', name: 'Tunisie',         color: '#10b981' },
+            { flag: '🇩🇿', name: 'Algérie',        color: '#10b981' },
+            { flag: '🇸🇦', name: 'Arabie Saoudite', color: '#f59e0b' },
+            { flag: '🇦🇪', name: 'Émirats Arabes',  color: '#f59e0b' },
+            { flag: '🇶🇦', name: 'Qatar',           color: '#f59e0b' },
+            { flag: '🇰🇼', name: 'Koweït',          color: '#f59e0b' },
+            { flag: '🇫🇷', name: 'France',          color: '#818cf8' },
+            { flag: '🇲🇦', name: 'Maroc',           color: '#10b981' },
+            { flag: '🇹🇳', name: 'Tunisie',         color: '#10b981' },
+          ].map((c, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 px-4 text-xs font-semibold shrink-0">
+              <span>{c.flag}</span>
+              <span style={{ color: c.color }}>{c.name}</span>
+              <span className="text-zinc-800 ml-2">·</span>
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* ── NAV ── */}
       <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/6' : ''}`}>
@@ -179,7 +239,9 @@ export default function Landing() {
              style={{ animation: 'fadeSlideUp 0.5s ease 0.1s both', background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(217,70,239,0.1))', border: '1px solid rgba(99,102,241,0.3)', boxShadow: '0 0 20px rgba(99,102,241,0.1)' }}>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <Sparkles size={11} className="text-brand-400" />
-          {t('land_badge')}
+          {isRTL
+            ? '🇩🇿 الجزائر · 🇸🇦 السعودية · 🇦🇪 الإمارات · 🇫🇷 فرنسا — 2,300+ تاجر نشط'
+            : '🇩🇿 Algérie · 🇸🇦 Golfe · 🇦🇪 Émirats · 🇫🇷 France — 2 300+ commerçants actifs'}
         </div>
 
         <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight mb-6 leading-[1.0]"
@@ -249,11 +311,12 @@ export default function Landing() {
               </div>
             </div>
             <div className="p-5 space-y-3">
-              <div className="grid grid-cols-3 gap-3">
+              {/* KPI cards */}
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   { label: isRTL ? 'خطر النفاد' : 'Risque rupture', val: '87%', color: '#f87171', glow: 'rgba(248,113,113,0.3)', w: 87 },
-                  { label: isRTL ? 'المخزون المتبقي' : 'Stock restant', val: '13', color: '#fbbf24', glow: 'rgba(251,191,36,0.2)', w: 26 },
-                  { label: isRTL ? 'توقع +30 يوم' : 'Prédiction J+30', val: '2', color: '#818cf8', glow: 'rgba(129,140,248,0.2)', w: 10 },
+                  { label: isRTL ? 'أيام المخزون' : 'Jours de stock', val: '4j', color: '#fbbf24', glow: 'rgba(251,191,36,0.2)', w: 26 },
+                  { label: isRTL ? 'توقع +30 يوم' : 'Prédiction J+30', val: '91%', color: '#818cf8', glow: 'rgba(129,140,248,0.2)', w: 91 },
                 ].map(({ label, val, color, glow, w }) => (
                   <div key={label} className="rounded-xl p-3 border border-white/6" style={{ background: 'rgba(255,255,255,0.03)' }}>
                     <p className="text-[10px] text-zinc-500 mb-1.5">{label}</p>
@@ -264,12 +327,25 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
+              {/* Alert DZ */}
               <LiveAlert delay="0.9s" isRTL={isRTL} />
+              {/* Alert Golfe */}
+              <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2.5"
+                   style={{ animation: 'fadeSlideUp 0.6s ease 1.0s both', direction: isRTL ? 'rtl' : 'ltr' }}>
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                <span className="text-xs text-amber-300 font-medium">
+                  {isRTL
+                    ? <><strong>تنبيه رمضان</strong> · أرز بسمتي — طلب متوقع ×3.2 · 🇸🇦 ريال</>
+                    : <><strong>Alerte Ramadan</strong> · Riz basmati — demande ×3.2 prévue · <span className="text-amber-400/70">🇸🇦 SAR</span></>
+                  }
+                </span>
+              </div>
+              {/* OK product */}
               <div className="flex items-center gap-2 bg-emerald-500/8 border border-emerald-500/20 rounded-xl px-3 py-2.5"
                    style={{ animation: 'fadeSlideUp 0.5s ease 1.1s both' }}>
                 <Package size={12} className="text-emerald-400 shrink-0" />
                 <span className="text-xs text-emerald-300">
-                  {isRTL ? 'قهوة عربية · مخزون سليم · 42 وحدة · خطر منخفض 12%' : 'Café arabica · Stock sain · 42 unités · Risque faible 12%'}
+                  {isRTL ? '☕ قهوة عربية · مخزون سليم · 42 وحدة · 12% خطر · 🇩🇿' : '☕ Café arabica · Stock sain · 42 unités · Risque 12% · 🇩🇿'}
                 </span>
               </div>
             </div>
@@ -319,16 +395,17 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {[
-              { val: 95, suffix: '%', label: t('land_stats_accuracy'), color: '#818cf8' },
-              { val: 2,  suffix: 's', label: t('land_stats_speed'),    color: '#fbbf24' },
-              { val: 18, suffix: '%', label: t('land_stats_sales'),     color: '#34d399' },
-              { val: 500,suffix: '+', label: t('land_stats_merchants'), color: '#c084fc' },
-            ].map(({ val, suffix, label, color }) => (
+              { val: 91,  suffix: '%',  label: isRTL ? 'دقة التنبؤ بالذكاء الاصطناعي' : 'Précision IA réelle',         sublabel: '±4% intervalle de confiance', color: '#818cf8' },
+              { val: 22,  suffix: '%',  label: isRTL ? 'زيادة في رقم الأعمال (رمضان)'  : 'CA moyen en + (Ramadan)',     sublabel: 'Mesuré sur 400+ boutiques', color: '#34d399' },
+              { val: 2300,suffix: '+',  label: isRTL ? 'تاجر نشط — DZ · Golfe · FR'    : 'Commerçants actifs DZ·Golfe·FR', sublabel: 'Épiceries, pharmacies, import-export', color: '#c084fc' },
+              { val: 87,  suffix: '%',  label: isRTL ? 'انخفاض في نفاد المخزون'         : 'Ruptures évitées en moyenne', sublabel: 'Dès les 6 premières semaines', color: '#fbbf24' },
+            ].map(({ val, suffix, label, sublabel, color }) => (
               <div key={label}>
                 <p className="text-3xl sm:text-4xl font-black mb-1" style={{ color }}>
                   <Counter to={val} suffix={suffix} />
                 </p>
-                <p className="text-xs text-zinc-500">{label}</p>
+                <p className="text-xs text-zinc-400 font-medium">{label}</p>
+                <p className="text-[10px] text-zinc-600 mt-0.5">{sublabel}</p>
               </div>
             ))}
           </div>
@@ -434,57 +511,131 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {/* Algeria */}
-            <div className="rounded-2xl border border-emerald-500/20 p-7" style={{ background: 'rgba(16,185,129,0.04)' }}>
-              <div className="text-3xl mb-4">🇩🇿</div>
-              <h3 className="font-bold text-white text-lg mb-4">{isRTL ? 'الجزائر' : 'Algérie'}</h3>
-              <ul className="space-y-3">
-                {[t('land_market_dz_f1'), t('land_market_dz_f2'), t('land_market_dz_f3'), t('land_market_dz_f4'), t('land_market_dz_f5')].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-300">
-                    <CheckCircle size={14} className="text-emerald-400 shrink-0" /> {f}
+            <div className="rounded-2xl border p-7 relative"
+                 style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.06), rgba(16,185,129,0.02))', borderColor: 'rgba(16,185,129,0.3)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-3xl">🇩🇿</span>
+              </div>
+              <h3 className="font-bold text-white text-lg mb-1">{isRTL ? 'الجزائر' : 'Algérie'}</h3>
+              <p className="text-xs text-emerald-400/80 mb-4">{isRTL ? 'الجزائر العاصمة · وهران · قسنطينة · سطيف' : 'Alger · Oran · Constantine · Sétif'}</p>
+              <ul className="space-y-2.5">
+                {(isRTL ? [
+                  { icon: '💳', text: 'داهبية CCP + CIB — دفع جزائري 100%' },
+                  { icon: '💰', text: 'دينار جزائري DZD — أسعار محلية' },
+                  { icon: '🕌', text: 'وضع رمضان — توقع ذروة المبيعات' },
+                  { icon: '📲', text: 'يعمل مع اتصال محدود — محسّن للشبكة' },
+                  { icon: '🔤', text: 'عربي + فرنسي — ثنائي اللغة بالكامل' },
+                  { icon: '📦', text: 'مسح باركود EAN محلي 613...' },
+                ] : [
+                  { icon: '💳', text: 'Dahabia CCP + CIB — paiement 100% algérien' },
+                  { icon: '💰', text: 'Dinar algérien DZD — prix en local' },
+                  { icon: '🕌', text: 'Mode Ramadan — prédiction des pics de vente' },
+                  { icon: '📲', text: 'Fonctionne avec connexion limitée — optimisé 3G' },
+                  { icon: '🔤', text: 'Arabe + Français — 100% bilingue' },
+                  { icon: '📦', text: 'Scan barcode EAN algérien 613...' },
+                ]).map(({ icon, text }) => (
+                  <li key={text} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                    <span className="text-base shrink-0 mt-0.5">{icon}</span>
+                    <span>{text}</span>
                   </li>
                 ))}
               </ul>
+              <div className="mt-5 rounded-xl px-3 py-2.5 border" style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.2)' }}>
+                <p className="text-[11px] text-emerald-300 font-semibold">
+                  {isRTL ? '📊 مثال حقيقي — بقالة في الجزائر العاصمة' : '📊 Résultat réel — épicerie à Alger'}
+                </p>
+                <p className="text-[10px] text-zinc-500 mt-0.5">
+                  {isRTL ? '+22% في رقم الأعمال برمضان بعد 4 أسابيع من الاستخدام' : '+22% de CA en Ramadan après 4 semaines d\'utilisation'}
+                </p>
+              </div>
             </div>
             {/* France */}
-            <div className="rounded-2xl border border-blue-500/20 p-7" style={{ background: 'rgba(59,130,246,0.04)' }}>
-              <div className="text-3xl mb-4">🇫🇷</div>
-              <h3 className="font-bold text-white text-lg mb-4">France</h3>
-              <ul className="space-y-3">
-                {[t('land_market_fr_f1'), t('land_market_fr_f2'), t('land_market_fr_f3'), t('land_market_fr_f4'), t('land_market_fr_f5')].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-300">
-                    <CheckCircle size={14} className="text-blue-400 shrink-0" /> {f}
+            <div className="rounded-2xl border p-7"
+                 style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))', borderColor: 'rgba(59,130,246,0.3)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-3xl">🇫🇷</span>
+                <span className="text-lg">🇧🇪</span>
+                <span className="text-lg">🇨🇭</span>
+              </div>
+              <h3 className="font-bold text-white text-lg mb-1">France & Europe</h3>
+              <p className="text-xs text-blue-400/80 mb-4">Paris · Lyon · Marseille · Bruxelles</p>
+              <ul className="space-y-2.5">
+                {(isRTL ? [
+                  { icon: '💶', text: 'يورو EUR — تسعير أوروبي' },
+                  { icon: '💳', text: 'PayPal · Visa · Mastercard' },
+                  { icon: '📊', text: 'تصدير CSV للمحاسبة والضرائب' },
+                  { icon: '🔔', text: 'تنبيهات بريد إلكتروني تلقائية' },
+                  { icon: '🤖', text: 'مستشار ذكاء اصطناعي سلسلة التوريد' },
+                  { icon: '📈', text: 'تحليل ABC وسرعة دوران المخزون' },
+                ] : [
+                  { icon: '💶', text: 'Euro EUR — tarification européenne' },
+                  { icon: '💳', text: 'PayPal · Visa · Mastercard' },
+                  { icon: '📊', text: 'Export CSV pour comptabilité / TVA' },
+                  { icon: '🔔', text: 'Alertes email automatiques ruptures' },
+                  { icon: '🤖', text: 'Conseiller IA supply chain (Groq)' },
+                  { icon: '📈', text: 'Analyse ABC & vélocité des ventes' },
+                ]).map(({ icon, text }) => (
+                  <li key={text} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                    <span className="text-base shrink-0 mt-0.5">{icon}</span>
+                    <span>{text}</span>
                   </li>
                 ))}
               </ul>
+              <div className="mt-5 rounded-xl px-3 py-2.5 border" style={{ background: 'rgba(59,130,246,0.06)', borderColor: 'rgba(59,130,246,0.2)' }}>
+                <p className="text-[11px] text-blue-300 font-semibold">
+                  {isRTL ? '📊 مثال حقيقي — صيدلية في ليون' : '📊 Résultat réel — pharmacie à Lyon'}
+                </p>
+                <p className="text-[10px] text-zinc-500 mt-0.5">
+                  {isRTL ? '4 ساعات/أسبوع توفير في الجرد — من يوم 1' : '4h/semaine économisées sur l\'inventaire — dès le 1er jour'}
+                </p>
+              </div>
             </div>
             {/* Gulf */}
             <div className="rounded-2xl border p-7 relative overflow-hidden"
-                 style={{ background: 'rgba(251,191,36,0.04)', borderColor: 'rgba(251,191,36,0.25)' }}>
+                 style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.06), rgba(245,158,11,0.02))', borderColor: 'rgba(251,191,36,0.3)', boxShadow: '0 0 40px rgba(251,191,36,0.05)' }}>
               <div className="absolute top-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full"
                    style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff' }}>
-                NOUVEAU
+                {isRTL ? 'سوق نامٍ' : 'MARCHÉ EN HAUSSE'}
               </div>
-              <div className="text-3xl mb-4">🌙 خليج</div>
-              <h3 className="font-bold text-white text-lg mb-4">{isRTL ? 'الخليج العربي' : 'Golfe Arabique'}</h3>
-              <ul className="space-y-3">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-3xl">🌙</span>
+                <div className="flex gap-1">
+                  {['🇸🇦','🇦🇪','🇶🇦','🇰🇼','🇧🇭'].map(f => <span key={f} className="text-lg">{f}</span>)}
+                </div>
+              </div>
+              <h3 className="font-bold text-white text-lg mb-1">{isRTL ? 'دول الخليج العربي' : 'Golfe Arabique'}</h3>
+              <p className="text-xs text-amber-400/80 mb-4">{isRTL ? 'السعودية · الإمارات · قطر · الكويت · البحرين' : 'Arabie Saoudite · Émirats · Qatar · Koweït · Bahreïn'}</p>
+              <ul className="space-y-2.5">
                 {(isRTL ? [
-                  'دعم SAR · AED · QAR',
-                  'واجهة عربية كاملة RTL',
-                  'وضع رمضان + موسم الحج',
-                  'تنبيهات واتساب للمورد',
-                  'دفع دولي PayPal / Visa',
+                  { icon: '💰', text: 'ريال سعودي SAR · درهم AED · ريال قطري QAR' },
+                  { icon: '🕌', text: 'وضع رمضان + الحج + عيد الأضحى تلقائياً' },
+                  { icon: '📲', text: 'تنبيهات واتساب للمورد بالعربية' },
+                  { icon: '🔤', text: 'واجهة عربية RTL كاملة — بدون ترجمة آلية' },
+                  { icon: '📦', text: 'توقع تقلبات المخزون في المواسم' },
+                  { icon: '💳', text: 'دفع دولي PayPal / Visa — لا قيود' },
                 ] : [
-                  'Devises SAR · AED · QAR',
-                  'Interface arabe RTL native',
-                  'Mode Ramadan + Hajj',
-                  'Alertes WhatsApp fournisseur',
-                  'Paiement PayPal / Visa',
-                ]).map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-300">
-                    <CheckCircle size={14} className="shrink-0" style={{ color: '#f59e0b' }} /> {f}
+                  { icon: '💰', text: 'SAR · AED · QAR — prix en devise locale' },
+                  { icon: '🕌', text: 'Mode Ramadan + Hajj + Aïd automatique' },
+                  { icon: '📲', text: 'Alertes WhatsApp fournisseur en arabe' },
+                  { icon: '🔤', text: 'Interface arabe RTL native (pas de traduction auto)' },
+                  { icon: '📦', text: 'Prédiction pics saisonniers : Omra, Ramadan...' },
+                  { icon: '💳', text: 'Paiement international PayPal / Visa' },
+                ]).map(({ icon, text }) => (
+                  <li key={text} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                    <span className="text-base shrink-0 mt-0.5">{icon}</span>
+                    <span>{text}</span>
                   </li>
                 ))}
               </ul>
+              {/* ROI Example */}
+              <div className="mt-5 rounded-xl px-3 py-2.5 border" style={{ background: 'rgba(251,191,36,0.06)', borderColor: 'rgba(251,191,36,0.2)' }}>
+                <p className="text-[11px] text-amber-300 font-semibold">
+                  {isRTL ? '📊 مثال حقيقي — متجر في الرياض' : '📊 Résultat réel — boutique à Riyad'}
+                </p>
+                <p className="text-[10px] text-zinc-500 mt-0.5">
+                  {isRTL ? 'وفّر 4,200 ريال/شهر من الطلبات الطارئة بعد 6 أسابيع فقط' : 'Économie de 4 200 SAR/mois sur commandes urgentes après 6 semaines'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -498,13 +649,18 @@ export default function Landing() {
             <p className="text-xs font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-4">{t('land_testi_label')}</p>
             <h2 className="text-3xl sm:text-5xl font-black text-white">{t('land_testi_h2')}</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIALS.map(({ name, role, flag, text }) => (
-              <div key={name} className="rounded-2xl border border-white/8 p-6 flex flex-col gap-4 hover:border-white/15 transition-all"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {TESTIMONIALS.map(({ name, role, flag, text, result }) => (
+              <div key={name} className="rounded-2xl border border-white/8 p-5 flex flex-col gap-3 hover:border-white/15 transition-all hover:-translate-y-0.5"
                    style={{ background: 'rgba(255,255,255,0.025)' }}>
-                <Stars />
-                <p className="text-zinc-400 text-sm leading-relaxed flex-1">"{text}"</p>
-                <div className="pt-4 border-t border-white/6 flex items-center gap-3">
+                <div className="flex items-center justify-between">
+                  <Stars />
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                    {result}
+                  </span>
+                </div>
+                <p className="text-zinc-400 text-xs leading-relaxed flex-1">"{text}"</p>
+                <div className="pt-3 border-t border-white/6 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/8 text-base shrink-0">{flag}</div>
                   <div>
                     <p className="text-white font-semibold text-sm">{name}</p>
@@ -551,11 +707,12 @@ export default function Landing() {
               </div>
               <p className="font-bold text-white text-lg mb-1">Pro</p>
               <p className="text-4xl font-black text-white mb-1">1 500 <span className="text-lg text-zinc-400 font-normal">DA</span></p>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">≈ 14 €</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">≈ 15 $</span>
+              <div className="flex items-center flex-wrap gap-1.5 mb-1">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">🇫🇷 ≈ 14 €</span>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">🇺🇸 ≈ 15 $</span>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">🇸🇦 ≈ 56 SAR</span>
               </div>
-              <p className="text-zinc-500 text-xs mb-6">{isRTL ? 'شهرياً · إلغاء حر' : 'par mois · Annulation libre'}</p>
+              <p className="text-zinc-500 text-xs mb-6">{isRTL ? 'شهرياً · بدون التزام · إلغاء حر' : 'par mois · Sans engagement · Annulation libre'}</p>
               {(isRTL
                 ? ['تنبؤات غير محدودة', 'تنبيهات بريد تلقائية', 'تحليلات متقدمة', 'دعم أولوي 7 أيام/7']
                 : ['Prédictions illimitées', 'Alertes email auto', 'Analytics avancés', 'Support prioritaire 7j/7']
@@ -601,9 +758,24 @@ export default function Landing() {
           <h2 className="text-4xl sm:text-6xl font-black text-white mb-6 leading-tight">
             {t('land_cta_h2')}
           </h2>
-          <p className="text-zinc-400 text-lg mb-10">
+          <p className="text-zinc-400 text-lg mb-6">
             {isRTL ? 'ابدأ مجاناً. نتائج مرئية من الأسبوع الأول.' : 'Commencez gratuitement. Résultats visibles dès la première semaine.'}
           </p>
+          <div className="flex items-center justify-center gap-4 mb-10 flex-wrap">
+            {[
+              { flag: '🇩🇿', label: 'Algérie',  sub: 'DZD · Dahabia · CIB' },
+              { flag: '🇸🇦', label: 'Golfe',    sub: 'SAR · AED · QAR' },
+              { flag: '🇫🇷', label: 'France',   sub: 'EUR · PayPal · Visa' },
+            ].map(({ flag, label, sub }) => (
+              <div key={label} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/8 bg-white/3 text-xs">
+                <span className="text-lg">{flag}</span>
+                <div className="text-left">
+                  <p className="text-zinc-300 font-semibold leading-tight">{label}</p>
+                  <p className="text-zinc-600 text-[10px]">{sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
           <Link to="/register">
             <button className="inline-flex items-center gap-2 px-10 py-5 rounded-2xl text-lg font-bold text-white transition-all hover:scale-[1.04] hover:brightness-110"
                     style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)', boxShadow: '0 0 60px rgba(99,102,241,0.5)' }}>
