@@ -31,8 +31,6 @@ export const Solution: React.FC<Props> = ({ lang, format }) => {
   // Flash d'entrée
   const enterFlash = interpolate(frame, [0, 4, 10], [0, 0.3, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
 
-  const fadeOut = interpolate(frame, [285, 300], [1, 0], { extrapolateRight: 'clamp' })
-
   const isVertical = format === 'vertical'
   const mockupWidth = isVertical ? 880 : 1100
   const titleSize = isVertical ? 56 : 64
@@ -46,7 +44,6 @@ export const Solution: React.FC<Props> = ({ lang, format }) => {
   return (
     <AbsoluteFill
       style={{
-        opacity: fadeOut,
         direction: rtl ? 'rtl' : 'ltr',
         fontFamily: theme.font.sans,
         justifyContent: 'center',

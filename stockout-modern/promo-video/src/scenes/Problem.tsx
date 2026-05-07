@@ -44,8 +44,6 @@ export const Problem: React.FC<Props> = ({ lang, format }) => {
   // Glow pulsing après l'impact
   const glowPulse = (Math.sin(frame * 0.15) + 1) / 2
 
-  const fadeOut = interpolate(frame, [165, 180], [1, 0], { extrapolateRight: 'clamp' })
-
   const isVertical = format === 'vertical'
   const titleSize = isVertical ? 60 : 70
   const statSize = isVertical ? 280 : 360
@@ -54,7 +52,6 @@ export const Problem: React.FC<Props> = ({ lang, format }) => {
   return (
     <AbsoluteFill
       style={{
-        opacity: fadeOut,
         direction: rtl ? 'rtl' : 'ltr',
         fontFamily: theme.font.sans,
         justifyContent: 'center',

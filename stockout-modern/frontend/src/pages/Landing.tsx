@@ -900,7 +900,7 @@ export default function Landing() {
                 <Link to="/register">
                   <button className="w-full mt-5 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
                           style={{ background: 'linear-gradient(135deg,#6366f1,#d946ef)', boxShadow: '0 8px 24px -8px rgba(99,102,241,0.6)' }}>
-                    {isRTL ? 'جرّب 14 يوماً مجاناً' : 'Essayer 14 jours gratuits'}
+                    {isRTL ? 'ابدأ مجّاناً' : 'Démarrer gratuitement'}
                   </button>
                 </Link>
               </div>
