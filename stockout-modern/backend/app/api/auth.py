@@ -1,5 +1,11 @@
 from datetime import datetime, timezone, timedelta
+import os
 import secrets as _secrets
+
+
+def _frontend_url() -> str:
+    """Lit FRONTEND_URL directement depuis l'env (bypass pydantic cache)."""
+    return os.getenv("FRONTEND_URL") or settings.FRONTEND_URL or "http://localhost:5173"
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
@@ -49,7 +55,7 @@ async def register(request: Request, payload: UserCreate, db: AsyncSession = Dep
     await db.refresh(user)
 
     # Envoi de l'email (mode console si SMTP non configuré)
-    verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token_str}"
+    verify_url = f"{_frontend_url()}/verify-email?token={token_str}"
     from app.services.email_service import send_verification_email
     send_verification_email(user.email, verify_url)
 
@@ -122,7 +128,7 @@ async def resend_verification(
         db.add(verif_token)
         await db.commit()
 
-        verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token_str}"
+        verify_url = f"{_frontend_url()}/verify-email?token={token_str}"
         from app.services.email_service import send_verification_email
         send_verification_email(user.email, verify_url)
 
@@ -214,7 +220,7 @@ async def forgot_password(
         reset_token = models.PasswordResetToken(user_id=user.id, token=token_str, expires_at=expires)
         db.add(reset_token)
         await db.commit()
-        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token_str}"
+        reset_url = f"{_frontend_url()}/reset-password?token={token_str}"
         from app.services.email_service import send_reset_email
         send_reset_email(user.email, reset_url)
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé."}
