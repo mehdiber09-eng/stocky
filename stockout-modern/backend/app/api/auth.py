@@ -4,8 +4,8 @@ import secrets as _secrets
 
 
 def _frontend_url() -> str:
-    """Lit FRONTEND_URL directement depuis l'env (bypass pydantic cache)."""
-    return os.getenv("FRONTEND_URL") or settings.FRONTEND_URL or "http://localhost:5173"
+    """Lit FRONTEND_URL directement depuis l'env, fallback sur le domaine prod."""
+    return os.getenv("FRONTEND_URL") or settings.FRONTEND_URL or "https://www.mstockpredictor.com"
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field

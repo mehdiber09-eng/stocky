@@ -32,9 +32,10 @@ class Settings(BaseSettings):
     PAYPAL_SECRET: str = os.getenv("PAYPAL_SECRET", "")
     PAYPAL_SANDBOX: bool = os.getenv("PAYPAL_SANDBOX", "true").lower() == "true"
 
-    # URLs (needed for payment redirects)
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    API_BASE_URL: str = os.getenv("API_BASE_URL", "http://localhost:8000")
+    # URLs (needed for payment redirects + email links)
+    # Defaults sur le domaine custom — override via env vars en dev local.
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://www.mstockpredictor.com")
+    API_BASE_URL: str = os.getenv("API_BASE_URL", "https://api.mstockpredictor.com")
 
     # Subscription price
     PRICE_DZD: int = int(os.getenv("PRICE_DZD", "1500"))
