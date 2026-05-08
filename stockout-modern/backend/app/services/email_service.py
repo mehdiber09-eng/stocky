@@ -73,6 +73,74 @@ def send_alert_email(to_email: str, product_name: str, probability: float, horiz
         return False
 
 
+def send_verification_email(to_email: str, verify_url: str):
+    """Send email verification email after registration."""
+    html = f"""
+    <div style="font-family: -apple-system, sans-serif; max-width: 560px; margin: 0 auto; background: #0f0f11; color: #e4e4e7; border-radius: 12px; overflow: hidden;">
+      <div style="background: linear-gradient(135deg,#6366f1,#d946ef); padding: 24px 32px;">
+        <h1 style="margin: 0; font-size: 22px; color: white;">📧 Confirme ton email</h1>
+        <p style="margin: 4px 0 0; color: #e0e7ff; font-size: 14px;">Stocky — Bienvenue dans la famille</p>
+      </div>
+      <div style="padding: 32px;">
+        <p style="color: #a1a1aa; margin-bottom: 24px;">
+          Bienvenue sur Stocky ! Pour activer ton compte et commencer à anticiper tes ruptures de stock,
+          confirme ton adresse email en cliquant sur le bouton ci-dessous.
+        </p>
+
+        <div style="text-align: center; margin-bottom: 28px;">
+          <a href="{verify_url}"
+             style="display: inline-block; background: linear-gradient(135deg,#6366f1,#d946ef); color: white; text-decoration: none;
+                    padding: 14px 32px; border-radius: 12px; font-size: 15px; font-weight: 700;">
+            Confirmer mon email →
+          </a>
+        </div>
+
+        <div style="background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+          <p style="margin: 0; font-size: 13px; color: #a1a1aa;">
+            ⏱️ Ce lien est valable <strong style="color: #e4e4e7;">24 heures</strong>.
+            Si tu n'as pas créé de compte Stocky, ignore cet email.
+          </p>
+        </div>
+
+        <p style="color: #71717a; font-size: 12px;">
+          Le bouton ne marche pas ? Copie ce lien dans ton navigateur :<br>
+          <span style="color: #818cf8; word-break: break-all;">{verify_url}</span>
+        </p>
+
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #27272a;">
+          <p style="color: #52525b; font-size: 12px; margin: 0;">
+            Envoyé par Stocky · stocky.app
+          </p>
+        </div>
+      </div>
+    </div>
+    """
+
+    if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        # Mode dev : print dans les logs pour test sans SMTP
+        logger.warning(f"[DEV MODE] SMTP non configuré. Lien de vérification pour {to_email}:")
+        logger.warning(f"  → {verify_url}")
+        return True  # On retourne True pour ne pas bloquer le flow
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "📧 Confirme ton email — Stocky"
+        msg["From"] = settings.SMTP_USER
+        msg["To"] = to_email
+        msg.attach(MIMEText(html, "html"))
+
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+
+        logger.info(f"Verification email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send verification email: {e}")
+        return False
+
+
 def send_reset_email(to_email: str, reset_url: str):
     """Send password reset email."""
     if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:

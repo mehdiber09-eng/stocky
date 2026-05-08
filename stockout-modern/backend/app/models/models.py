@@ -12,10 +12,25 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # nullable pour OAuth (pas de mot de passe)
     is_subscribed = Column(Boolean, default=False, nullable=False)
     alert_threshold = Column(Float, default=0.5, nullable=False, server_default="0.5")
+    email_verified = Column(Boolean, default=False, nullable=False, server_default="false")
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
+    oauth_provider = Column(String(20), nullable=True)  # 'google', 'apple', null = email/password
+    oauth_id = Column(String(255), nullable=True, index=True)  # ID externe Google/Apple
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    user = relationship("User")
 
 
 class PasswordResetToken(Base):

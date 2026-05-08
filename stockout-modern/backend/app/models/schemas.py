@@ -13,6 +13,8 @@ class UserOut(BaseModel):
     email: EmailStr
     is_subscribed: bool
     alert_threshold: float = 0.5
+    email_verified: bool = False
+    oauth_provider: Optional[str] = None
     created_at: datetime
 
     class Config:

@@ -35,11 +35,98 @@ async def register(request: Request, payload: UserCreate, db: AsyncSession = Dep
     user = models.User(
         email=payload.email,
         password_hash=hash_password(payload.password),
+        email_verified=False,
     )
     db.add(user)
+    await db.flush()  # pour récupérer user.id avant le commit
+
+    # Token de vérification email (24h)
+    token_str = _secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc) + timedelta(hours=24)
+    verif_token = models.EmailVerificationToken(user_id=user.id, token=token_str, expires_at=expires)
+    db.add(verif_token)
     await db.commit()
     await db.refresh(user)
+
+    # Envoi de l'email (mode console si SMTP non configuré)
+    verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token_str}"
+    from app.services.email_service import send_verification_email
+    send_verification_email(user.email, verify_url)
+
     return {"access_token": create_access_token(str(user.id))}
+
+
+class VerifyEmailPayload(BaseModel):
+    token: str
+
+
+@router.post("/verify-email", status_code=200)
+async def verify_email(payload: VerifyEmailPayload, db: AsyncSession = Depends(get_db)):
+    """Confirme l'email à partir du token reçu par email."""
+    q = await db.execute(select(models.EmailVerificationToken).where(
+        models.EmailVerificationToken.token == payload.token,
+        models.EmailVerificationToken.used == False,
+    ))
+    token = q.scalars().first()
+    if not token:
+        raise HTTPException(status_code=400, detail="Lien invalide ou déjà utilisé.")
+
+    expires = token.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Lien expiré. Demande un nouveau lien.")
+
+    user = await db.get(models.User, token.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Compte introuvable.")
+
+    user.email_verified = True
+    user.email_verified_at = datetime.now(timezone.utc)
+    token.used = True
+    db.add(user)
+    db.add(token)
+    await db.commit()
+    return {"message": "Email confirmé avec succès."}
+
+
+class ResendVerificationPayload(BaseModel):
+    email: EmailStr
+
+
+@router.post("/resend-verification", status_code=200)
+async def resend_verification(
+    request: Request,
+    payload: ResendVerificationPayload,
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-envoie le mail de vérification (rate-limité)."""
+    await check_rate_limit(request, max_calls=3, window_seconds=300)
+
+    q = await db.execute(select(models.User).where(models.User.email == payload.email))
+    user = q.scalars().first()
+    # On ne révèle pas si l'email existe ou non
+    if user and not user.email_verified:
+        # Invalider les anciens tokens
+        old = await db.execute(select(models.EmailVerificationToken).where(
+            models.EmailVerificationToken.user_id == user.id,
+            models.EmailVerificationToken.used == False,
+        ))
+        for t in old.scalars().all():
+            t.used = True
+            db.add(t)
+
+        token_str = _secrets.token_urlsafe(32)
+        expires = datetime.now(timezone.utc) + timedelta(hours=24)
+        verif_token = models.EmailVerificationToken(user_id=user.id, token=token_str, expires_at=expires)
+        db.add(verif_token)
+        await db.commit()
+
+        verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token_str}"
+        from app.services.email_service import send_verification_email
+        send_verification_email(user.email, verify_url)
+
+    return {"message": "Si cet email existe et n'est pas vérifié, un nouveau lien a été envoyé."}
 
 
 @router.post("/token", response_model=Token)
@@ -48,7 +135,13 @@ async def login(request: Request, payload: UserCreate, db: AsyncSession = Depend
 
     q = await db.execute(select(models.User).filter(models.User.email == payload.email))
     user = q.scalars().first()
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not user or not user.password_hash or not verify_password(payload.password, user.password_hash):
+        # password_hash null = compte OAuth (Google/Apple), pas de login par mot de passe
+        if user and user.oauth_provider:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Ce compte utilise la connexion {user.oauth_provider.capitalize()}. Connecte-toi avec ce service.",
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect.",

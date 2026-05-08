@@ -23,6 +23,7 @@ from app.api import (
     simulate,
     system_status,
     push,
+    oauth,
 )
 from app.core.config import settings
 from app.models.db import init_db
@@ -67,6 +68,7 @@ async def add_process_time(request: Request, call_next):
 
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(oauth.router, prefix="/auth/oauth", tags=["oauth"])
 app.include_router(products.router, prefix="/products", tags=["products"])
 app.include_router(sales.router, prefix="/sales", tags=["sales"])
 app.include_router(inventory.router, prefix="/inventory", tags=["inventory"])

@@ -52,6 +52,15 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     ALERT_THRESHOLD: float = float(os.getenv("ALERT_THRESHOLD", "0.5"))
 
+    # OAuth — Google
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    # OAuth — Apple
+    APPLE_CLIENT_ID: str = os.getenv("APPLE_CLIENT_ID", "")  # Service ID (ex: com.stocky.signin)
+    APPLE_TEAM_ID: str = os.getenv("APPLE_TEAM_ID", "")
+    APPLE_KEY_ID: str = os.getenv("APPLE_KEY_ID", "")
+    APPLE_PRIVATE_KEY: str = os.getenv("APPLE_PRIVATE_KEY", "")  # Contenu du fichier .p8
+
     # Web Push (VAPID) — generate once with: python scripts/gen_vapid.py
     VAPID_PUBLIC_KEY: str = os.getenv("VAPID_PUBLIC_KEY", "BF_DyNfoDtCgIWWU-6A6YgHCsFMbk6ZeOTTWL-d-QE0jGamZL_c0QN66SaHXyjCgvB_bWjYcZHf5AfBML9d5Iwk")
     VAPID_PRIVATE_KEY: str = os.getenv("VAPID_PRIVATE_KEY", "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgL-1FtIhrMQjNfKmUUzhDsstAtKOFthbNSH98r4_siImhRANCAARfw8jX6A7QoCFllPugOmIBwrBTG5OmXjk01i_nfkBNIxmpmS_3NEDeukmh18owoLwf21o2HGR3-QHwTC_XeSMJ")

@@ -29,3 +29,20 @@ async def init_db():
         await conn.execute(text(
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS price_currency VARCHAR(10) NOT NULL DEFAULT 'DZD'"
         ))
+        # Email verification + OAuth columns
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP WITH TIME ZONE"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)"
+        ))
+        # password_hash devient nullable pour les comptes OAuth (sans mot de passe)
+        await conn.execute(text(
+            "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
+        ))

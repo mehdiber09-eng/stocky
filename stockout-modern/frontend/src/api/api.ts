@@ -207,6 +207,13 @@ export const AuthAPI = {
   login: (email: string, password: string) =>
     API.post<{ access_token: string }>('/auth/token', { email, password }),
   me: () => API.get('/auth/me'),
+  verifyEmail: (token: string) =>
+    API.post<{ message: string }>('/auth/verify-email', { token }),
+  resendVerification: (email: string) =>
+    API.post<{ message: string }>('/auth/resend-verification', { email }),
+  // OAuth — URLs de redirection (le backend gère le callback)
+  oauthGoogleStart: () => `${baseURL}/auth/oauth/google/start`,
+  oauthAppleStart: () => `${baseURL}/auth/oauth/apple/start`,
 }
 
 export const ProductsAPI = {

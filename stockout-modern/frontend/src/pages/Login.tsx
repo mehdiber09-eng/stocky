@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation, useSearchParams, Navigate } from 'react-router-dom'
 import { Mail, Lock, Activity, AlertCircle, Loader2 } from 'lucide-react'
 import { AuthAPI } from '../api/api'
 import { useAuth } from '../context/AuthContext'
@@ -12,7 +12,21 @@ export default function Login() {
   const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const from = (location.state as any)?.from?.pathname || '/dashboard'
+
+  // Auto-login depuis OAuth callback (?token=xxx) ou erreur OAuth (?oauth_error=xxx)
+  useEffect(() => {
+    const token = searchParams.get('token')
+    const oauthError = searchParams.get('oauth_error')
+    if (token) {
+      login(token)
+      navigate('/dashboard', { replace: true })
+    } else if (oauthError) {
+      setError(`Connexion ${oauthError === 'access_denied' ? 'annulée' : 'échouée'}. Réessaie.`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   if (isAuthenticated || !!localStorage.getItem('token')) {
     return <Navigate to={from} replace />
@@ -59,6 +73,35 @@ export default function Login() {
               {error}
             </div>
           )}
+
+          {/* Boutons OAuth */}
+          <div className="space-y-2 mb-5">
+            <a href={AuthAPI.oauthGoogleStart()} className="block">
+              <button type="button" className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-white text-zinc-900 font-semibold text-sm hover:bg-zinc-100 transition-all">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                  <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                </svg>
+                Continuer avec Google
+              </button>
+            </a>
+            <a href={AuthAPI.oauthAppleStart()} className="block">
+              <button type="button" className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-black text-white font-semibold text-sm border border-white/15 hover:bg-zinc-900 transition-all">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+                Continuer avec Apple
+              </button>
+            </a>
+          </div>
+
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-zinc-500">ou</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
 
           <form onSubmit={submit} className="space-y-4">
             <div>
