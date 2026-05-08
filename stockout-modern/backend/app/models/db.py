@@ -9,40 +9,36 @@ AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 Base = declarative_base()
 
 async def init_db():
-    # Import models to register them with metadata
+    """
+    Initialise la DB :
+    1. Crée les nouvelles tables (create_all idempotent)
+    2. Applique les ALTER TABLE de migration en mode best-effort.
+       Chaque ALTER est dans son propre try/except : si une migration
+       échoue (ex: contrainte qu'on a pas anticipée), l'app continue
+       quand même de démarrer plutôt que de crasher au boot.
+    """
+    import logging
+    log = logging.getLogger(__name__)
+
     from app.models import models  # noqa: F401
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # Ensure columns added after initial deployment exist on existing DBs
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS alert_threshold FLOAT NOT NULL DEFAULT 0.5"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS unit_price FLOAT"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price FLOAT"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS price_currency VARCHAR(10) NOT NULL DEFAULT 'DZD'"
-        ))
-        # Email verification + OAuth columns
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP WITH TIME ZONE"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)"
-        ))
-        # password_hash devient nullable pour les comptes OAuth (sans mot de passe)
-        await conn.execute(text(
-            "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
-        ))
+
+    migrations = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS alert_threshold FLOAT NOT NULL DEFAULT 0.5",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS unit_price FLOAT",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price FLOAT",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS price_currency VARCHAR(10) NOT NULL DEFAULT 'DZD'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP WITH TIME ZONE",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)",
+        "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL",
+    ]
+    for sql in migrations:
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text(sql))
+        except Exception as e:
+            log.warning(f"Migration skipped ({sql[:60]}...): {e}")
