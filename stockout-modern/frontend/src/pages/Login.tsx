@@ -58,7 +58,7 @@ export default function Login() {
             <div className="absolute inset-0 bg-white/20 blur-md rounded-2xl" />
           </div>
           <div>
-            <h1 className="font-semibold text-white leading-tight text-lg">StockSense</h1>
+            <h1 className="font-semibold text-white leading-tight text-lg">Stocky</h1>
             <p className="text-xs text-zinc-400">Prédiction de ruptures</p>
           </div>
         </div>

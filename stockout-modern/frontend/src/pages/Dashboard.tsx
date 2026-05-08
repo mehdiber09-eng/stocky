@@ -186,6 +186,111 @@ export default function Dashboard() {
     return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
   })
 
+  // ── ÉTAT VIDE — Pour les nouveaux utilisateurs sans produit ───────────────
+  // On affiche un dashboard ultra simple et focalisé : 1 seul CTA, 3 previews
+  // de ce qui apparaîtra plus tard. Évite le sentiment d'abandon face à
+  // 9 sections vides pour quelqu'un qui ne sait pas encore quoi faire.
+  if (!loading && !usingCache && products.length === 0) {
+    return (
+      <div className="animate-fade-in max-w-3xl mx-auto pt-4 pb-12">
+        {/* Greeting */}
+        <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">
+          {getGreeting()} ·{' '}
+          {new Date().toLocaleDateString('fr-DZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
+
+        {/* Hero principal */}
+        <div className="card-glow shimmer relative overflow-hidden mb-8">
+          <div className="absolute -top-32 -right-20 w-72 h-72 rounded-full bg-brand-500/25 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-32 -left-20 w-72 h-72 rounded-full bg-magenta-500/15 blur-3xl pointer-events-none" />
+          <div className="relative text-center sm:text-left">
+            <div className="inline-flex items-center gap-2 badge-info mb-4">
+              <Rocket size={11} /> Bienvenue sur Stocky
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gradient leading-tight mb-3">
+              Anticipe tes ruptures<br className="hidden sm:block" /> de stock en 5 min
+            </h1>
+            <p className="text-sm text-zinc-400 mb-6 max-w-md mx-auto sm:mx-0">
+              Ajoute ton premier produit, enregistre quelques ventes, et l'IA prédit
+              tes ruptures à 30 jours avec 91% de précision.
+            </p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-center sm:justify-start">
+              <Link to="/create-product">
+                <button className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm">
+                  <Plus size={15} /> Créer mon premier produit
+                  <ArrowUpRight size={14} />
+                </button>
+              </Link>
+              <Link to="/import">
+                <button className="btn-glass w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 text-sm">
+                  <Layers size={14} /> Importer un CSV
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 previews de ce qui apparaîtra plus tard */}
+        <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider mb-3">
+          Ce qui s'affichera ici dès ton premier produit
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+          {[
+            {
+              icon: Bell,
+              color: 'text-red-300',
+              bg: 'bg-red-500/10',
+              border: 'border-red-500/20',
+              title: 'Alertes ruptures',
+              desc: 'Notifs 30j à l\'avance pour commander à temps',
+            },
+            {
+              icon: BarChart2,
+              color: 'text-emerald-300',
+              bg: 'bg-emerald-500/10',
+              border: 'border-emerald-500/20',
+              title: 'Prédictions IA',
+              desc: 'XGBoost + LSTM avec intervalle de confiance',
+            },
+            {
+              icon: TrendingUp,
+              color: 'text-purple-300',
+              bg: 'bg-purple-500/10',
+              border: 'border-purple-500/20',
+              title: 'Vélocité ventes',
+              desc: 'Tendances 7j / 30j / 90j par produit',
+            },
+          ].map(({ icon: Icon, color, bg, border, title, desc }) => (
+            <div key={title} className={`p-4 rounded-xl bg-white/3 border ${border} opacity-60 hover:opacity-100 transition-opacity`}>
+              <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center mb-3`}>
+                <Icon size={16} className={color} />
+              </div>
+              <p className="text-sm font-semibold text-zinc-200 mb-1">{title}</p>
+              <p className="text-xs text-zinc-500 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Raccourcis */}
+        <div className="flex items-center justify-center gap-4 text-xs text-zinc-500 flex-wrap">
+          <Link to="/scan-qr" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+            <QrCode size={12} /> Scanner un produit
+          </Link>
+          <span className="text-zinc-700">·</span>
+          <Link to="/suppliers" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+            <Package size={12} /> Ajouter un fournisseur
+          </Link>
+          <span className="text-zinc-700">·</span>
+          <Link to="/profile" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+            <Sparkles size={12} /> Configurer le profil
+          </Link>
+        </div>
+
+        {showOnboarding && <OnboardingModal onClose={closeOnboarding} />}
+      </div>
+    )
+  }
+
   const stats = [
     {
       label: t('dash_products'),
@@ -234,7 +339,7 @@ export default function Dashboard() {
         <div className="relative flex items-center justify-between gap-6 flex-wrap">
           <div>
             <div className="inline-flex items-center gap-2 badge-info mb-3">
-              <Sparkles size={11} /> StockSense v3
+              <Sparkles size={11} /> Stocky v3
             </div>
             <h1 className="text-3xl font-semibold text-gradient leading-tight">{t('dash_title')}</h1>
             <p className="text-sm text-zinc-400 mt-2">{t('dash_overview')} · {products.length} produit{products.length !== 1 ? 's' : ''} suivi{products.length !== 1 ? 's' : ''}</p>
@@ -319,7 +424,7 @@ export default function Dashboard() {
                 <Rocket size={16} className="text-brand-300" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-zinc-100">Bienvenue sur StockSense !</h2>
+                <h2 className="text-sm font-semibold text-zinc-100">Bienvenue sur Stocky !</h2>
                 <p className="text-xs text-zinc-500">Suivez ces 3 étapes pour commencer</p>
               </div>
             </div>
