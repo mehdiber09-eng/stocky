@@ -3,7 +3,7 @@ import axios, { AxiosError } from 'axios'
 // Use env-driven base URL with fallback to deployed Railway backend.
 // Defensive: prepend https:// if missing, strip trailing slashes.
 function normalizeBaseURL(raw: string | undefined): string {
-  const fallback = 'https://m-stocky.up.railway.app'
+  const fallback = 'https://api.mstockpredictor.com'
   let url = (raw || fallback).trim()
   if (!url) return fallback
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url
