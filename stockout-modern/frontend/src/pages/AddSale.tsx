@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, ShoppingCart, Loader2 } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Loader2, Package, Printer } from 'lucide-react'
 import { ProductsAPI, SalesAPI, Product } from '../api/api'
 import Toast from '../components/Toast'
+import ReceiptModal from '../components/ReceiptModal'
 import { useLanguage } from '../context/LanguageContext'
 
 export default function AddSale() {
@@ -13,6 +14,7 @@ export default function AddSale() {
   const [loading, setLoading] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [receipt, setReceipt] = useState<{ product: Product; quantity: number } | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -24,16 +26,23 @@ export default function AddSale() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!productId) return
+    const product = products.find(p => p.id === Number(productId))
+    if (!product) return
     setLoading(true)
     try {
       await SalesAPI.add({ product_id: Number(productId), quantity })
       setToast({ msg: t('sale_success'), type: 'success' })
-      setTimeout(() => navigate('/'), 1000)
+      setReceipt({ product, quantity })  // ouvre le modal de ticket
     } catch (err: any) {
       setToast({ msg: err.response?.data?.detail || t('sale_error'), type: 'error' })
     } finally {
       setLoading(false)
     }
+  }
+
+  function closeReceipt() {
+    setReceipt(null)
+    navigate('/')
   }
 
   const selectedProduct = products.find(p => p.id === Number(productId))
@@ -81,9 +90,26 @@ export default function AddSale() {
             </div>
 
             {selectedProduct && (
-              <div className="bg-surface-tertiary rounded-lg px-4 py-3 text-xs text-zinc-500 flex items-center gap-4">
-                <span>{t('sale_delay')} <strong className="text-zinc-300">{selectedProduct.lead_time_days}j</strong></span>
-                <span>{t('sale_min_stock')} <strong className="text-zinc-300">{selectedProduct.safety_stock}</strong></span>
+              <div className="rounded-xl bg-white/3 border border-white/8 p-3 flex items-center gap-4">
+                {selectedProduct.image_url ? (
+                  <img
+                    src={selectedProduct.image_url}
+                    alt={selectedProduct.name}
+                    className="w-16 h-16 rounded-lg object-cover border border-white/10 shrink-0"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <Package size={22} className="text-zinc-600" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-zinc-100 truncate">{selectedProduct.name}</p>
+                  <code className="text-[10px] text-zinc-500 font-mono">{selectedProduct.sku}</code>
+                  <div className="flex gap-3 mt-1.5 text-xs text-zinc-500">
+                    <span>{t('sale_delay')} <strong className="text-zinc-300">{selectedProduct.lead_time_days}j</strong></span>
+                    <span>{t('sale_min_stock')} <strong className="text-zinc-300">{selectedProduct.safety_stock}</strong></span>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -111,6 +137,16 @@ export default function AddSale() {
       </div>
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+      {receipt && (
+        <ReceiptModal
+          items={[{
+            product: receipt.product,
+            quantity: receipt.quantity,
+            unit_price: receipt.product.unit_price,
+          }]}
+          onClose={closeReceipt}
+        />
+      )}
     </div>
   )
 }

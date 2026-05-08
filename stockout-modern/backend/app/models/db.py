@@ -35,6 +35,8 @@ async def init_db():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)",
         "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL",
+        # Photos produits (base64 data URLs jusqu'à 500 KB)
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT",
     ]
     for sql in migrations:
         try:

@@ -63,6 +63,7 @@ export interface Product {
   unit_price: number | null
   cost_price: number | null
   price_currency: string
+  image_url: string | null
   created_at: string
 }
 
@@ -223,10 +224,12 @@ export const ProductsAPI = {
     name: string; sku: string; lead_time_days: number; safety_stock: number;
     initial_stock?: number; supplier_id?: number | null;
     unit_price?: number | null; cost_price?: number | null; price_currency?: string;
+    image_url?: string | null;
   }) => API.post<Product>('/products/', data),
   update: (id: number, data: {
     name?: string; lead_time_days?: number; safety_stock?: number; supplier_id?: number | null;
     unit_price?: number | null; cost_price?: number | null; price_currency?: string;
+    image_url?: string | null;
   }) => API.put<Product>(`/products/${id}`, data),
   delete: (id: number) => API.delete(`/products/${id}`),
 }

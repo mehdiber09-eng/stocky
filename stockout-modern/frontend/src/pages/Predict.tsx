@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, TrendingUp, Loader2, AlertTriangle, CheckCircle, Info, Calendar, MessageCircle, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, TrendingUp, Loader2, AlertTriangle, CheckCircle, Info, Calendar, MessageCircle, ShoppingCart, Package } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   Tooltip, CartesianGrid, ReferenceLine, ReferenceArea,
@@ -189,6 +189,26 @@ export default function Predict() {
                 <select className="input text-sm" value={productId} onChange={e => setProductId(Number(e.target.value))}>
                   {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
+                {/* Photo + info du produit sélectionné */}
+                {selectedProduct && (
+                  <div className="mt-3 flex items-center gap-3 rounded-xl bg-white/3 border border-white/8 p-2.5">
+                    {selectedProduct.image_url ? (
+                      <img
+                        src={selectedProduct.image_url}
+                        alt={selectedProduct.name}
+                        className="w-14 h-14 rounded-lg object-cover border border-white/10 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                        <Package size={18} className="text-zinc-600" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-zinc-200 truncate">{selectedProduct.name}</p>
+                      <code className="text-[10px] text-zinc-500 font-mono">{selectedProduct.sku}</code>
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">

@@ -746,7 +746,18 @@ export default function Dashboard() {
                   return (
                   <tr key={p.id} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt={p.name}
+                            className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                            <Package size={14} className="text-zinc-600" />
+                          </div>
+                        )}
                         <span className="font-medium text-zinc-100">{p.name}</span>
                         {trend === 'accelerating' && (
                           <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">

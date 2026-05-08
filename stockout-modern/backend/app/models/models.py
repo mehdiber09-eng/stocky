@@ -69,6 +69,7 @@ class Product(Base):
     unit_price = Column(Float, nullable=True)
     cost_price = Column(Float, nullable=True)
     price_currency = Column(String(10), nullable=False, default="DZD", server_default="DZD")
+    image_url = Column(String(500000), nullable=True)  # base64 data URL ou URL externe
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     owner = relationship("User")

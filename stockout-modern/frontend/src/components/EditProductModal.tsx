@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Package, X, Check, Loader2, Truck, AlertTriangle } from 'lucide-react'
 import { ProductsAPI, SuppliersAPI, Product, Supplier } from '../api/api'
+import ImageUpload from './ImageUpload'
 
 interface Props {
   product: Product
@@ -13,6 +14,7 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
   const [leadTime, setLeadTime] = useState(product.lead_time_days)
   const [safetyStock, setSafetyStock] = useState(product.safety_stock)
   const [supplierId, setSupplierId] = useState<number | null>(product.supplier_id ?? null)
+  const [imageUrl, setImageUrl] = useState<string | null>(product.image_url ?? null)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [suppliersLoading, setSuppliersLoading] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -36,6 +38,7 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
         lead_time_days: leadTime,
         safety_stock: safetyStock,
         supplier_id: supplierId,
+        image_url: imageUrl,
       })
       onSaved(res.data)
     } catch (err: any) {
@@ -66,8 +69,26 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
         </div>
 
         <form onSubmit={submit} className="space-y-4">
-          {/* Name */}
-          <div>
+          {/* Photo */}
+          <div className="flex gap-4">
+            <div className="w-28 shrink-0">
+              <label className="label text-xs">Photo</label>
+              <ImageUpload value={imageUrl} onChange={setImageUrl} />
+            </div>
+            <div className="flex-1">
+              <label className="label">Nom du produit</label>
+              <input
+                className="input"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+              />
+              <p className="text-xs text-zinc-500 mt-2">Modifie nom, photo et infos. SKU non modifiable.</p>
+            </div>
+          </div>
+
+          {/* Hidden duplicate Name (kept for fallback, not shown) */}
+          <div className="hidden">
             <label className="label">Nom du produit</label>
             <input
               className="input"

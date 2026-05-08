@@ -36,6 +36,7 @@ class ProductCreate(BaseModel):
     cost_price: Optional[float] = Field(None, ge=0)
     price_currency: str = Field(default="DZD", max_length=10)
     supplier_id: Optional[int] = None
+    image_url: Optional[str] = Field(None, max_length=500000)
 
     @validator("sku", pre=True)
     def sku_normalize(cls, v):
@@ -61,10 +62,15 @@ class ProductOut(BaseModel):
     unit_price: Optional[float] = None
     cost_price: Optional[float] = None
     price_currency: str = "DZD"
+    image_url: Optional[str] = None
     created_at: datetime
 
     class Config:
         orm_mode = True
+
+
+class ProductImageUpdate(BaseModel):
+    image_url: Optional[str] = Field(None, max_length=500000, description="Data URL base64 ou URL externe")
 
 
 class ProductUpdate(BaseModel):
@@ -75,6 +81,7 @@ class ProductUpdate(BaseModel):
     unit_price: Optional[float] = Field(None, ge=0)
     cost_price: Optional[float] = Field(None, ge=0)
     price_currency: Optional[str] = Field(None, max_length=10)
+    image_url: Optional[str] = Field(None, max_length=500000)
 
 
 class SaleCreate(BaseModel):

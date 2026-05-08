@@ -26,6 +26,7 @@ async def create_product(
         unit_price=payload.unit_price,
         cost_price=payload.cost_price,
         price_currency=payload.price_currency,
+        image_url=getattr(payload, "image_url", None),
     )
     db.add(product)
     try:

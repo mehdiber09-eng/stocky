@@ -5,6 +5,7 @@ import { ProductsAPI, SuppliersAPI, Supplier } from '../api/api'
 import Toast from '../components/Toast'
 import BarcodeScanModal from '../components/BarcodeScanModal'
 import QRProductModal from '../components/QRProductModal'
+import ImageUpload from '../components/ImageUpload'
 import { useLanguage } from '../context/LanguageContext'
 
 export default function CreateProduct() {
@@ -16,6 +17,7 @@ export default function CreateProduct() {
   const [safetyStock, setSafetyStock] = useState(0)
   const [initialStock, setInitialStock] = useState(0)
   const [supplierId, setSupplierId] = useState<number | null>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [suppliersLoading, setSuppliersLoading] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -42,6 +44,7 @@ export default function CreateProduct() {
         safety_stock: safetyStock,
         initial_stock: initialStock,
         supplier_id: supplierId,
+        image_url: imageUrl,
       })
       setToast({ msg: t('cp_success'), type: 'success' })
       setQrProduct({ id: res.data.id, name: res.data.name, sku: res.data.sku })
@@ -71,15 +74,26 @@ export default function CreateProduct() {
       <div className="card">
         <form onSubmit={submit} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="label">{t('cp_name')}</label>
-              <input
-                className="input"
-                placeholder="ex: Écran 27 pouces 4K"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-              />
+            {/* Photo en haut à gauche */}
+            <div className="col-span-2 sm:col-span-1">
+              <label className="label">Photo du produit <span className="text-zinc-600">(optionnel)</span></label>
+              <ImageUpload value={imageUrl} onChange={setImageUrl} />
+            </div>
+            <div className="col-span-2 sm:col-span-1 space-y-4">
+              <div>
+                <label className="label">{t('cp_name')}</label>
+                <input
+                  className="input"
+                  placeholder="ex: Écran 27 pouces 4K"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                />
+              </div>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                💡 La photo apparaîtra dans tes ventes, prédictions et la liste produits.
+                Tu peux scanner un code-barres juste en bas pour préremplir le SKU.
+              </p>
             </div>
             <div className="col-span-2">
               <label className="label">{t('cp_sku')} <span className="text-zinc-600">({t('cp_sku_note')})</span></label>
