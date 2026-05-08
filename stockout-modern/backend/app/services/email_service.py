@@ -57,14 +57,14 @@ def send_alert_email(to_email: str, product_name: str, probability: float, horiz
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"⚠️ Risque rupture {risk_pct}% — {product_name}"
-        msg["From"] = settings.SMTP_USER
+        msg["From"] = settings.FROM_EMAIL or settings.SMTP_USER
         msg["To"] = to_email
         msg.attach(MIMEText(html, "html"))
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+            server.sendmail(settings.FROM_EMAIL or settings.SMTP_USER, to_email, msg.as_string())
 
         logger.info(f"Alert email sent to {to_email} for {product_name}")
         return True
@@ -125,14 +125,14 @@ def send_verification_email(to_email: str, verify_url: str):
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "📧 Confirme ton email — Stocky"
-        msg["From"] = settings.SMTP_USER
+        msg["From"] = settings.FROM_EMAIL or settings.SMTP_USER
         msg["To"] = to_email
         msg.attach(MIMEText(html, "html"))
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+            server.sendmail(settings.FROM_EMAIL or settings.SMTP_USER, to_email, msg.as_string())
 
         logger.info(f"Verification email sent to {to_email}")
         return True
@@ -188,14 +188,14 @@ def send_reset_email(to_email: str, reset_url: str):
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "🔑 Réinitialisation de votre mot de passe — StockSense"
-        msg["From"] = settings.SMTP_USER
+        msg["From"] = settings.FROM_EMAIL or settings.SMTP_USER
         msg["To"] = to_email
         msg.attach(MIMEText(html, "html"))
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+            server.sendmail(settings.FROM_EMAIL or settings.SMTP_USER, to_email, msg.as_string())
 
         logger.info(f"Reset email sent to {to_email}")
         return True

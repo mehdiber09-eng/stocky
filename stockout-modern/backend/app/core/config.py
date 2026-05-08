@@ -45,11 +45,14 @@ class Settings(BaseSettings):
     def superuser_emails_set(self) -> set:
         return {e.strip().lower() for e in self.SUPERUSER_EMAILS.split(",") if e.strip()}
 
-    # Email alerts (optional)
+    # Email — SMTP (Resend, OVH, SendGrid, etc.)
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USER: str = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    # Adresse expéditeur visible (peut différer de SMTP_USER, ex: avec Resend
+    # SMTP_USER='resend' littéral mais on envoie depuis noreply@mondomaine.com)
+    FROM_EMAIL: str = os.getenv("FROM_EMAIL", "")
     ALERT_THRESHOLD: float = float(os.getenv("ALERT_THRESHOLD", "0.5"))
 
     # OAuth — Google
