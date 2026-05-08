@@ -1,8 +1,8 @@
-const CACHE = 'stocky-v1'
-const PRECACHE = ['/', '/index.html']
+const CACHE = 'stocky-v2'
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()))
+  // Force le nouveau SW à prendre le relais immédiatement
+  self.skipWaiting()
 })
 
 self.addEventListener('activate', e => {
@@ -14,25 +14,62 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url)
-  // Network-first for API calls
-  if (url.pathname.includes('/api/') || url.port === '8000') {
+  const req = e.request
+  const url = new URL(req.url)
+
+  // Bypass complet pour les requêtes cross-origin (API backend, fonts Google, etc.)
+  // Le navigateur les gère directement.
+  if (url.origin !== self.location.origin) return
+
+  // Bypass pour les méthodes non-GET (POST, PUT, DELETE...)
+  if (req.method !== 'GET') return
+
+  // Navigation (HTML) → toujours network-first, sinon écran blanc après deploy
+  // (le HTML cached référence d'anciens JS hash qui n'existent plus)
+  if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
     e.respondWith(
-      fetch(e.request).catch(() => new Response(JSON.stringify({ offline: true }), { headers: { 'Content-Type': 'application/json' } }))
+      fetch(req)
+        .then(res => {
+          // Met à jour le cache pour fallback offline
+          const clone = res.clone()
+          caches.open(CACHE).then(c => c.put('/', clone)).catch(() => {})
+          return res
+        })
+        .catch(() => caches.match('/').then(r => r || new Response('Offline', { status: 503 })))
     )
     return
   }
-  // Cache-first for static assets
+
+  // Assets versionnés (/assets/*-HASH.js, *.css) → cache-first (immutable)
+  if (url.pathname.startsWith('/assets/')) {
+    e.respondWith(
+      caches.match(req).then(cached => {
+        if (cached) return cached
+        return fetch(req)
+          .then(res => {
+            if (res && res.status === 200 && res.type === 'basic') {
+              const clone = res.clone()
+              caches.open(CACHE).then(c => c.put(req, clone)).catch(() => {})
+            }
+            return res
+          })
+          .catch(() => new Response('Asset unavailable', { status: 503 }))
+      })
+    )
+    return
+  }
+
+  // Autres ressources statiques (manifest, icons) → network avec fallback cache
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached
-      return fetch(e.request).then(res => {
-        if (!res || res.status !== 200 || res.type === 'opaque') return res
-        const clone = res.clone()
-        caches.open(CACHE).then(c => c.put(e.request, clone))
+    fetch(req)
+      .then(res => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const clone = res.clone()
+          caches.open(CACHE).then(c => c.put(req, clone)).catch(() => {})
+        }
         return res
       })
-    })
+      .catch(() => caches.match(req).then(r => r || new Response('Not available', { status: 503 })))
   )
 })
 
