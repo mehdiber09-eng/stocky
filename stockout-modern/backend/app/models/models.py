@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, func, Index
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, func, Index, Text
 from sqlalchemy.orm import relationship
 from app.models.db import Base
 from datetime import datetime, timezone
@@ -14,6 +14,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=True)  # nullable pour OAuth (pas de mot de passe)
     is_subscribed = Column(Boolean, default=False, nullable=False)
+    subscription_expires_at = Column(DateTime(timezone=True), nullable=True)
     alert_threshold = Column(Float, default=0.5, nullable=False, server_default="0.5")
     email_verified = Column(Boolean, default=False, nullable=False, server_default="false")
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
@@ -69,7 +70,7 @@ class Product(Base):
     unit_price = Column(Float, nullable=True)
     cost_price = Column(Float, nullable=True)
     price_currency = Column(String(10), nullable=False, default="DZD", server_default="DZD")
-    image_url = Column(String(500000), nullable=True)  # base64 data URL ou URL externe
+    image_url = Column(Text, nullable=True)  # base64 data URL ou URL externe — TEXT pour pas de limite
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     owner = relationship("User")

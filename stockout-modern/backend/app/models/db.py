@@ -35,8 +35,13 @@ async def init_db():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)",
         "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL",
-        # Photos produits (base64 data URLs jusqu'à 500 KB)
+        # Photos produits (base64 data URLs)
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT",
+        # Si la colonne avait été créée en VARCHAR(500000), on la passe en TEXT
+        # pour pouvoir stocker des photos plus grosses (jusqu'à ~3 MB de base64).
+        "ALTER TABLE products ALTER COLUMN image_url TYPE TEXT",
+        # Abonnement mensuel avec expiration
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE",
     ]
     for sql in migrations:
         try:

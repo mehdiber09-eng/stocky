@@ -1,24 +1,24 @@
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from typing import Optional
 from datetime import datetime
 
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=6, description="Minimum 6 characters")
+    password: str = Field(..., min_length=6)
 
 
 class UserOut(BaseModel):
     id: int
     email: EmailStr
     is_subscribed: bool
+    subscription_expires_at: Optional[datetime] = None
     alert_threshold: float = 0.5
     email_verified: bool = False
     oauth_provider: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
@@ -31,21 +31,21 @@ class ProductCreate(BaseModel):
     sku: str = Field(..., min_length=1, max_length=100)
     lead_time_days: int = Field(default=7, ge=0, le=365)
     safety_stock: int = Field(default=0, ge=0)
-    initial_stock: int = Field(default=0, ge=0, description="Quantité initiale en stock")
+    initial_stock: int = Field(default=0, ge=0)
     unit_price: Optional[float] = Field(None, ge=0)
     cost_price: Optional[float] = Field(None, ge=0)
     price_currency: str = Field(default="DZD", max_length=10)
     supplier_id: Optional[int] = None
-    image_url: Optional[str] = Field(None, max_length=500000)
+    image_url: Optional[str] = Field(None, max_length=5_000_000)
 
-    @validator("sku", pre=True)
-    def sku_normalize(cls, v):
+    @field_validator("sku", mode="before")
+    @classmethod
+    def sku_normalize(cls, v: object) -> str:
         if not isinstance(v, str):
             raise ValueError("sku doit être une chaîne")
         v = v.strip().upper()
         if not v:
             raise ValueError("sku ne peut pas être vide")
-        # Accepte alphanumérique + séparateurs courants des codes-barres (EAN, QR, Code 128, URL)
         import re
         if not re.match(r"^[A-Z0-9\-_.:/ ]+$", v):
             raise ValueError("sku ne peut contenir que lettres, chiffres, et - _ . : / espace")
@@ -65,12 +65,11 @@ class ProductOut(BaseModel):
     image_url: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductImageUpdate(BaseModel):
-    image_url: Optional[str] = Field(None, max_length=500000, description="Data URL base64 ou URL externe")
+    image_url: Optional[str] = Field(None, max_length=5_000_000)
 
 
 class ProductUpdate(BaseModel):
@@ -81,12 +80,12 @@ class ProductUpdate(BaseModel):
     unit_price: Optional[float] = Field(None, ge=0)
     cost_price: Optional[float] = Field(None, ge=0)
     price_currency: Optional[str] = Field(None, max_length=10)
-    image_url: Optional[str] = Field(None, max_length=500000)
+    image_url: Optional[str] = Field(None, max_length=5_000_000)
 
 
 class SaleCreate(BaseModel):
     product_id: int = Field(..., gt=0)
-    quantity: int = Field(..., gt=0, description="Must be a positive integer")
+    quantity: int = Field(..., gt=0)
 
 
 class SaleOut(BaseModel):
@@ -95,8 +94,7 @@ class SaleOut(BaseModel):
     quantity: int
     sold_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PredictRequest(BaseModel):
@@ -127,8 +125,7 @@ class InventoryOut(BaseModel):
     quantity: int
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotificationOut(BaseModel):
@@ -141,8 +138,7 @@ class NotificationOut(BaseModel):
     is_read: bool
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotificationCount(BaseModel):
@@ -165,8 +161,7 @@ class SupplierOut(BaseModel):
     lead_time_days: int
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StockMovementOut(BaseModel):
@@ -178,5 +173,4 @@ class StockMovementOut(BaseModel):
     reason: str
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CheckCircle, Crown, Zap, CreditCard, Loader2, Shield, Star,
@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { PaymentAPI } from '../api/api'
 import Toast from '../components/Toast'
 import Tooltip from '../components/Tooltip'
+import { useCurrency, TO_DZD, type Currency } from '../hooks/useCurrency'
 
 const FREE_FEATURES = [
   '5 prédictions ML gratuites',
@@ -29,10 +30,20 @@ const PRO_FEATURES = [
   'Support prioritaire',
 ]
 
+const CURRENCY_FLAGS: Record<Currency, string> = {
+  DZD: '🇩🇿',
+  EUR: '🇫🇷',
+  USD: '🌐',
+  SAR: '🇸🇦',
+  AED: '🇦🇪',
+}
+
 type PayMethod = 'edahabia' | 'cib' | 'paypal' | null
 
 export default function Pricing() {
   const { isAuthenticated } = useAuth()
+  const { currency } = useCurrency()
+
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [chargilyEnabled, setChargilyEnabled] = useState(false)
   const [paypalEnabled, setPaypalEnabled] = useState(false)
@@ -57,6 +68,35 @@ export default function Pricing() {
       .catch(() => {})
       .finally(() => setStatusLoading(false))
   }, [isAuthenticated])
+
+  // Prix converti dans la devise active de l'utilisateur
+  const mainPrice = useMemo(() => {
+    const val = priceDzd / TO_DZD[currency]
+    switch (currency) {
+      case 'DZD': return { display: Math.round(val).toLocaleString('fr-DZ'), unit: 'DZD/mois' }
+      case 'EUR': return { display: priceEur.toFixed(2), unit: '€/mois' }
+      case 'USD': return { display: priceUsd.toFixed(2), unit: '$/mois' }
+      case 'SAR': return { display: Math.round(val).toLocaleString('ar-SA'), unit: 'SAR/مو' }
+      case 'AED': return { display: Math.round(val).toLocaleString('ar-AE'), unit: 'AED/شهر' }
+    }
+  }, [currency, priceDzd, priceEur, priceUsd])
+
+  // Équivalents dans toutes les devises
+  const equivalents = useMemo(() => {
+    const priceSar = Math.round(priceDzd / TO_DZD.SAR)
+    const priceAed = Math.round(priceDzd / TO_DZD.AED)
+    const all: { code: Currency; flag: string; value: string; color: string }[] = [
+      { code: 'DZD', flag: '🇩🇿', value: `${priceDzd.toLocaleString()} DA`,   color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' },
+      { code: 'SAR', flag: '🇸🇦', value: `${priceSar} SAR`,                   color: 'text-green-400  border-green-500/20  bg-green-500/10'  },
+      { code: 'AED', flag: '🇦🇪', value: `${priceAed} AED`,                   color: 'text-sky-400    border-sky-500/20    bg-sky-500/10'    },
+      { code: 'EUR', flag: '🇫🇷', value: `${priceEur} €`,                     color: 'text-blue-400   border-blue-500/20   bg-blue-500/10'   },
+      { code: 'USD', flag: '🌐',   value: `$${priceUsd}`,                      color: 'text-violet-400 border-violet-500/20 bg-violet-500/10' },
+    ]
+    // Mettre la devise active en premier
+    const idx = all.findIndex(e => e.code === currency)
+    if (idx > 0) { const [active] = all.splice(idx, 1); all.unshift(active) }
+    return all
+  }, [currency, priceDzd, priceEur, priceUsd])
 
   async function payChargily(method: 'edahabia' | 'cib') {
     setLoading(method)
@@ -89,11 +129,11 @@ export default function Pricing() {
           <Sparkles size={11} /> Tarifs transparents
         </div>
         <h1 className="text-3xl md:text-4xl font-bold text-gradient">
-          Passez à StockSense Pro
+          Passez à Stocky Pro
         </h1>
         <p className="text-zinc-400 max-w-lg mx-auto">
           Commencez gratuitement. Passez Pro quand vous êtes prêt.
-          Disponible en Algérie et en France — plusieurs méthodes de paiement acceptées.
+          Disponible en Algérie, Arabie Saoudite, Émirats et France.
         </p>
       </div>
 
@@ -106,7 +146,7 @@ export default function Pricing() {
             <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Gratuit</p>
             <div className="flex items-end gap-1">
               <span className="text-4xl font-bold text-zinc-100">0</span>
-              <span className="text-zinc-400 mb-1.5">DZD</span>
+              <span className="text-zinc-400 mb-1.5">{currency}</span>
             </div>
             <p className="text-zinc-500 text-sm mt-1">Pour démarrer et tester la plateforme</p>
           </div>
@@ -144,18 +184,31 @@ export default function Pricing() {
             ⭐ Populaire
           </div>
 
-          {/* Price header */}
-          <div className="mb-6">
-            <p className="text-xs font-medium text-brand-400 uppercase tracking-wider mb-1">Pro</p>
+          {/* Prix principal dans la devise active */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-brand-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              Pro {CURRENCY_FLAGS[currency]}
+            </p>
             <div className="flex items-end gap-1">
-              <span className="text-4xl font-bold text-white">{priceDzd.toLocaleString()}</span>
-              <span className="text-zinc-400 mb-1.5">DZD/mois</span>
+              <span className="text-4xl font-bold text-white">{mainPrice.display}</span>
+              <span className="text-zinc-400 mb-1.5 text-sm">{mainPrice.unit}</span>
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">≈ {priceEur} €</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">≈ {priceUsd} $</span>
+
+            {/* Équivalents toutes devises */}
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {equivalents.map(e => (
+                <span
+                  key={e.code}
+                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${e.color} ${e.code === currency ? 'ring-1 ring-white/20' : 'opacity-70'}`}
+                >
+                  {e.flag} {e.value}
+                </span>
+              ))}
             </div>
-            <p className="text-zinc-500 text-sm mt-2">Prédictions illimitées · Sans engagement</p>
+            <p className="text-zinc-500 text-xs mt-2">
+              Prédictions illimitées · Sans engagement ·{' '}
+              <Link to="/profile" className="text-brand-400 hover:underline">Changer de devise</Link>
+            </p>
           </div>
 
           {/* Feature list */}
@@ -192,14 +245,14 @@ export default function Pricing() {
           ) : (
             <div className="space-y-4">
 
-              {/* ── Section Algérie ── */}
+              {/* ── Algérie ── */}
               <div className="border border-zinc-700/50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                    <span className="text-base">🇩🇿</span> Paiement en Algérie
+                    🇩🇿 Paiement en Algérie
                   </p>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">
-                    Algérie
+                    DZD
                   </span>
                 </div>
 
@@ -229,30 +282,33 @@ export default function Pricing() {
 
                 {!chargilyEnabled && (
                   <p className="text-xs text-amber-500/80 flex items-center gap-1">
-                    <AlertCircle size={11} /> Chargily non configuré (admin requis)
+                    <AlertCircle size={11} /> Chargily non configuré
                   </p>
                 )}
               </div>
 
-              {/* Séparateur 1 */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-zinc-700/60" />
                 <span className="text-xs text-zinc-500 font-medium">— ou —</span>
                 <div className="flex-1 h-px bg-zinc-700/60" />
               </div>
 
-              {/* ── Section PayPal ── */}
+              {/* ── International (PayPal) ── */}
               <div className="border border-zinc-700/50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                    <span className="text-base">🌍</span> Paiement international
+                    🌍 Paiement international
                   </p>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 uppercase tracking-wide">
-                    France & International
-                  </span>
+                  <div className="flex gap-1">
+                    {(['SAR','AED','EUR','USD'] as const).map(c => (
+                      <span key={c} className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-700/60 text-zinc-300 border border-zinc-600/40">
+                        {CURRENCY_FLAGS[c]} {c}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
-                <Tooltip text="Paiement sécurisé via votre compte ou carte PayPal" position="left">
+                <Tooltip text="Paiement sécurisé via PayPal — SAR, AED, EUR, USD acceptés" position="left">
                   <button
                     onClick={payPaypal}
                     disabled={loading !== null || !paypalEnabled}
@@ -260,42 +316,26 @@ export default function Pricing() {
                     style={{ background: 'linear-gradient(135deg,#0070ba,#003087)', color: '#fff', boxShadow: '0 4px 16px rgba(0,112,186,0.3)' }}
                   >
                     {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
-                    PayPal — {priceEur}€ / {priceUsd}$
+                    PayPal · {mainPrice.display} {mainPrice.unit.split('/')[0]}
                   </button>
                 </Tooltip>
 
-                {!paypalEnabled && (
-                  <p className="text-xs text-amber-500/80 flex items-center gap-1">
-                    <AlertCircle size={11} /> PayPal non configuré (admin requis)
-                  </p>
-                )}
-              </div>
-
-              {/* Séparateur 2 */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-zinc-700/60" />
-                <span className="text-xs text-zinc-500 font-medium">— ou —</span>
-                <div className="flex-1 h-px bg-zinc-700/60" />
-              </div>
-
-              {/* ── Section Carte bancaire ── */}
-              <div className="border border-zinc-700/50 rounded-xl p-4 space-y-2">
-                <p className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                  <CreditCard size={13} className="text-zinc-400" /> Carte bancaire
-                </p>
-                <p className="text-xs text-zinc-500">
-                  Visa / Mastercard via PayPal — aucun compte PayPal requis.
-                </p>
-                <Tooltip text="Payez directement par carte sans créer de compte PayPal" position="left">
+                <Tooltip text="Payez directement par carte sans compte PayPal" position="left">
                   <button
                     onClick={payPaypal}
                     disabled={loading !== null || !paypalEnabled}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-600/60 text-zinc-300 hover:bg-zinc-700/40"
                   >
                     {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                    Payer par carte — {priceEur}€ / {priceUsd}$
+                    Visa / Mastercard · Mada · Carte locale
                   </button>
                 </Tooltip>
+
+                {!paypalEnabled && (
+                  <p className="text-xs text-amber-500/80 flex items-center gap-1">
+                    <AlertCircle size={11} /> PayPal non configuré
+                  </p>
+                )}
               </div>
 
             </div>
@@ -309,7 +349,7 @@ export default function Pricing() {
           <Shield size={14} className="text-emerald-400" /> Paiement sécurisé SSL
         </span>
         <span className="flex items-center gap-2">
-          <Globe size={14} className="text-brand-400" /> Disponible en Algérie & France
+          <Globe size={14} className="text-brand-400" /> 🇩🇿 🇸🇦 🇦🇪 🇫🇷 🌐
         </span>
         <span className="flex items-center gap-2">
           <Star size={14} className="text-amber-400" /> Support 7j/7
@@ -325,7 +365,11 @@ export default function Pricing() {
         {[
           {
             q: 'Quelles méthodes de paiement sont disponibles ?',
-            a: "En Algérie : Dahabia (Poste Algérie) et CIB via Chargily. En France et à l'international : PayPal ou carte Visa / Mastercard directement via PayPal. Vos données bancaires ne transitent jamais par nos serveurs.",
+            a: "Algérie : Dahabia et CIB via Chargily. Arabie Saoudite / Émirats / international : PayPal, Visa, Mastercard (y compris Mada) — aucun compte PayPal requis pour payer par carte. Vos données bancaires ne transitent jamais par nos serveurs.",
+          },
+          {
+            q: 'Je suis en Arabie Saoudite, comment voir le prix en SAR ?',
+            a: "Dans votre Profil → sélectionner le marché Arabie Saoudite. Le prix s'affichera automatiquement en SAR sur toutes les pages.",
           },
           {
             q: 'Le plan gratuit est-il vraiment gratuit ?',
@@ -333,11 +377,7 @@ export default function Pricing() {
           },
           {
             q: 'Puis-je annuler à tout moment ?',
-            a: "Oui. L'abonnement Pro est mensuel sans engagement. Contactez-nous par email pour annuler.",
-          },
-          {
-            q: 'Je suis en France, comment puis-je payer ?',
-            a: "Utilisez PayPal ou votre carte Visa / Mastercard via PayPal. Aucun compte PayPal n'est obligatoire pour payer par carte.",
+            a: "Oui. L'abonnement Pro est mensuel sans engagement. Il expire automatiquement au bout de 30 jours si vous ne renouvelez pas.",
           },
         ].map(({ q, a }) => (
           <div key={q} className="card">

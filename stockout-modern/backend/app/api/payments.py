@@ -2,6 +2,7 @@ import hmac
 import hashlib
 import json
 import logging
+from datetime import datetime, timezone, timedelta
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, get_current_user
 from app.core.config import settings
 from app.models import models
+
+SUBSCRIPTION_DAYS = 30
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -120,11 +123,15 @@ async def chargily_webhook(request: Request, db: AsyncSession = Depends(get_db))
         user_id = meta.get("user_id")
         if user_id:
             user = await db.get(models.User, int(user_id))
-            if user and not user.is_subscribed:
+            if user:
+                now = datetime.now(timezone.utc)
+                # Prolonger depuis la date d'expiration actuelle si déjà abonné
+                base = user.subscription_expires_at if (user.is_subscribed and user.subscription_expires_at and user.subscription_expires_at > now) else now
                 user.is_subscribed = True
+                user.subscription_expires_at = base + timedelta(days=SUBSCRIPTION_DAYS)
                 db.add(user)
                 await db.commit()
-                logger.info(f"[Chargily] Subscribed user_id={user_id}")
+                logger.info(f"[Chargily] Subscribed user_id={user_id} until {user.subscription_expires_at}")
 
     return {"received": True}
 
@@ -204,8 +211,11 @@ async def paypal_capture(
             logger.error(f"PayPal capture error: {e.response.text}")
             raise HTTPException(status_code=502, detail="Capture PayPal échouée.")
 
+    now = datetime.now(timezone.utc)
+    base = user.subscription_expires_at if (user.is_subscribed and user.subscription_expires_at and user.subscription_expires_at > now) else now
     user.is_subscribed = True
+    user.subscription_expires_at = base + timedelta(days=SUBSCRIPTION_DAYS)
     db.add(user)
     await db.commit()
-    logger.info(f"[PayPal] Subscribed user_id={user.id}")
+    logger.info(f"[PayPal] Subscribed user_id={user.id} until {user.subscription_expires_at}")
     return {"subscribed": True}

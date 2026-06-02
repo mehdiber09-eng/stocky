@@ -68,7 +68,7 @@ async def remove_subscription(
 
 @router.get("/vapid-public-key")
 async def get_vapid_public_key():
-    return {"publicKey": settings.VAPID_PUBLIC_KEY}
+    return {"publicKey": settings.VAPID_PUBLIC_KEY, "enabled": settings.push_enabled}
 
 
 @router.post("/test")
@@ -98,6 +98,8 @@ async def send_test_push(
 # ── Internal helper — called by other modules ────────────────────────────────
 
 def _send_push(sub: PushSubscription, title: str, body: str, url: str = "/dashboard"):
+    if not settings.push_enabled:
+        return
     data = json.dumps({"title": title, "body": body, "url": url})
     try:
         webpush(

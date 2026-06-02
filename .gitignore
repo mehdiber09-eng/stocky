@@ -3,7 +3,19 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+*.env.*
+!*.env.example
 *.egg-info/
 dist/
 .pytest_cache/
 *.bak
+
+# ML artifacts — entraînés localement, ne pas committer
+models_artifacts/
+*.pkl
+*.h5
+*.onnx
+
+# Logs
+*.log
+logs/

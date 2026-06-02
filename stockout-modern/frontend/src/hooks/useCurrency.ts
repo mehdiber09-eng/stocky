@@ -1,5 +1,5 @@
 // Re-export useCurrency from the context (shared global state)
-export { useCurrency, type Currency, CURRENCY_SYMBOLS } from '../context/CurrencyContext'
+export { useCurrency, TO_DZD, type Currency, CURRENCY_SYMBOLS } from '../context/CurrencyContext'
 
 export function saveUnitPrice(productId: number, price: string) {
   if (price && !isNaN(parseFloat(price)) && parseFloat(price) > 0) {
