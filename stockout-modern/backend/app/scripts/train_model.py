@@ -37,7 +37,7 @@ FEATURES = [
 ]
 
 
-def train(n_products: int = 300, n_days: int = 365) -> dict:
+def train(n_products: int = 300, n_days: int = 365, dataset: str = None, dataset_format: str = None) -> dict:
     try:
         import pandas as pd
         import xgboost as xgb
@@ -50,11 +50,30 @@ def train(n_products: int = 300, n_days: int = 365) -> dict:
         logger.error("Installe : pip install xgboost scikit-learn pandas numpy joblib")
         sys.exit(1)
 
-    from app.scripts.generate_synthetic_data import generate_dataset, build_features
+    # If dataset provided, load and map to features
+    if dataset is not None:
+        logger.info(f"Chargement dataset fourni: {dataset} (format={dataset_format})")
+        if dataset_format == 'm5' or (dataset_format is None and os.path.isdir(dataset)):
+            # expect a folder with sales_train_validation.csv and calendar.csv
+            from app.scripts.mapper_m5 import m5_to_raw
+            raw = m5_to_raw(dataset, max_products=n_products, max_days=n_days)
+            from app.scripts.generate_synthetic_data import build_features
+            df = build_features(raw, horizons=[7, 14, 30])
+        else:
+            # try generic parquet/csv
+            if dataset.endswith('.parquet'):
+                raw_df = pd.read_parquet(dataset)
+            else:
+                raw_df = pd.read_csv(dataset, parse_dates=['date'])
+            # Expect raw_df already in the shape used by generate_synthetic_data.generate_dataset
+            from app.scripts.generate_synthetic_data import build_features as build_features_generic
+            df = build_features_generic(raw_df, horizons=[7, 14, 30])
+    else:
+        from app.scripts.generate_synthetic_data import generate_dataset, build_features
+        logger.info(f"Génération données synthétiques — {n_products} produits × {n_days} jours...")
+        raw = generate_dataset(n_products=n_products, n_days=n_days)
+        df = build_features(raw, horizons=[7, 14, 30])
 
-    logger.info(f"Génération données synthétiques — {n_products} produits × {n_days} jours...")
-    raw = generate_dataset(n_products=n_products, n_days=n_days)
-    df = build_features(raw, horizons=[7, 14, 30])
 
     pos_rate = df["stockout"].mean()
     logger.info(f"Dataset : {len(df):,} exemples | {pos_rate:.1%} ruptures")
@@ -172,9 +191,11 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Entraîne le modèle XGBoost Stocky")
-    parser.add_argument("--products", type=int, default=300, help="Nombre de produits simulés (défaut: 300)")
-    parser.add_argument("--days", type=int, default=365, help="Jours d'historique simulé (défaut: 365)")
+    parser.add_argument("--products", type=int, default=300, help="Nombre de produits simulés ou max produits du dataset (défaut: 300)")
+    parser.add_argument("--days", type=int, default=365, help="Jours d'historique (défaut: 365)")
+    parser.add_argument("--dataset", type=str, default=None, help="Chemin vers dataset (dossier M5 ou fichier parquet/csv)")
+    parser.add_argument("--dataset-format", type=str, default=None, choices=[None, 'm5', 'parquet', 'csv'], help="Format explicite du dataset (m5, parquet, csv)")
     args = parser.parse_args()
 
-    metrics = train(n_products=args.products, n_days=args.days)
+    metrics = train(n_products=args.products, n_days=args.days, dataset=args.dataset, dataset_format=args.dataset_format)
     print(f"\nRésultat : AUC={metrics['auc']} | Brier={metrics['brier']}")
