@@ -196,7 +196,7 @@ export default function Predict() {
                       <img
                         src={selectedProduct.image_url}
                         alt={selectedProduct.name}
-                        className="w-14 h-14 rounded-lg object-cover border border-white/10 shrink-0"
+                        className="w-14 h-14 rounded-lg object-contain bg-black/30 border border-white/10 shrink-0"
                       />
                     ) : (
                       <div className="w-14 h-14 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">

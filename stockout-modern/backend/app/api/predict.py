@@ -49,13 +49,16 @@ async def predict(
         raise HTTPException(status_code=404, detail="Produit introuvable")
 
     # Fetch recent sales (90 days) for statistical prediction
+    # Order DESC to get the most recent 90 entries, then reverse to chronological order
     sales_q = await db.execute(
         select(models.Sale)
         .where(models.Sale.product_id == payload.product_id, models.Sale.owner_id == user.id)
-        .order_by(models.Sale.sold_at.asc())
+        .order_by(models.Sale.sold_at.desc())
         .limit(90)
     )
     sales_rows = sales_q.scalars().all()
+    # sales_rows currently newest->oldest; reverse to oldest->newest for feature calculation
+    sales_rows = list(reversed(sales_rows))
     sales_data = [s.quantity for s in sales_rows]
 
     # Fetch current inventory
@@ -74,6 +77,7 @@ async def predict(
             safety_stock=product.safety_stock,
             lead_time_days=product.lead_time_days,
         )
+        logger.debug(f"Prediction result method={res.get('method')} model_version={res.get('model_version')}")
     except Exception as e:
         logger.exception(f"ML prediction failed: {e}")
         raise HTTPException(status_code=500, detail="Service de prédiction indisponible")

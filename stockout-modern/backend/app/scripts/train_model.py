@@ -101,8 +101,19 @@ def train(n_products: int = 300, n_days: int = 365) -> dict:
     auc = roc_auc_score(y_test, proba)
     brier = brier_score_loss(y_test, proba)
 
+    # Additional classification metrics at 0.5 threshold
+    from sklearn.metrics import precision_score, recall_score, f1_score, average_precision_score
+    thresh = 0.5
+    preds = (proba >= thresh).astype(int)
+    precision = precision_score(y_test, preds, zero_division=0)
+    recall = recall_score(y_test, preds, zero_division=0)
+    f1 = f1_score(y_test, preds, zero_division=0)
+    pr_auc = average_precision_score(y_test, proba)
+
     logger.info(f"AUC    = {auc:.4f}  (>0.75 = bon, >0.85 = excellent)")
+    logger.info(f"PR-AUC = {pr_auc:.4f}")
     logger.info(f"Brier  = {brier:.4f}  (<0.15 = bon, <0.10 = excellent)")
+    logger.info(f"Precision/Recall/F1 @0.5 = {precision:.3f} / {recall:.3f} / {f1:.3f}")
 
     # Feature importance
     importances = dict(zip(FEATURES, model.feature_importances_))
@@ -116,7 +127,11 @@ def train(n_products: int = 300, n_days: int = 365) -> dict:
 
     metrics = {
         "auc": round(auc, 4),
+        "pr_auc": round(pr_auc, 4),
         "brier": round(brier, 4),
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "f1": round(f1, 4),
         "n_train": len(X_train),
         "n_test": len(X_test),
         "pos_rate": round(float(pos_rate), 4),
@@ -124,6 +139,30 @@ def train(n_products: int = 300, n_days: int = 365) -> dict:
     }
     with open(os.path.join(MODEL_DIR, "metrics.json"), "w") as f:
         json.dump(metrics, f, indent=2)
+
+    # Also write a French-labelled metrics file for Kaggle notebook convenience
+    metrics_fr = {
+        "AUC": metrics['auc'],
+        "PR_AUC": metrics['pr_auc'],
+        "Score de Brier": metrics['brier'],
+        "Précision": metrics['precision'],
+        "Rappel": metrics['recall'],
+        "F1": metrics['f1'],
+        "Exemples entraînement": metrics['n_train'],
+        "Exemples test": metrics['n_test'],
+        "Taux de positifs": metrics['pos_rate'],
+    }
+    with open(os.path.join(MODEL_DIR, "metrics_fr.json"), "w", encoding="utf-8") as f:
+        json.dump(metrics_fr, f, ensure_ascii=False, indent=2)
+
+    # write a simple model version file (timestamp)
+    try:
+        import datetime as _dt
+        version_str = _dt.datetime.utcnow().isoformat() + 'Z'
+        with open(os.path.join(MODEL_DIR, 'version.txt'), 'w') as vf:
+            vf.write(version_str)
+    except Exception:
+        pass
 
     logger.info(f"Modèles sauvegardés dans {os.path.abspath(MODEL_DIR)}")
     return metrics

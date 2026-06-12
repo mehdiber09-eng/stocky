@@ -751,7 +751,7 @@ export default function Dashboard() {
                           <img
                             src={p.image_url}
                             alt={p.name}
-                            className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0"
+                            className="w-10 h-10 rounded-lg object-contain bg-black/30 border border-white/10 shrink-0"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">

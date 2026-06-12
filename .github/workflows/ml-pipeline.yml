@@ -1,0 +1,36 @@
+name: ML Pipeline (train & metrics)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'stockout-modern/backend/**'
+
+jobs:
+  train-and-eval:
+    name: Train (synthetic) & export metrics
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stockout-modern/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install xgboost scikit-learn pandas numpy joblib
+      - name: Run training (synthetic small)
+        run: |
+          python -m app.scripts.train_model --products 100 --days 365
+      - name: Check metrics
+        run: |
+          if [ ! -f app/models_artifacts/metrics.json ]; then echo "metrics.json missing" && exit 1; fi
+          cat app/models_artifacts/metrics.json
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-artifacts
+          path: app/models_artifacts/

@@ -4,9 +4,9 @@ import { Camera, X, Upload, Loader2, ImageIcon } from 'lucide-react'
 interface Props {
   value: string | null
   onChange: (dataUrl: string | null) => void
-  /** Taille max du carré final en pixels (default 600) */
+  /** Taille max du côté le plus long en pixels (default 1800) */
   maxSize?: number
-  /** Qualité JPEG (default 0.75) */
+  /** Qualité JPEG (default 0.8) */
   quality?: number
   className?: string
 }
@@ -15,14 +15,13 @@ interface Props {
  * Upload d'image avec :
  * - Preview live
  * - Compression automatique côté navigateur (canvas resize + JPEG quality)
- * - Limite taille finale visée : ~150-200 KB
  * - Stocké en base64 data URL (prêt à envoyer à l'API)
  */
 export default function ImageUpload({
   value,
   onChange,
-  maxSize = 600,
-  quality = 0.75,
+  maxSize = 1800,
+  quality = 0.8,
   className = '',
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -83,7 +82,7 @@ export default function ImageUpload({
           <img
             src={value}
             alt="Aperçu produit"
-            className="w-full aspect-square rounded-xl object-cover border border-white/10"
+            className="w-full max-h-[600px] rounded-xl object-contain bg-black/30 border border-white/10"
           />
           <button
             type="button"
@@ -158,9 +157,8 @@ function compressImage(file: File, maxSize: number, quality: number): Promise<st
       ctx.drawImage(img, 0, 0, w, h)
       try {
         const dataUrl = canvas.toDataURL('image/jpeg', quality)
-        if (dataUrl.length > 500_000) {
-          // Si encore trop gros, retry avec quality plus basse
-          const dataUrl2 = canvas.toDataURL('image/jpeg', 0.55)
+        if (dataUrl.length > 1_500_000) {
+          const dataUrl2 = canvas.toDataURL('image/jpeg', 0.7)
           resolve(dataUrl2)
         } else {
           resolve(dataUrl)

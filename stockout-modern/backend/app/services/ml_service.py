@@ -2,10 +2,13 @@ import os
 import math
 import numpy as np
 import joblib
+import logging
 from typing import Dict, List, Optional
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models_artifacts")
 os.makedirs(MODEL_DIR, exist_ok=True)
+
+logger = logging.getLogger(__name__)
 
 # Features doivent correspondre exactement à celles utilisées lors de l'entraînement
 # (scripts/train_model.py → FEATURES)
@@ -96,10 +99,14 @@ def _ml_features(
 def _load_model(filename: str):
     path = os.path.join(MODEL_DIR, filename)
     if not os.path.exists(path):
+        logger.debug(f"Model file not found: {path}")
         return None
     try:
-        return joblib.load(path)
-    except Exception:
+        model = joblib.load(path)
+        logger.debug(f"Loaded model artifact: {filename}")
+        return model
+    except Exception as e:
+        logger.exception(f"Failed loading model artifact {filename}: {e}")
         return None
 
 
@@ -116,30 +123,47 @@ def run_prediction(
     1. Données réelles → modèle statistique (Normal) + blend XGBoost si dispo
     2. XGBoost seul avec proxy (si pas de données réelles)
     3. Heuristique seedée (dernier recours)
+
+    Retourne toujours un dict contenant 'probability', 'lower', 'upper',
+    et ajoute 'method' ("statistical", "ml_blend", "ml_proxy", "heuristic")
+    et optionnellement 'model_version' quand disponible.
     """
+    # try to read model version if present
+    model_version = None
+    ver_path = os.path.join(MODEL_DIR, 'version.txt')
+    if os.path.exists(ver_path):
+        try:
+            with open(ver_path, 'r') as vf:
+                model_version = vf.read().strip()
+        except Exception:
+            model_version = None
+
+    # Case 1: enough real sales -> statistical + optional ML blend
     if sales_data and len(sales_data) >= 3:
         result = _statistical_probability(
             sales_data, current_stock, horizon, safety_stock, lead_time_days
         )
-
-        xgb = _load_model("xgb_model.pkl")
-        scaler = _load_model("scaler.pkl")
+        result['method'] = 'statistical'
+        xgb = _load_model('xgb_model.pkl')
+        scaler = _load_model('scaler.pkl')
         if xgb is not None and scaler is not None:
             try:
                 feats = _ml_features(sales_data, current_stock, safety_stock, lead_time_days, horizon)
                 if feats is not None:
                     feats_scaled = scaler.transform(feats)
                     prob_ml = float(xgb.predict_proba(feats_scaled)[0][1])
-                    # Blend pondéré : 60% statistique (fiable) + 40% ML (apprend patterns)
-                    blended = 0.6 * result["probability"] + 0.4 * prob_ml
-                    result["probability"] = round(float(np.clip(blended, 0.01, 0.99)), 4)
-            except Exception:
-                pass
-
+                    blended = 0.6 * result['probability'] + 0.4 * prob_ml
+                    result['probability'] = round(float(np.clip(blended, 0.01, 0.99)), 4)
+                    result['method'] = 'ml_blend'
+                    if model_version:
+                        result['model_version'] = model_version
+            except Exception as e:
+                logger.exception(f"ML blend failed for product {product_id}: {e}")
         return result
 
-    xgb = _load_model("xgb_model.pkl")
-    scaler = _load_model("scaler.pkl")
+    # Case 2: not enough real sales but ML artifacts exist -> use proxy sales + ML
+    xgb = _load_model('xgb_model.pkl')
+    scaler = _load_model('scaler.pkl')
     if xgb is not None and scaler is not None:
         try:
             rng = np.random.RandomState(product_id)
@@ -148,18 +172,24 @@ def run_prediction(
             if feats is not None:
                 feats_scaled = scaler.transform(feats)
                 prob = float(np.clip(xgb.predict_proba(feats_scaled)[0][1], 0.01, 0.99))
-                return {
-                    "probability": round(prob, 4),
-                    "lower": round(max(0.01, prob - 0.10), 4),
-                    "upper": round(min(0.99, prob + 0.10), 4),
+                out = {
+                    'probability': round(prob, 4),
+                    'lower': round(max(0.01, prob - 0.10), 4),
+                    'upper': round(min(0.99, prob + 0.10), 4),
+                    'method': 'ml_proxy'
                 }
-        except Exception:
-            pass
+                if model_version:
+                    out['model_version'] = model_version
+                return out
+        except Exception as e:
+            logger.exception(f"ML proxy prediction failed for product {product_id}: {e}")
 
+    # Case 3: fallback heuristic
     rng = np.random.RandomState(product_id + horizon)
     prob = float(np.clip(0.40 + rng.randn() * 0.12, 0.01, 0.99))
     return {
-        "probability": round(prob, 4),
-        "lower": round(max(0.0, prob - 0.12), 4),
-        "upper": round(min(1.0, prob + 0.12), 4),
+        'probability': round(prob, 4),
+        'lower': round(max(0.0, prob - 0.12), 4),
+        'upper': round(min(1.0, prob + 0.12), 4),
+        'method': 'heuristic'
     }

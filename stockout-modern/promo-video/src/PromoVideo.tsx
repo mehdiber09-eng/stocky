@@ -22,7 +22,7 @@ export interface PromoVideoProps {
  * Active l'audio quand tu as posé les fichiers dans public/.
  * Voir AUDIO.md pour les liens de téléchargement.
  */
-const ENABLE_AUDIO = true
+const ENABLE_AUDIO = false
 
 /**
  * Vidéo 30s @ 30fps = 900 frames
@@ -100,15 +100,30 @@ export const PromoVideo: React.FC<PromoVideoProps> = ({ lang, format }) => {
         </TransitionSeries.Sequence>
       </TransitionSeries>
 
-      {/* Audio — activé si fichiers dans public/ */}
+      {/* Audio — activé si fichiers dans public/
+       *
+       * Layout des transitions (cumulatives) :
+       *   Hook    0-80
+       *   flip    81-92      ← woosh 1
+       *   Problem 93-257
+       *   slide   258-269    ← woosh 2
+       *   Solution 270-551
+       *   wipe    552-563    ← woosh 3
+       *   Stats   564-731
+       *   fade    732-743    ← woosh 4
+       *   CTA     744-899
+       *
+       * Chaque woosh démarre ~6f avant la transition pour anticiper
+       * le mouvement et finit pendant la nouvelle scène.
+       */}
       {ENABLE_AUDIO && (
         <>
-          <Audio src={staticFile('music.mp3')} volume={0.13} />
-          <Sequence from={75}  durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
+          <Audio src={staticFile('music.mp3')} volume={0.28} />
+          <Sequence from={75}  durationInFrames={22}><Audio src={staticFile('whoosh.mp3')} volume={1.0} /></Sequence>
           <Sequence from={108} durationInFrames={45}><Audio src={staticFile('impact.mp3')} volume={0.85} /></Sequence>
-          <Sequence from={246} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
-          <Sequence from={528} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
-          <Sequence from={696} durationInFrames={20}><Audio src={staticFile('whoosh.mp3')} volume={0.9} /></Sequence>
+          <Sequence from={252} durationInFrames={22}><Audio src={staticFile('whoosh.mp3')} volume={1.0} /></Sequence>
+          <Sequence from={546} durationInFrames={22}><Audio src={staticFile('whoosh.mp3')} volume={1.0} /></Sequence>
+          <Sequence from={726} durationInFrames={22}><Audio src={staticFile('whoosh.mp3')} volume={1.0} /></Sequence>
           <Sequence from={744} durationInFrames={60}><Audio src={staticFile('sparkle.mp3')} volume={0.7} /></Sequence>
         </>
       )}

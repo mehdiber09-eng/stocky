@@ -34,7 +34,7 @@ for (const fmt of formats) {
     console.log(`\n→ [${++done}/${total}] ${id}`)
     await render(id, file)
     console.log(`  ✓ ${file}`)
-  }
+  }362
 }
 
 const elapsed = ((Date.now() - start) / 1000).toFixed(1)
