@@ -19,3 +19,4 @@ models_artifacts/
 # Logs
 *.log
 logs/
+stockout-modern/backend/app/models_artifacts/

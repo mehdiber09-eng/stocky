@@ -10,19 +10,35 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 logger = logging.getLogger(__name__)
 
-# Features doivent correspondre exactement à celles utilisées lors de l'entraînement
-# (scripts/train_model.py → FEATURES)
 FEATURES = [
     "lag_1", "lag_7", "lag_14", "lag_30",
     "rolling_mean_7", "rolling_mean_14",
     "rolling_std_7", "rolling_std_14",
-    "current_stock", "safety_stock", "stock_to_demand_ratio",
-    "lead_time", "day_of_week", "month", "horizon",
+    "cv_demand",            # Volatilité relative de la demande
+    "trend_7",              # Tendance court terme (lag_7 - lag_14)
+    "trend_30",             # Tendance long terme (lag_14 - lag_30)
+    "days_cover",           # Couverture en jours (stock / lag_7)
+    "stock_ratio",          # Ratio stock / safety_stock
+    "current_stock", "safety_stock",
+    "lead_time",
+    "day_of_week", "month", "is_weekend",
+    "horizon",
 ]
+
+SAFETY_STOCK_DAYS_ASSUMPTION = 7
+DEFAULT_MEAN_DAILY_FALLBACK  = 1.0
 
 
 def _normal_cdf(x: float) -> float:
     return (1.0 + math.erf(x / math.sqrt(2.0))) / 2.0
+
+
+def _estimate_mean_daily(current_stock: int, safety_stock: int) -> float:
+    if safety_stock and safety_stock > 0:
+        return max(safety_stock / SAFETY_STOCK_DAYS_ASSUMPTION, 0.1)
+    if current_stock and current_stock > 0:
+        return max(current_stock / (2 * SAFETY_STOCK_DAYS_ASSUMPTION), 0.1)
+    return DEFAULT_MEAN_DAILY_FALLBACK
 
 
 def _statistical_probability(
@@ -37,27 +53,26 @@ def _statistical_probability(
 
     recent = sales_data[-min(30, len(sales_data)):]
     mean_d = float(np.mean(recent))
-    std_d = float(np.std(recent, ddof=1))
+    std_d  = float(np.std(recent, ddof=1))
     if std_d < 1e-6:
         std_d = max(mean_d * 0.25, 0.1)
-
     if mean_d <= 0:
         return {"probability": 0.04, "lower": 0.01, "upper": 0.08}
 
     effective_stock = max(0.0, float(current_stock) - float(safety_stock))
     expected_demand = mean_d * horizon
-    std_demand = std_d * math.sqrt(horizon)
+    std_demand      = std_d * math.sqrt(horizon)
 
-    z = (effective_stock - expected_demand) / std_demand
+    z    = (effective_stock - expected_demand) / std_demand
     prob = 1.0 - _normal_cdf(z)
 
     lead_factor = 1.0 + min((lead_time_days / 30.0) * 0.25, 0.5)
     prob = float(np.clip(prob * lead_factor, 0.01, 0.99))
 
-    z_low = (effective_stock - (expected_demand - 1.28 * std_demand)) / std_demand
+    z_low  = (effective_stock - (expected_demand - 1.28 * std_demand)) / std_demand
     z_high = (effective_stock - (expected_demand + 1.28 * std_demand)) / std_demand
-    lower = float(np.clip(1.0 - _normal_cdf(z_low), 0.01, 0.99))
-    upper = float(np.clip(1.0 - _normal_cdf(z_high), 0.01, 0.99))
+    lower  = float(np.clip(1.0 - _normal_cdf(z_low),  0.01, 0.99))
+    upper  = float(np.clip(1.0 - _normal_cdf(z_high), 0.01, 0.99))
     if lower > upper:
         lower, upper = upper, lower
 
@@ -71,7 +86,7 @@ def _ml_features(
     lead_time: int,
     horizon: int,
 ) -> Optional[np.ndarray]:
-    """Construit le vecteur de features XGBoost — doit correspondre à FEATURES."""
+    """Construit le vecteur de features ML — doit correspondre exactement à FEATURES."""
     from datetime import datetime
     if len(sales_data) < 2:
         return None
@@ -79,34 +94,82 @@ def _ml_features(
     now = datetime.now()
     arr = np.array(sales_data, dtype=float)
 
-    lag_1 = float(arr[-1])
-    lag_7 = float(np.mean(arr[-7:])) if len(arr) >= 7 else float(np.mean(arr))
+    lag_1  = float(arr[-1])
+    lag_7  = float(np.mean(arr[-7:]))  if len(arr) >= 7  else float(np.mean(arr))
     lag_14 = float(np.mean(arr[-14:])) if len(arr) >= 14 else lag_7
     lag_30 = float(np.mean(arr[-30:])) if len(arr) >= 30 else lag_14
-    rolling_std_7 = float(np.std(arr[-7:])) if len(arr) >= 7 else 0.0
-    rolling_std_14 = float(np.std(arr[-14:])) if len(arr) >= 14 else rolling_std_7
-    stock_to_demand = float(current_stock) / max(lag_7, 0.1)
+
+    std_7  = float(np.std(arr[-7:]))  if len(arr) >= 7  else 0.0
+    std_14 = float(np.std(arr[-14:])) if len(arr) >= 14 else std_7
+
+    cv_demand   = std_7 / max(lag_7, 0.1)
+    trend_7     = lag_7  - lag_14
+    trend_30    = lag_14 - lag_30
+    days_cover  = float(current_stock) / max(lag_7, 0.1)
+    stock_ratio = float(current_stock) / max(float(safety_stock), 0.1)
+
+    is_weekend = float(now.weekday() >= 5)
 
     return np.array([[
         lag_1, lag_7, lag_14, lag_30,
-        lag_7, lag_14,              # rolling_mean_7, rolling_mean_14
-        rolling_std_7, rolling_std_14,
-        float(current_stock), float(safety_stock), stock_to_demand,
-        float(lead_time), float(now.weekday()), float(now.month), float(horizon),
-    ]])
+        lag_7, lag_14,           # rolling_mean_7, rolling_mean_14
+        std_7, std_14,
+        min(cv_demand, 10.0),
+        trend_7,
+        trend_30,
+        min(days_cover, 200.0),
+        min(stock_ratio, 50.0),
+        float(current_stock), float(safety_stock),
+        float(lead_time),
+        float(now.weekday()), float(now.month), is_weekend,
+        float(horizon),
+    ]], dtype=np.float32)
 
 
-def _load_model(filename: str):
+def _load_artifact(filename: str):
     path = os.path.join(MODEL_DIR, filename)
     if not os.path.exists(path):
-        logger.debug(f"Model file not found: {path}")
         return None
     try:
-        model = joblib.load(path)
-        logger.debug(f"Loaded model artifact: {filename}")
-        return model
+        return joblib.load(path)
     except Exception as e:
-        logger.exception(f"Failed loading model artifact {filename}: {e}")
+        logger.exception(f"Failed loading {filename}: {e}")
+        return None
+
+
+def _load_threshold() -> float:
+    """Charge le seuil optimal depuis threshold.json (généré par le notebook Optuna)."""
+    import json
+    path = os.path.join(MODEL_DIR, 'threshold.json')
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                return float(json.load(f).get('threshold', 0.5))
+        except Exception:
+            pass
+    return 0.5
+
+
+def _apply_ml(
+    sales_data: List[int],
+    current_stock: int,
+    safety_stock: int,
+    lead_time_days: int,
+    horizon: int,
+    model, scaler, calibrator,
+) -> Optional[float]:
+    """Retourne la probabilité ML calibrée, ou None si échec."""
+    try:
+        feats = _ml_features(sales_data, current_stock, safety_stock, lead_time_days, horizon)
+        if feats is None:
+            return None
+        feats_s   = scaler.transform(feats)
+        raw_prob  = float(model.predict_proba(feats_s)[0][1])
+        if calibrator is not None:
+            return float(np.clip(calibrator.predict([raw_prob])[0], 0.01, 0.99))
+        return float(np.clip(raw_prob, 0.01, 0.99))
+    except Exception as e:
+        logger.exception(f"ML prediction failed: {e}")
         return None
 
 
@@ -119,77 +182,75 @@ def run_prediction(
     lead_time_days: int = 7,
 ) -> Dict:
     """
-    Priorité :
-    1. Données réelles → modèle statistique (Normal) + blend XGBoost si dispo
-    2. XGBoost seul avec proxy (si pas de données réelles)
-    3. Heuristique seedée (dernier recours)
+    Priorités :
+    1. Données réelles (>=3 jours) → statistique + blend ML calibré  ('ml_blend' / 'statistical')
+    2. Pas d'historique, ML dispo  → estimation via safety_stock + statistique + blend ML ('ml_proxy')
+    3. Pas d'historique, ML indispo→ estimation via safety_stock + statistique seule ('heuristic')
 
-    Retourne toujours un dict contenant 'probability', 'lower', 'upper',
-    et ajoute 'method' ("statistical", "ml_blend", "ml_proxy", "heuristic")
-    et optionnellement 'model_version' quand disponible.
+    Toujours retourné : 'probability', 'lower', 'upper', 'method'
+    Si modèle dispo   : 'model_version', 'threshold'
     """
-    # try to read model version if present
+    # Chargement des artefacts (une fois, en prod on peut les mettre en cache module-level)
+    model      = _load_artifact('xgb_model.pkl')
+    scaler     = _load_artifact('scaler.pkl')
+    calibrator = _load_artifact('calibrator.pkl')   # nouveau : calibration isotonique
+    threshold  = _load_threshold()                  # nouveau : seuil F1-optimal
+
     model_version = None
     ver_path = os.path.join(MODEL_DIR, 'version.txt')
     if os.path.exists(ver_path):
         try:
-            with open(ver_path, 'r') as vf:
-                model_version = vf.read().strip()
+            model_version = open(ver_path).read().strip()
         except Exception:
-            model_version = None
+            pass
 
-    # Case 1: enough real sales -> statistical + optional ML blend
+    ml_available = (model is not None and scaler is not None)
+
+    # ── Cas 1 : assez de données réelles ──────────────────────────────────────
     if sales_data and len(sales_data) >= 3:
-        result = _statistical_probability(
-            sales_data, current_stock, horizon, safety_stock, lead_time_days
-        )
+        result = _statistical_probability(sales_data, current_stock, horizon,
+                                          safety_stock, lead_time_days)
         result['method'] = 'statistical'
-        xgb = _load_model('xgb_model.pkl')
-        scaler = _load_model('scaler.pkl')
-        if xgb is not None and scaler is not None:
-            try:
-                feats = _ml_features(sales_data, current_stock, safety_stock, lead_time_days, horizon)
-                if feats is not None:
-                    feats_scaled = scaler.transform(feats)
-                    prob_ml = float(xgb.predict_proba(feats_scaled)[0][1])
-                    blended = 0.6 * result['probability'] + 0.4 * prob_ml
-                    result['probability'] = round(float(np.clip(blended, 0.01, 0.99)), 4)
-                    result['method'] = 'ml_blend'
-                    if model_version:
-                        result['model_version'] = model_version
-            except Exception as e:
-                logger.exception(f"ML blend failed for product {product_id}: {e}")
+
+        if ml_available:
+            prob_ml = _apply_ml(sales_data, current_stock, safety_stock,
+                                lead_time_days, horizon, model, scaler, calibrator)
+            if prob_ml is not None:
+                blended = 0.6 * result['probability'] + 0.4 * prob_ml
+                result['probability'] = round(float(np.clip(blended, 0.01, 0.99)), 4)
+                result['method'] = 'ml_blend'
+
+        if model_version:
+            result['model_version'] = model_version
+        result['threshold'] = threshold
         return result
 
-    # Case 2: not enough real sales but ML artifacts exist -> use proxy sales + ML
-    xgb = _load_model('xgb_model.pkl')
-    scaler = _load_model('scaler.pkl')
-    if xgb is not None and scaler is not None:
-        try:
-            rng = np.random.RandomState(product_id)
-            proxy_sales = list(rng.poisson(lam=max(1, current_stock // max(horizon, 1)), size=30))
-            feats = _ml_features(proxy_sales, current_stock, safety_stock, lead_time_days, horizon)
-            if feats is not None:
-                feats_scaled = scaler.transform(feats)
-                prob = float(np.clip(xgb.predict_proba(feats_scaled)[0][1], 0.01, 0.99))
-                out = {
-                    'probability': round(prob, 4),
-                    'lower': round(max(0.01, prob - 0.10), 4),
-                    'upper': round(min(0.99, prob + 0.10), 4),
-                    'method': 'ml_proxy'
-                }
-                if model_version:
-                    out['model_version'] = model_version
-                return out
-        except Exception as e:
-            logger.exception(f"ML proxy prediction failed for product {product_id}: {e}")
+    # ── Cas 2 & 3 : pas (ou peu) d'historique ────────────────────────────────
+    # On reconstruit une demande plausible à partir de safety_stock / current_stock
+    mean_daily   = _estimate_mean_daily(current_stock, safety_stock)
+    rng          = np.random.RandomState(product_id)
+    proxy_sales  = list(np.clip(
+        rng.normal(loc=mean_daily, scale=max(mean_daily * 0.3, 0.1), size=30),
+        a_min=0, a_max=None
+    ).round().astype(int))
 
-    # Case 3: fallback heuristic
-    rng = np.random.RandomState(product_id + horizon)
-    prob = float(np.clip(0.40 + rng.randn() * 0.12, 0.01, 0.99))
-    return {
-        'probability': round(prob, 4),
-        'lower': round(max(0.0, prob - 0.12), 4),
-        'upper': round(min(1.0, prob + 0.12), 4),
-        'method': 'heuristic'
-    }
+    result = _statistical_probability(proxy_sales, current_stock, horizon,
+                                      safety_stock, lead_time_days)
+
+    if ml_available:
+        prob_ml = _apply_ml(proxy_sales, current_stock, safety_stock,
+                            lead_time_days, horizon, model, scaler, calibrator)
+        if prob_ml is not None:
+            blended = 0.6 * result['probability'] + 0.4 * prob_ml
+            result['probability'] = round(float(np.clip(blended, 0.01, 0.99)), 4)
+            result['method'] = 'ml_proxy'
+            if model_version:
+                result['model_version'] = model_version
+            result['threshold'] = threshold
+            return result
+
+    result['method'] = 'heuristic'
+    if model_version:
+        result['model_version'] = model_version
+    result['threshold'] = threshold
+    return result
