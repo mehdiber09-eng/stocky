@@ -130,9 +130,33 @@ def _load_artifact(filename: str):
     path = os.path.join(MODEL_DIR, filename)
     if not os.path.exists(path):
         return None
+
+    # Première tentative: joblib.load (fonctionne pour sklearn objects et pickles compatibles)
     try:
         return joblib.load(path)
+    except ModuleNotFoundError as mnfe:
+        # Si l'erreur mentionne 'catboost', essayer d'importer catboost avant de réessayer
+        msg = str(mnfe).lower()
+        if 'catboost' in msg:
+            try:
+                import importlib
+                importlib.import_module('catboost')
+                # réessayer unpickle maintenant que le module est présent
+                return joblib.load(path)
+            except Exception:
+                # Dernier recours : tenter un chargement explicite via l'API CatBoost
+                try:
+                    from catboost import CatBoost
+                    model = CatBoost()
+                    model.load_model(path)
+                    return model
+                except Exception as e:
+                    logger.exception(f"Failed loading CatBoost model {filename}: {e}")
+                    return None
+        logger.exception(f"ModuleNotFoundError loading {filename}: {mnfe}")
+        return None
     except Exception as e:
+        # Pour les autres erreurs, journaliser et retourner None
         logger.exception(f"Failed loading {filename}: {e}")
         return None
 
