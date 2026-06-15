@@ -24,7 +24,7 @@ export default function ReceiptModal({ items, shopName = 'Stocky', onClose }: Pr
   const receiptRef = useRef<HTMLDivElement>(null)
 
   const total = items.reduce((sum, it) => sum + (it.unit_price || 0) * it.quantity, 0)
-  const currency = items[0]?.product.price_currency || 'DZD'
+  const currency = items[0]?.product.price_currency || 'EUR'
   const date = new Date()
   const ticketNum = `T${Date.now().toString().slice(-8)}`
 

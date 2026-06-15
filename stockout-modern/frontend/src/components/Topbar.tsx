@@ -6,8 +6,8 @@ import { useLanguage } from '../context/LanguageContext'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import { useCurrency, Currency } from '../context/CurrencyContext'
 
-const CURRENCY_CYCLE: Currency[] = ['DZD', 'EUR', 'USD', 'SAR', 'AED']
-const CURRENCY_FLAG: Record<Currency, string> = { DZD: '🇩🇿', EUR: '🇪🇺', USD: '🇺🇸', SAR: '🇸🇦', AED: '🇦🇪' }
+const CURRENCY_CYCLE: Currency[] = ['EUR', 'USD', 'SAR', 'AED']
+const CURRENCY_FLAG: Record<Currency, string> = { EUR: '🇪🇺', USD: '🇺🇸', SAR: '🇸🇦', AED: '🇦🇪' }
 
 interface TopbarProps {
   onMenuOpen?: () => void

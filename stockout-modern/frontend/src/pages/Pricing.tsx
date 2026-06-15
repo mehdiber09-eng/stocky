@@ -31,7 +31,6 @@ const PRO_FEATURES = [
 ]
 
 const CURRENCY_FLAGS: Record<Currency, string> = {
-  DZD: '🇩🇿',
   EUR: '🇫🇷',
   USD: '🌐',
   SAR: '🇸🇦',
@@ -71,13 +70,17 @@ export default function Pricing() {
 
   // Prix converti dans la devise active de l'utilisateur
   const mainPrice = useMemo(() => {
-    const val = priceDzd / TO_DZD[currency]
     switch (currency) {
-      case 'DZD': return { display: Math.round(val).toLocaleString('fr-DZ'), unit: 'DZD/mois' }
       case 'EUR': return { display: priceEur.toFixed(2), unit: '€/mois' }
       case 'USD': return { display: priceUsd.toFixed(2), unit: '$/mois' }
-      case 'SAR': return { display: Math.round(val).toLocaleString('ar-SA'), unit: 'SAR/مو' }
-      case 'AED': return { display: Math.round(val).toLocaleString('ar-AE'), unit: 'AED/شهر' }
+      case 'SAR': {
+        const val = Math.round(priceDzd / TO_DZD.SAR)
+        return { display: val.toLocaleString('ar-SA'), unit: 'SAR/مو' }
+      }
+      case 'AED': {
+        const val = Math.round(priceDzd / TO_DZD.AED)
+        return { display: val.toLocaleString('ar-AE'), unit: 'AED/شهر' }
+      }
     }
   }, [currency, priceDzd, priceEur, priceUsd])
 
@@ -86,7 +89,6 @@ export default function Pricing() {
     const priceSar = Math.round(priceDzd / TO_DZD.SAR)
     const priceAed = Math.round(priceDzd / TO_DZD.AED)
     const all: { code: Currency; flag: string; value: string; color: string }[] = [
-      { code: 'DZD', flag: '🇩🇿', value: `${priceDzd.toLocaleString()} DA`,   color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' },
       { code: 'SAR', flag: '🇸🇦', value: `${priceSar} SAR`,                   color: 'text-green-400  border-green-500/20  bg-green-500/10'  },
       { code: 'AED', flag: '🇦🇪', value: `${priceAed} AED`,                   color: 'text-sky-400    border-sky-500/20    bg-sky-500/10'    },
       { code: 'EUR', flag: '🇫🇷', value: `${priceEur} €`,                     color: 'text-blue-400   border-blue-500/20   bg-blue-500/10'   },
@@ -309,7 +311,7 @@ export default function Pricing() {
           <Shield size={14} className="text-emerald-400" /> Paiement sécurisé SSL
         </span>
         <span className="flex items-center gap-2">
-          <Globe size={14} className="text-brand-400" /> 🇩🇿 🇸🇦 🇦🇪 🇫🇷 🌐
+          <Globe size={14} className="text-brand-400" /> 🇸🇦 🇦🇪 🇫🇷 🌐
         </span>
         <span className="flex items-center gap-2">
           <Star size={14} className="text-amber-400" /> Support 7j/7

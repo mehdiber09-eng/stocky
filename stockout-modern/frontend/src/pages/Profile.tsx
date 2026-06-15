@@ -7,10 +7,9 @@ import Toast from '../components/Toast'
 import { useLanguage } from '../context/LanguageContext'
 import { useCurrency, type Currency } from '../hooks/useCurrency'
 
-type Market = 'DZ' | 'SA' | 'AE' | 'FR'
+type Market = 'SA' | 'AE' | 'FR'
 const MARKET_KEY = 'stocky_market'
 const MARKETS: { id: Market; flag: string; label: string; sub: string; currency: Currency; lang: 'fr' | 'ar' }[] = [
-  { id: 'DZ', flag: '🇩🇿', label: 'Algérie', sub: 'DZD · Français/عربي', currency: 'DZD', lang: 'fr' },
   { id: 'SA', flag: '🇸🇦', label: 'Arabie Saoudite', sub: 'SAR · العربية', currency: 'SAR', lang: 'ar' },
   { id: 'AE', flag: '🇦🇪', label: 'Émirats Arabes Unis', sub: 'AED · العربية', currency: 'AED', lang: 'ar' },
   { id: 'FR', flag: '🇫🇷', label: 'France', sub: 'EUR · Français', currency: 'EUR', lang: 'fr' },
@@ -29,7 +28,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(false)
   const [loadingPwd, setLoadingPwd] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
-  const [market, setMarket] = useState<Market>(() => (localStorage.getItem(MARKET_KEY) as Market) || 'DZ')
+  const [market, setMarket] = useState<Market>(() => (localStorage.getItem(MARKET_KEY) as Market) || 'FR')
 
   useEffect(() => {
     API.get('/auth/me').then(r => {
@@ -111,7 +110,7 @@ export default function Profile() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="font-semibold text-zinc-200 flex items-center gap-2"><Zap size={15} className="text-brand-400" /> Passez à StockSense Pro</p>
-              <p className="text-sm text-zinc-500 mt-1">Prédictions illimitées · Alertes email · 900 DZD/mois</p>
+              <p className="text-sm text-zinc-500 mt-1">Prédictions illimitées · Alertes email · Prix selon votre marché</p>
               <p className="text-xs text-zinc-600 mt-1">Paiement Dahabia, CIB, Visa ou PayPal</p>
             </div>
             <Link to="/pricing" className="btn-primary flex items-center gap-2 text-sm shrink-0">
@@ -215,9 +214,9 @@ export default function Profile() {
           <h2 className="font-medium text-zinc-200">{t('curr_title')}</h2>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          {(['DZD', 'EUR', 'USD', 'SAR', 'AED'] as Currency[]).map(c => {
-            const flags: Record<string, string> = { DZD: '🇩🇿', EUR: '🇪🇺', USD: '🇺🇸', SAR: '🇸🇦', AED: '🇦🇪' }
-            const symbols: Record<string, string> = { DZD: 'DA', EUR: '€', USD: '$', SAR: 'ر.س', AED: 'د.إ' }
+          {(['EUR', 'USD', 'SAR', 'AED'] as Currency[]).map(c => {
+            const flags: Record<string, string> = { EUR: '🇪🇺', USD: '🇺🇸', SAR: '🇸🇦', AED: '🇦🇪' }
+            const symbols: Record<string, string> = { EUR: '€', USD: '$', SAR: 'ر.س', AED: 'د.إ' }
             return (
               <button
                 key={c}

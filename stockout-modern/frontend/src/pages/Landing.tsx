@@ -248,14 +248,14 @@ export default function Landing() {
   /* Markets — features par pays avec icônes */
   const ALG_FEATURES = isRTL ? [
     { icon: CreditCard, text: 'داهبية CCP + CIB — دفع جزائري 100%' },
-    { icon: Banknote,   text: 'دينار جزائري DZD — أسعار محلية' },
+    { icon: Banknote,   text: 'أسعار محلية' },
     { icon: Moon,       text: 'وضع رمضان — توقع ذروة المبيعات' },
     { icon: Wifi,       text: 'يعمل مع اتصال محدود — محسّن للشبكة' },
     { icon: Languages,  text: 'عربي + فرنسي — ثنائي اللغة بالكامل' },
     { icon: Scan,       text: 'مسح باركود EAN محلي 613...' },
   ] : [
     { icon: CreditCard, text: 'Dahabia CCP + CIB — paiement 100% algérien' },
-    { icon: Banknote,   text: 'Dinar algérien DZD — prix en local' },
+    { icon: Banknote,   text: 'Prix locaux' },
     { icon: Moon,       text: 'Mode Ramadan — prédiction des pics de vente' },
     { icon: Wifi,       text: 'Fonctionne avec connexion limitée — optimisé 3G' },
     { icon: Languages,  text: 'Arabe + Français — 100% bilingue' },
@@ -942,7 +942,7 @@ export default function Landing() {
             </p>
             <div className="flex items-center justify-center gap-4 mb-10 flex-wrap">
               {[
-                { flag: '🇩🇿', label: 'Algérie',  sub: 'DZD · Dahabia · CIB' },
+                { flag: '🇩🇿', label: 'Algérie',  sub: 'Dahabia · CIB' },
                 { flag: '🇸🇦', label: 'Golfe',    sub: 'SAR · AED · QAR' },
                 { flag: '🇫🇷', label: 'France',   sub: 'EUR · PayPal · Visa' },
               ].map(({ flag, label, sub }) => (
