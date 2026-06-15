@@ -304,6 +304,7 @@ export interface PaymentStatus {
   price_eur: number
   chargily_enabled: boolean
   paypal_enabled: boolean
+  stripe_enabled: boolean
 }
 
 export const PaymentAPI = {
