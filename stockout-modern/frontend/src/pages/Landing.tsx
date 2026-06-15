@@ -254,7 +254,7 @@ export default function Landing() {
     { icon: Languages,  text: 'عربي + فرنسي — ثنائي اللغة بالكامل' },
     { icon: Scan,       text: 'مسح باركود EAN محلي 613...' },
   ] : [
-    { icon: CreditCard, text: 'Dahabia CCP + CIB — paiement 100% algérien' },
+    { icon: CreditCard, text: 'CIB — paiement par carte' },
     { icon: Banknote,   text: 'Prix locaux' },
     { icon: Moon,       text: 'Mode Ramadan — prédiction des pics de vente' },
     { icon: Wifi,       text: 'Fonctionne avec connexion limitée — optimisé 3G' },
@@ -467,7 +467,7 @@ export default function Landing() {
              style={{ animation: 'fadeSlideUp 0.5s ease 0.6s both' }}>
           <span className="flex items-center gap-1.5"><Lock size={11} /> SSL sécurisé</span>
           <span className="w-px h-3 bg-white/8 hidden sm:block" />
-          <span className="flex items-center gap-1.5"><CreditCard size={11} /> Dahabia · CIB · PayPal · Visa</span>
+          <span className="flex items-center gap-1.5"><CreditCard size={11} /> CIB · PayPal · Visa</span>
           <span className="w-px h-3 bg-white/8 hidden sm:block" />
           <span className="flex items-center gap-1.5"><Globe size={11} /> DZ · MENA · EU</span>
           <span className="w-px h-3 bg-white/8 hidden sm:block" />
@@ -857,7 +857,7 @@ export default function Landing() {
             <Reveal>
               <div className="rounded-2xl border border-white/12 p-7 h-full" style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <p className="font-bold text-white text-lg mb-1">{isRTL ? 'مجاني' : 'Gratuit'}</p>
-                <p className="text-4xl font-black text-white mb-1">0 <span className="text-lg text-zinc-500 font-normal">DA</span></p>
+                <p className="text-4xl font-black text-white mb-1">0 <span className="text-lg text-zinc-500 font-normal">€</span></p>
                 <p className="text-zinc-500 text-xs mb-6">{isRTL ? 'لاكتشاف بلا مخاطرة' : 'Pour découvrir sans risque · 0 € · 0 $'}</p>
                 {(isRTL
                   ? ['5 تنبؤات ذكاء اصطناعي', 'جميع منتجاتك', 'تصدير CSV', 'مستشار ذكي']
@@ -882,7 +882,7 @@ export default function Landing() {
                   {isRTL ? 'موصى به' : 'Recommandé'}
                 </div>
                 <p className="font-bold text-white text-lg mb-1">Pro</p>
-                <p className="text-4xl font-black text-white mb-1">1 500 <span className="text-lg text-zinc-300 font-normal">DA</span></p>
+                <p className="text-4xl font-black text-white mb-1">14 <span className="text-lg text-zinc-300 font-normal">€</span></p>
                 <div className="flex items-center flex-wrap gap-1.5 mb-1">
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">≈ 14 €</span>
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">≈ 15 $</span>
@@ -942,7 +942,7 @@ export default function Landing() {
             </p>
             <div className="flex items-center justify-center gap-4 mb-10 flex-wrap">
               {[
-                { flag: '🇩🇿', label: 'Algérie',  sub: 'Dahabia · CIB' },
+                { flag: '🇩🇿', label: 'Algérie',  sub: 'CIB' },
                 { flag: '🇸🇦', label: 'Golfe',    sub: 'SAR · AED · QAR' },
                 { flag: '🇫🇷', label: 'France',   sub: 'EUR · PayPal · Visa' },
               ].map(({ flag, label, sub }) => (

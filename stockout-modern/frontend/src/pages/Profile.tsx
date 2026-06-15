@@ -111,7 +111,7 @@ export default function Profile() {
             <div>
               <p className="font-semibold text-zinc-200 flex items-center gap-2"><Zap size={15} className="text-brand-400" /> Passez à StockSense Pro</p>
               <p className="text-sm text-zinc-500 mt-1">Prédictions illimitées · Alertes email · Prix selon votre marché</p>
-              <p className="text-xs text-zinc-600 mt-1">Paiement Dahabia, CIB, Visa ou PayPal</p>
+              <p className="text-xs text-zinc-600 mt-1">Paiement CIB, Visa ou PayPal</p>
             </div>
             <Link to="/pricing" className="btn-primary flex items-center gap-2 text-sm shrink-0">
               Voir les tarifs <ArrowUpRight size={13} />

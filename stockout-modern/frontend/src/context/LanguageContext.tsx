@@ -401,7 +401,7 @@ const translations = {
 
     // Currency & stock value
     curr_title: 'Devise',
-    curr_dzd: 'Dinar algérien (DA)',
+    curr_dzd: 'Devise locale',
     curr_eur: 'Euro (€)',
     curr_usd: 'Dollar US ($)',
     curr_saved: 'Devise sauvegardée',
@@ -444,7 +444,7 @@ const translations = {
     land_hero_sub2: 'Pour les commerçants algériens, français et MENA.',
     land_cta_start: 'Commencer gratuitement',
     land_cta_demo: 'Voir une démo',
-    land_free_note: '5 prédictions gratuites · Aucune carte bancaire · CIB & Edahabia acceptés',
+    land_free_note: '5 prédictions gratuites · Aucune carte bancaire · Cartes bancaires & CIB acceptés',
     land_stats_accuracy: 'Précision IA',
     land_stats_speed: 'Par prédiction',
     land_stats_sales: 'Ventes en +',
@@ -455,7 +455,7 @@ const translations = {
     land_pain1_desc: 'Chaque rupture coûte des ventes et votre réputation. Le client qui ne trouve pas va chez le concurrent.',
     land_pain1_loss: '−30% de fidélité',
     land_pain2_title: 'Trop de stock = trésorerie bloquée',
-    land_pain2_desc: 'Surstockage paralyse votre cash. Des centaines de milliers de dinars immobilisés dans des produits qui ne bougent pas.',
+    land_pain2_desc: 'Surstockage paralyse votre cash. Des centaines de milliers immobilisés dans des produits qui ne bougent pas.',
     land_pain2_loss: '−40% cash flow',
     land_pain3_title: 'Décision tardive = perte sèche',
     land_pain3_desc: "Commander après la rupture, c'est déjà trop tard. Les délais fournisseurs font le reste des dégâts.",
@@ -903,7 +903,7 @@ const translations = {
 
     // Currency & stock value
     curr_title: 'العملة',
-    curr_dzd: 'دينار جزائري (دج)',
+    curr_dzd: 'العملة المحلية',
     curr_eur: 'يورو (€)',
     curr_usd: 'دولار أمريكي ($)',
     curr_saved: 'تم حفظ العملة',
