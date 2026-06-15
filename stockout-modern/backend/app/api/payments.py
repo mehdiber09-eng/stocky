@@ -44,9 +44,99 @@ async def payment_status(user=Depends(get_current_user)):
         "price_dzd": settings.PRICE_DZD,
         "price_usd": settings.PRICE_USD,
         "price_eur": settings.PRICE_EUR,
+        # Chargily removed optionality — frontend may ignore if false
         "chargily_enabled": bool(settings.CHARGILY_API_KEY),
         "paypal_enabled": bool(settings.PAYPAL_CLIENT_ID and settings.PAYPAL_SECRET),
+        "stripe_enabled": bool(settings.STRIPE_SECRET_KEY),
     }
+
+
+# ── Stripe (card payments) ─────────────────────────────────────────────────
+try:
+    import stripe
+except Exception:
+    stripe = None
+
+
+@router.post('/stripe/create')
+async def stripe_create_checkout(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Create a Stripe Checkout Session (payment mode) and return the URL for redirect.
+    Requires STRIPE_SECRET_KEY in settings. This uses a one-time payment flow and relies on webhook
+    to mark the user as subscribed when checkout.session.completed is received.
+    """
+    if user.is_subscribed:
+        raise HTTPException(status_code=400, detail="Vous êtes déjà abonné Pro.")
+    if not settings.STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Stripe non configuré.")
+    if stripe is None:
+        raise HTTPException(status_code=503, detail="Librairie stripe non installée sur le serveur.")
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    amount_cents = int(round(settings.PRICE_USD * 100))
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {'name': 'StockSense Pro'},
+                    'unit_amount': amount_cents,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f"{settings.FRONTEND_URL}/payment/success?method=stripe",
+            cancel_url=f"{settings.FRONTEND_URL}/payment/cancel",
+            metadata={'user_id': str(user.id), 'email': user.email},
+        )
+        return {'session_url': session.url, 'session_id': session.id}
+    except Exception as e:
+        logger.exception(f"Stripe create session failed: {e}")
+        raise HTTPException(status_code=502, detail="Erreur Stripe. Réessayez.")
+
+
+@router.post('/stripe/webhook', include_in_schema=False)
+async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+
+    event = None
+    if settings.STRIPE_WEBHOOK_SECRET and stripe is not None:
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        except Exception as e:
+            logger.error(f"Stripe webhook signature verification failed: {e}")
+            raise HTTPException(status_code=400, detail="Webhook signature invalide")
+    else:
+        # No webhook secret configured — try to parse the payload naively
+        try:
+            event = json.loads(payload)
+        except Exception:
+            raise HTTPException(status_code=400, detail='Payload invalide')
+
+    etype = event.get('type') if isinstance(event, dict) else getattr(event, 'type', None)
+    # Handle checkout.session.completed
+    sess = None
+    if isinstance(event, dict):
+        sess = event.get('data', {}).get('object')
+    else:
+        sess = event['data']['object'] if hasattr(event, 'get') else None
+
+    if etype == 'checkout.session.completed' and sess:
+        meta = sess.get('metadata', {})
+        user_id = meta.get('user_id')
+        if user_id:
+            user = await db.get(models.User, int(user_id))
+            if user:
+                now = datetime.now(timezone.utc)
+                base = user.subscription_expires_at if (user.is_subscribed and user.subscription_expires_at and user.subscription_expires_at > now) else now
+                user.is_subscribed = True
+                user.subscription_expires_at = base + timedelta(days=SUBSCRIPTION_DAYS)
+                db.add(user)
+                await db.commit()
+                logger.info(f"[Stripe] Subscribed user_id={user_id} until {user.subscription_expires_at}")
+
+    return {'received': True}
 
 
 # ── Chargily Pay (Dahabia / CIB / Visa — Algeria) ───────────────────────────

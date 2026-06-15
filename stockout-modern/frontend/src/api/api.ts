@@ -314,6 +314,8 @@ export const PaymentAPI = {
     API.post<{ order_id: string; approval_url: string }>('/payments/paypal/create'),
   paypalCapture: (orderId: string) =>
     API.post<{ subscribed: boolean }>(`/payments/paypal/capture?order_id=${encodeURIComponent(orderId)}`),
+  stripeCreate: () =>
+    API.post<{ session_url: string; session_id: string }>(`/payments/stripe/create`),
 }
 
 export default API

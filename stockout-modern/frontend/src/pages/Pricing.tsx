@@ -38,15 +38,15 @@ const CURRENCY_FLAGS: Record<Currency, string> = {
   AED: '🇦🇪',
 }
 
-type PayMethod = 'edahabia' | 'cib' | 'paypal' | null
+type PayMethod = 'edahabia' | 'cib' | 'paypal' | 'stripe' | null
 
 export default function Pricing() {
   const { isAuthenticated } = useAuth()
   const { currency } = useCurrency()
 
   const [isSubscribed, setIsSubscribed] = useState(false)
-  const [chargilyEnabled, setChargilyEnabled] = useState(false)
   const [paypalEnabled, setPaypalEnabled] = useState(false)
+  const [stripeEnabled, setStripeEnabled] = useState(false)
   const [priceDzd, setPriceDzd] = useState(1500)
   const [priceUsd, setPriceUsd] = useState(15)
   const [priceEur, setPriceEur] = useState(14)
@@ -59,8 +59,8 @@ export default function Pricing() {
     PaymentAPI.status()
       .then(r => {
         setIsSubscribed(r.data.is_subscribed)
-        setChargilyEnabled(r.data.chargily_enabled)
         setPaypalEnabled(r.data.paypal_enabled)
+        setStripeEnabled(r.data.stripe_enabled)
         setPriceDzd(r.data.price_dzd)
         setPriceUsd(r.data.price_usd)
         if (r.data.price_eur) setPriceEur(r.data.price_eur)
@@ -98,13 +98,14 @@ export default function Pricing() {
     return all
   }, [currency, priceDzd, priceEur, priceUsd])
 
-  async function payChargily(method: 'edahabia' | 'cib') {
-    setLoading(method)
+  async function payStripe() {
+    setLoading('stripe')
     try {
-      const res = await PaymentAPI.chargilyCheckout(method)
-      window.location.href = res.data.checkout_url
+      const res = await PaymentAPI.stripeCreate()
+      // redirect to Stripe Checkout
+      window.location.href = res.data.session_url
     } catch (err: any) {
-      setToast({ msg: err.response?.data?.detail || 'Erreur paiement Chargily', type: 'error' })
+      setToast({ msg: err.response?.data?.detail || 'Erreur paiement par carte', type: 'error' })
       setLoading(null)
     }
   }
@@ -245,47 +246,6 @@ export default function Pricing() {
           ) : (
             <div className="space-y-4">
 
-              {/* ── Algérie ── */}
-              <div className="border border-zinc-700/50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                    🇩🇿 Paiement en Algérie
-                  </p>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">
-                    DZD
-                  </span>
-                </div>
-
-                <Tooltip text="Paiement via votre carte postale algérienne (CCP)" position="left">
-                  <button
-                    onClick={() => payChargily('edahabia')}
-                    disabled={loading !== null || !chargilyEnabled}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ background: 'linear-gradient(135deg,#00a651,#007a3d)', color: '#fff', boxShadow: '0 4px 16px rgba(0,166,81,0.3)' }}
-                  >
-                    {loading === 'edahabia' ? <Loader2 size={14} className="animate-spin" /> : '💳'}
-                    Dahabia (Poste Algérie)
-                  </button>
-                </Tooltip>
-
-                <Tooltip text="Paiement via votre carte bancaire algérienne CIB" position="left">
-                  <button
-                    onClick={() => payChargily('cib')}
-                    disabled={loading !== null || !chargilyEnabled}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ background: 'linear-gradient(135deg,#1d4ed8,#1e40af)', color: '#fff', boxShadow: '0 4px 16px rgba(29,78,216,0.3)' }}
-                  >
-                    {loading === 'cib' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                    CIB (banque algérienne)
-                  </button>
-                </Tooltip>
-
-                {!chargilyEnabled && (
-                  <p className="text-xs text-amber-500/80 flex items-center gap-1">
-                    <AlertCircle size={11} /> Chargily non configuré
-                  </p>
-                )}
-              </div>
 
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-zinc-700/60" />
@@ -320,14 +280,14 @@ export default function Pricing() {
                   </button>
                 </Tooltip>
 
-                <Tooltip text="Payez directement par carte sans compte PayPal" position="left">
+                <Tooltip text="Payez directement par carte (Stripe)" position="left">
                   <button
-                    onClick={payPaypal}
-                    disabled={loading !== null || !paypalEnabled}
+                    onClick={payStripe}
+                    disabled={loading !== null || !stripeEnabled}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-600/60 text-zinc-300 hover:bg-zinc-700/40"
                   >
-                    {loading === 'paypal' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                    Visa / Mastercard · Mada · Carte locale
+                    {loading === 'stripe' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+                    Carte (Visa / Mastercard)
                   </button>
                 </Tooltip>
 
@@ -365,7 +325,7 @@ export default function Pricing() {
         {[
           {
             q: 'Quelles méthodes de paiement sont disponibles ?',
-            a: "Algérie : Dahabia et CIB via Chargily. Arabie Saoudite / Émirats / international : PayPal, Visa, Mastercard (y compris Mada) — aucun compte PayPal requis pour payer par carte. Vos données bancaires ne transitent jamais par nos serveurs.",
+            a: "Paiement : Carte (Visa/Mastercard) via Stripe et PayPal pour international — aucun compte PayPal requis pour payer par carte. Vos données bancaires ne transitent jamais par nos serveurs.",
           },
           {
             q: 'Je suis en Arabie Saoudite, comment voir le prix en SAR ?',

@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     PAYPAL_SECRET: str = os.getenv("PAYPAL_SECRET", "")
     PAYPAL_SANDBOX: bool = os.getenv("PAYPAL_SANDBOX", "true").lower() == "true"
 
+    # Payment — Stripe (card payments)
+    STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
+    STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+    # Optional webhook signing secret for Stripe events
+    STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
     # URLs (redirections paiement + liens email)
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://www.mstockpredictor.com")
     API_BASE_URL: str = os.getenv("API_BASE_URL", "https://api.mstockpredictor.com")
