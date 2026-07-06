@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     PRICE_USD: float = float(os.getenv("PRICE_USD", "15.0"))
     PRICE_EUR: float = float(os.getenv("PRICE_EUR", "14.0"))
 
+    # Expiry / DLC alerts (jours avant expiration pour alerter)
+    EXPIRY_ALERT_DAYS: int = int(os.getenv("EXPIRY_ALERT_DAYS", "30"))
+
     # Email — SMTP
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))

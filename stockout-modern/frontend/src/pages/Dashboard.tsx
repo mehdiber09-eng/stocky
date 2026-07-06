@@ -13,6 +13,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import Tooltip from '../components/Tooltip'
 import QRProductModal from '../components/QRProductModal'
 import OnboardingModal from '../components/OnboardingModal'
+import { ExpiringLotsWidget } from '../components/ExpiringLotsWidget'
 import { useLanguage } from '../context/LanguageContext'
 
 const PRODUCTS_CACHE_KEY = 'stocky_products_cache'
@@ -607,6 +608,11 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Expiring lots widget */}
+      <div className="card border border-blue-500/20 bg-blue-500/5">
+        <ExpiringLotsWidget limit={5} />
+      </div>
 
       {/* Batch predictions */}
       <div className="card">

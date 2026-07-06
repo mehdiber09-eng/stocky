@@ -33,6 +33,7 @@ const Simulate = lazy(() => import('./pages/Simulate'))
 const StockReception = lazy(() => import('./pages/StockReception'))
 const QRBatchPrint = lazy(() => import('./pages/QRBatchPrint'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
+const ExpiringProducts = lazy(() => import('./pages/ExpiringProducts'))
 
 function RouteFallback() {
   return (
@@ -79,6 +80,7 @@ export default function App() {
                 <Route path="/simulate" element={<Simulate />} />
                 <Route path="/stock-reception" element={<StockReception />} />
                 <Route path="/qr-print" element={<QRBatchPrint />} />
+                <Route path="/expiring-products" element={<ExpiringProducts />} />
               </Route>
               <Route path="/pricing" element={<Pricing />} />
               <Route path="*" element={<NotFound />} />

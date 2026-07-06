@@ -174,3 +174,36 @@ class StockMovementOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class LotCreate(BaseModel):
+    product_id: int
+    batch_code: Optional[str] = None
+    expiry_date: Optional[datetime] = None
+    received_at: Optional[datetime] = None
+    quantity_total: int = 0
+    quantity_available: Optional[int] = None
+    supplier_lot_ref: Optional[str] = None
+
+
+class LotOut(BaseModel):
+    id: int
+    product_id: int
+    batch_code: Optional[str] = None
+    expiry_date: Optional[datetime] = None
+    received_at: datetime
+    quantity_total: int
+    quantity_available: int
+    supplier_lot_ref: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LotUpdate(BaseModel):
+    batch_code: Optional[str] = None
+    expiry_date: Optional[datetime] = None
+    received_at: Optional[datetime] = None
+    quantity_total: Optional[int] = None
+    quantity_available: Optional[int] = None
+    supplier_lot_ref: Optional[str] = None

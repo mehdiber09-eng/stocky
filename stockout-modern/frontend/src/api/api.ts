@@ -152,6 +152,37 @@ export interface Notification {
   created_at: string
 }
 
+export interface Lot {
+  id: number
+  product_id: number
+  batch_code: string | null
+  expiry_date: string | null
+  received_at: string
+  quantity_total: number
+  quantity_available: number
+  supplier_lot_ref: string | null
+  created_at: string
+  product?: Product
+}
+
+export interface LotCreate {
+  product_id: number
+  batch_code?: string | null
+  expiry_date?: string | null
+  received_at?: string
+  quantity_total: number
+  quantity_available?: number
+  supplier_lot_ref?: string | null
+}
+
+export interface LotUpdate {
+  batch_code?: string | null
+  expiry_date?: string | null
+  quantity_total?: number
+  quantity_available?: number
+  supplier_lot_ref?: string | null
+}
+
 export interface InventoryHealthItem {
   product_id: number
   product_name: string
@@ -279,6 +310,23 @@ export const NotificationsAPI = {
   markRead: (id: number) => API.post(`/notifications/${id}/read`),
   markAllRead: () => API.post('/notifications/read-all'),
   remove: (id: number) => API.delete(`/notifications/${id}`),
+}
+
+export const LotsAPI = {
+  list: (productId?: number) => {
+    const params = productId ? `?product_id=${productId}` : ''
+    return API.get<Lot[]>(`/lots/${params}`)
+  },
+  expiring: (days?: number, limit = 50) => {
+    const query = new URLSearchParams()
+    if (days !== undefined) query.append('days', String(days))
+    query.append('limit', String(limit))
+    return API.get<Lot[]>(`/lots/expiring?${query}`)
+  },
+  get: (id: number) => API.get<Lot>(`/lots/${id}`),
+  create: (data: LotCreate) => API.post<Lot>('/lots/', data),
+  update: (id: number, data: LotUpdate) => API.put<Lot>(`/lots/${id}`, data),
+  delete: (id: number) => API.delete(`/lots/${id}`),
 }
 
 export const ChatAPI = {

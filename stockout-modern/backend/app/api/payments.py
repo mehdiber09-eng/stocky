@@ -85,7 +85,8 @@ async def stripe_create_checkout(db: AsyncSession = Depends(get_db), user=Depend
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=f"{settings.FRONTEND_URL}/payment/success?method=stripe",
+            # Include session id placeholder so frontend can verify without webhook
+            success_url=f"{settings.FRONTEND_URL}/payment/success?session_id={{CHECKOUT_SESSION_ID}}&method=stripe",
             cancel_url=f"{settings.FRONTEND_URL}/payment/cancel",
             metadata={'user_id': str(user.id), 'email': user.email},
         )
@@ -137,6 +138,43 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 logger.info(f"[Stripe] Subscribed user_id={user_id} until {user.subscription_expires_at}")
 
     return {'received': True}
+
+
+@router.post('/stripe/verify')
+async def stripe_verify(session_id: str = Query(...), db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Verify a Checkout Session (useful when not using webhooks). Marks user subscribed if payment succeeded."""
+    if not settings.STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Stripe non configuré.")
+    if stripe is None:
+        raise HTTPException(status_code=503, detail="Librairie stripe non installée sur le serveur.")
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    try:
+        sess = stripe.checkout.Session.retrieve(session_id, expand=['payment_intent'])
+    except Exception as e:
+        logger.error(f"Stripe retrieve session failed: {e}")
+        raise HTTPException(status_code=400, detail="Session invalide")
+
+    # Successful payment conditions
+    paid = False
+    if getattr(sess, 'payment_status', None) == 'paid':
+        paid = True
+    pi = getattr(sess, 'payment_intent', None)
+    if getattr(pi, 'status', None) == 'succeeded':
+        paid = True
+
+    if not paid:
+        raise HTTPException(status_code=402, detail="Paiement non complété.")
+
+    now = datetime.now(timezone.utc)
+    base = user.subscription_expires_at if (user.is_subscribed and user.subscription_expires_at and user.subscription_expires_at > now) else now
+    user.is_subscribed = True
+    user.subscription_expires_at = base + timedelta(days=SUBSCRIPTION_DAYS)
+    db.add(user)
+    await db.commit()
+    logger.info(f"[Stripe-verify] Subscribed user_id={user.id} until {user.subscription_expires_at}")
+
+    return {"subscribed": True}
 
 
 # ── Chargily Pay (Dahabia / CIB / Visa — Algeria) ───────────────────────────

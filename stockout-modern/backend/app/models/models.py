@@ -80,6 +80,27 @@ class Product(Base):
     )
 
 
+class Lot(Base):
+    __tablename__ = "lots"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    batch_code = Column(String(255), nullable=True)
+    expiry_date = Column(DateTime(timezone=True), nullable=True, index=True)
+    received_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    quantity_total = Column(Integer, nullable=False, default=0)
+    quantity_available = Column(Integer, nullable=False, default=0)
+    supplier_lot_ref = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    product = relationship("Product")
+    owner = relationship("User")
+
+    __table_args__ = (
+        Index("ix_lots_owner_expiry", "owner_id", "expiry_date"),
+    )
+
+
 class Sale(Base):
     __tablename__ = "sales"
     id = Column(Integer, primary_key=True, index=True)

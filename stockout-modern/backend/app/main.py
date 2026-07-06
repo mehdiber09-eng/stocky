@@ -24,9 +24,11 @@ from app.api import (
     system_status,
     push,
     oauth,
+    lots,
 )
 from app.core.config import settings
 from app.models.db import init_db
+from app.tasks.expiry_notifier import start_expiry_checker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,6 +37,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await start_expiry_checker()
     logger.info(f"StockSense API démarrée (env={settings.APP_ENV})")
     yield
 
@@ -85,6 +88,7 @@ app.include_router(scan_qr.router, prefix="/scan_qr", tags=["scan-qr"])
 app.include_router(simulate.router, prefix="/simulate", tags=["simulate"])
 app.include_router(system_status.router, prefix="/system-status", tags=["system-status"])
 app.include_router(push.router, prefix="/push", tags=["push"])
+app.include_router(lots.router, prefix="/lots", tags=["lots"])
 
 
 @app.get("/", tags=["meta"])

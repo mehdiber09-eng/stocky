@@ -134,7 +134,7 @@ export default function Predict() {
   const selectedProduct = products.find(p => p.id === Number(productId)) ?? null
   const reorderQty = selectedProduct ? Math.max(selectedProduct.safety_stock * 3, 10) : 0
   const unitCostDZD = selectedProduct?.cost_price
-    ? convertToDZD(selectedProduct.cost_price, (selectedProduct.price_currency as any) || 'DZD')
+    ? convertToDZD(selectedProduct.cost_price, (selectedProduct.price_currency as any) || 'EUR')
     : null
   const totalCostDisplay = unitCostDZD ? formatPrice(unitCostDZD * reorderQty) : null
 
