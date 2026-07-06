@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { AlertTriangle, Trash2, CheckCircle } from 'lucide-react'
-import { LotsAPI, Lot, Product } from '../api/api'
-import { useAuth } from '../context/AuthContext'
+import { Trash2, CheckCircle } from 'lucide-react'
+import { LotsAPI, Lot } from '../api/api'
 
-export function ExpiringProducts() {
-  const { user } = useAuth()
+export default function ExpiringProducts() {
   const [lots, setLots] = useState<(Lot & { daysUntilExpiry: number })[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
