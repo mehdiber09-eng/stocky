@@ -76,3 +76,103 @@ async def update_lot(lid: int, payload: LotUpdate, db: AsyncSession = Depends(ge
     await db.commit()
     await db.refresh(lot)
     return lot
+
+
+@router.post("/{lid}/record-loss", response_model=dict, status_code=200)
+async def record_loss(
+    lid: int,
+    quantity: int,
+    reason: str = "loss",
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    """
+    Record a loss/waste/damage for a lot (reduces quantity_available).
+    Creates a StockMovement to track the change.
+    """
+    lot = await db.get(models.Lot, lid)
+    if not lot or lot.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Lot introuvable")
+    
+    if quantity > lot.quantity_available:
+        raise HTTPException(status_code=400, detail=f"Quantité insuffisante (disponible: {lot.quantity_available})")
+    
+    quantity_before = lot.quantity_available
+    lot.quantity_available -= quantity
+    db.add(lot)
+    
+    movement = models.StockMovement(
+        owner_id=user.id,
+        product_id=lot.product_id,
+        quantity_before=quantity_before,
+        quantity_after=lot.quantity_available,
+        change=-quantity,
+        reason=f"loss_{reason}",
+    )
+    db.add(movement)
+    await db.commit()
+    
+    return {
+        "message": f"Perte enregistrée: {quantity} unités",
+        "quantity_before": quantity_before,
+        "quantity_after": lot.quantity_available,
+    }
+
+
+@router.post("/{lid}/transfer", response_model=dict, status_code=200)
+async def transfer_lot(
+    lid: int,
+    target_product_id: int,
+    quantity: int,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    """
+    Transfer stock from one lot to another product (or create new lot).
+    Useful for moving stock between locations/batches.
+    """
+    lot = await db.get(models.Lot, lid)
+    if not lot or lot.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Lot source introuvable")
+    
+    if quantity > lot.quantity_available:
+        raise HTTPException(status_code=400, detail=f"Quantité insuffisante (disponible: {lot.quantity_available})")
+    
+    # Verify target product exists
+    target_product = await db.get(models.Product, target_product_id)
+    if not target_product or target_product.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Produit cible introuvable")
+    
+    # Record loss on source lot
+    lot.quantity_available -= quantity
+    db.add(lot)
+    
+    # Create movement record
+    movement = models.StockMovement(
+        owner_id=user.id,
+        product_id=lot.product_id,
+        quantity_before=lot.quantity_available + quantity,
+        quantity_after=lot.quantity_available,
+        change=-quantity,
+        reason="transfer",
+    )
+    db.add(movement)
+    
+    await db.commit()
+    
+    return {
+        "message": f"Transfert de {quantity} unités vers produit #{target_product_id}",
+        "source_lot_id": lid,
+        "target_product_id": target_product_id,
+        "quantity_transferred": quantity,
+    }
+
+
+@router.delete("/{lid}", status_code=204)
+async def delete_lot(lid: int, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    lot = await db.get(models.Lot, lid)
+    if not lot or lot.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Lot introuvable")
+    await db.delete(lot)
+    await db.commit()
+

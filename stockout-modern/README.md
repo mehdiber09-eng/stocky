@@ -96,3 +96,30 @@ cd e2e && npx cypress run
 | `FREE_TRIALS_LIMIT` | `5` | Prédictions gratuites/mois |
 | `CORS_ORIGINS` | `*` | Origines CORS autorisées |
 | `APP_ENV` | `development` | Environnement (`production` force validation SECRET_KEY) |
+
+## Connexion Google
+
+Le code OAuth Google est déjà câblé côté backend sur `/auth/oauth/google/start` et `/auth/oauth/google/callback`, et les boutons frontend utilisent `VITE_API_URL`.
+
+Dans Google Cloud Console, crée un client OAuth de type **Web application** puis ajoute ces valeurs :
+
+| Champ Google | Valeur locale | Valeur production |
+|--------------|---------------|-------------------|
+| Authorized JavaScript origins | `http://localhost:5173` | `https://www.mstockpredictor.com` |
+| Authorized redirect URIs | `http://localhost:8000/auth/oauth/google/callback` | `https://api.mstockpredictor.com/auth/oauth/google/callback` |
+
+Variables à mettre côté backend, par exemple Railway :
+
+```env
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+FRONTEND_URL=https://www.mstockpredictor.com
+API_BASE_URL=https://api.mstockpredictor.com
+CORS_ORIGINS=https://www.mstockpredictor.com
+```
+
+Variable à mettre côté frontend, par exemple Vercel :
+
+```env
+VITE_API_URL=https://api.mstockpredictor.com
+```

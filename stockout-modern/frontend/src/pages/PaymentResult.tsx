@@ -14,13 +14,22 @@ export default function PaymentResult({ type }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // PayPal redirects back with ?token=<order_id>&PayerID=<payer_id>
     if (type !== 'success') return
+    const method = searchParams.get('method')
+    const sessionId = searchParams.get('session_id')
     const orderId = searchParams.get('token') || searchParams.get('order_id')
-    if (!orderId) return
+
+    const validation =
+      method === 'stripe' && sessionId
+        ? PaymentAPI.stripeVerify(sessionId)
+        : orderId
+          ? PaymentAPI.paypalCapture(orderId)
+          : null
+
+    if (!validation) return
 
     setCapturing(true)
-    PaymentAPI.paypalCapture(orderId)
+    validation
       .then(() => setCaptured(true))
       .catch(err => setError(err.response?.data?.detail || 'Erreur lors de la validation du paiement'))
       .finally(() => setCapturing(false))

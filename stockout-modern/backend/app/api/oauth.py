@@ -4,6 +4,7 @@ OAuth endpoints — Google + Apple Sign-In.
 Ces endpoints ne sont actifs que si les credentials sont définis dans les
 variables d'environnement. Sinon ils retournent une erreur 503 explicite.
 """
+import secrets
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -32,6 +33,10 @@ def _google_redirect_uri() -> str:
     return f"{settings.API_BASE_URL}/auth/oauth/google/callback"
 
 
+def _oauth_cookie_secure() -> bool:
+    return settings.API_BASE_URL.startswith("https://")
+
+
 @router.get("/google/start")
 async def google_start():
     """Redirige vers la page de consentement Google."""
@@ -41,6 +46,7 @@ async def google_start():
             detail="Google OAuth non configuré. Contacte l'administrateur.",
         )
 
+    state = secrets.token_urlsafe(32)
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": _google_redirect_uri(),
@@ -48,9 +54,19 @@ async def google_start():
         "scope": "openid email profile",
         "access_type": "online",
         "prompt": "select_account",
+        "state": state,
     }
     url = f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
-    return RedirectResponse(url=url, status_code=302)
+    response = RedirectResponse(url=url, status_code=302)
+    response.set_cookie(
+        "google_oauth_state",
+        state,
+        max_age=600,
+        httponly=True,
+        secure=_oauth_cookie_secure(),
+        samesite="lax",
+    )
+    return response
 
 
 @router.get("/google/callback")
@@ -58,16 +74,22 @@ async def google_callback(
     request: Request,
     code: str | None = None,
     error: str | None = None,
+    state: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Reçoit le code de Google, échange contre un token, crée ou login user."""
     if error:
-        return RedirectResponse(
+        response = RedirectResponse(
             url=f"{settings.FRONTEND_URL}/login?oauth_error={error}",
             status_code=302,
         )
+        response.delete_cookie("google_oauth_state")
+        return response
     if not code:
         raise HTTPException(status_code=400, detail="Code OAuth manquant.")
+    expected_state = request.cookies.get("google_oauth_state")
+    if not state or not expected_state or not secrets.compare_digest(state, expected_state):
+        raise HTTPException(status_code=400, detail="État OAuth invalide.")
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(status_code=503, detail="Google OAuth non configuré.")
 
@@ -131,10 +153,12 @@ async def google_callback(
 
     # 4. Redirige le frontend avec le JWT
     jwt = create_access_token(str(user.id))
-    return RedirectResponse(
+    response = RedirectResponse(
         url=f"{settings.FRONTEND_URL}/login?token={jwt}",
         status_code=302,
     )
+    response.delete_cookie("google_oauth_state")
+    return response
 
 
 # ─── APPLE SIGN-IN ─────────────────────────────────────────────────────────
